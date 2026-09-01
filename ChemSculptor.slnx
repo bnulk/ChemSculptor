@@ -1,0 +1,10 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/ChemSculptor.Api/ChemSculptor.Api.csproj" />
+    <Project Path="src/ChemSculptor.Core/ChemSculptor.Core.csproj" />
+    <Project Path="src/ChemSculptor.Domain/ChemSculptor.Domain.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/ChemSculptor.Core.Tests/ChemSculptor.Core.Tests.csproj" />
+  </Folder>
+</Solution>
