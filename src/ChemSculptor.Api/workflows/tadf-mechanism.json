@@ -1,0 +1,13 @@
+{
+  "id": "tadf_mechanism_diagnosis",
+  "version": "1.0.0",
+  "goal": "判断超分子体系是否为 TADF 并定位主要发光通道",
+  "nodes": [
+    { "id": "structure", "container": "echo", "dependsOn": [] },
+    { "id": "s0_opt", "container": "echo", "dependsOn": [ "structure" ] },
+    { "id": "vertical", "container": "echo", "dependsOn": [ "s0_opt" ] },
+    { "id": "deltaE_ST", "container": "echo", "dependsOn": [ "vertical" ], "gate": "validate_deltaE_ST_quality" },
+    { "id": "soc", "container": "echo", "dependsOn": [ "vertical" ], "gate": "validate_soc_quality" },
+    { "id": "report", "container": "echo", "dependsOn": [ "soc", "deltaE_ST" ] }
+  ]
+}
