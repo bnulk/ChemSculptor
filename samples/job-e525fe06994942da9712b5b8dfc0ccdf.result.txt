@@ -1,0 +1,24 @@
+ChemSculptor Job: job-e525fe06994942da9712b5b8dfc0ccdf
+Status: Passed
+Goal: 客户端文本任务
+
+--- 原始请求 ---
+3
+water molecule
+O 0.000000 0.000000 0.117300
+H 0.000000 0.757200 -0.469200
+H 0.000000 -0.757200 -0.469200
+--- 节点输出 ---
+[deltaE_ST] Passed
+[echo] ok (structure=[echo] ok (no upstream outputs), s0_opt=[echo] ok (structure=[echo] ok (no upstream outputs)), vertical=[echo] ok (structure=[echo] ok (no upstream outputs), s0_opt=[echo] ok (structure=[echo] ok (no upstream outputs))))
+[report] Passed
+[echo] ok (structure=[echo] ok (no upstream outputs), s0_opt=[echo] ok (structure=[echo] ok (no upstream outputs)), vertical=[echo] ok (structure=[echo] ok (no upstream outputs), s0_opt=[echo] ok (structure=[echo] ok (no upstream outputs))), deltaE_ST=[echo] ok (structure=[echo] ok (no upstream outputs), s0_opt=[echo] ok (structure=[echo] ok (no upstream outputs)), vertical=[echo] ok (structure=[echo] ok (no upstream outputs), s0_opt=[echo] ok (structure=[echo] ok (no upstream outputs)))), soc=[echo] ok (structure=[echo] ok (no upstream outputs), s0_opt=[echo] ok (structure=[echo] ok (no upstream outputs)), vertical=[echo] ok (structure=[echo] ok (no upstream outputs), s0_opt=[echo] ok (structure=[echo] ok (no upstream outputs))), deltaE_ST=[echo] ok (structure=[echo] ok (no upstream outputs), s0_opt=[echo] ok (structure=[echo] ok (no upstream outputs)), vertical=[echo] ok (structure=[echo] ok (no upstream outputs), s0_opt=[echo] ok (structure=[echo] ok (no upstream outputs))))))
+[s0_opt] Passed
+[echo] ok (structure=[echo] ok (no upstream outputs))
+[soc] Passed
+[echo] ok (structure=[echo] ok (no upstream outputs), s0_opt=[echo] ok (structure=[echo] ok (no upstream outputs)), vertical=[echo] ok (structure=[echo] ok (no upstream outputs), s0_opt=[echo] ok (structure=[echo] ok (no upstream outputs))), deltaE_ST=[echo] ok (structure=[echo] ok (no upstream outputs), s0_opt=[echo] ok (structure=[echo] ok (no upstream outputs)), vertical=[echo] ok (structure=[echo] ok (no upstream outputs), s0_opt=[echo] ok (structure=[echo] ok (no upstream outputs)))))
+[structure] Passed
+[echo] ok (no upstream outputs)
+[vertical] Passed
+[echo] ok (structure=[echo] ok (no upstream outputs), s0_opt=[echo] ok (structure=[echo] ok (no upstream outputs)))
+--- 结束 ---

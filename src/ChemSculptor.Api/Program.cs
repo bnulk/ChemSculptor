@@ -16,6 +16,7 @@ builder.Services.AddSingleton<ICaseMemory, InMemoryCaseMemory>();
 builder.Services.AddSingleton<EchoSkillContainer>();
 builder.Services.AddSingleton<WorkflowEngine>();
 builder.Services.AddSingleton<IClientInputParser, TextClientInputParser>();
+builder.Services.AddSingleton<IGeometryTextParser, GeometryTextParser>();
 builder.Services.AddSingleton<ClientJobService>();
 
 var app = builder.Build();
@@ -57,12 +58,14 @@ app.MapGet("/", () => Results.Ok(new
         "POST /containers/register",
         "POST /client/jobs",
         "GET /client/jobs/{id}/status",
-        "GET /client/jobs/{id}/result"
+        "GET /client/jobs/{id}/result",
+        "POST /geometries"
     }
 }));
 
 app.MapWorkflowEndpoints();
 app.MapContainerEndpoints();
 app.MapClientJobEndpoints();
+app.MapGeometryEndpoints();
 
 app.Run();

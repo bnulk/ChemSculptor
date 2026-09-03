@@ -9,4 +9,7 @@
   <Folder Name="/tests/">
     <Project Path="tests/ChemSculptor.Core.Tests/ChemSculptor.Core.Tests.csproj" />
   </Folder>
+  <Folder Name="/解决方案项/">
+    <File Path="docs/CHANGES.md" />
+  </Folder>
 </Solution>

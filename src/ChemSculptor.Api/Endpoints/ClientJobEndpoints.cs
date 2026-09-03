@@ -24,7 +24,7 @@ public static class ClientJobEndpoints
             return Results.Accepted(
                 $"/client/jobs/{job.Id}",
                 new { job.Id, job.Status, job.Message });
-        });
+        }).DisableAntiforgery();
 
         jobs.MapGet("/{id}/status", (string id, ClientJobService service) =>
         {

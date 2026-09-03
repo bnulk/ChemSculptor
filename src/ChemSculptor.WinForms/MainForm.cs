@@ -1,3 +1,4 @@
+using System.Text;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 
@@ -11,12 +12,13 @@ public sealed class MainForm : Form
 
     private readonly TextBox _serverUrlBox = new()
     {
-        Text = "http://127.0.0.1:5080",
+        Text = "http://127.0.0.1:5178",
         Width = 220
     };
 
     private readonly Button _selectFileButton = new() { Text = "选择 txt", AutoSize = true };
     private readonly Button _submitButton = new() { Text = "提交给 ChemSculptor", AutoSize = true };
+    private readonly Button _sendGeometryButton = new() { Text = "发送坐标", AutoSize = true };
     private readonly Button _saveResultButton = new() { Text = "保存结果", AutoSize = true };
     private readonly Label _selectedFileLabel = new() { Text = "未选择文件", AutoSize = true };
     private readonly ListBox _jobList = new() { Dock = DockStyle.Fill };
@@ -40,6 +42,7 @@ public sealed class MainForm : Form
 
         _selectFileButton.Click += SelectFile;
         _submitButton.Click += async (_, _) => await SubmitAsync();
+        _sendGeometryButton.Click += async (_, _) => await SendGeometryAsync();
         _saveResultButton.Click += SaveResult;
         _timer.Tick += async (_, _) => await PollActiveJobsAsync();
         _timer.Start();
@@ -58,6 +61,7 @@ public sealed class MainForm : Form
         toolbar.Controls.Add(_serverUrlBox);
         toolbar.Controls.Add(_selectFileButton);
         toolbar.Controls.Add(_submitButton);
+        toolbar.Controls.Add(_sendGeometryButton);
         toolbar.Controls.Add(_saveResultButton);
         toolbar.Controls.Add(_selectedFileLabel);
 
@@ -110,13 +114,20 @@ public sealed class MainForm : Form
             response.EnsureSuccessStatusCode();
 
             var summary = await response.Content.ReadFromJsonAsync<ClientJobSummary>();
-            if (summary is null || string.IsNullOrWhiteSpace(summary.JobId))
+            if (summary is null)
             {
                 AppendOutput("提交失败：服务端没有返回任务编号。");
                 return;
             }
 
-            var job = new ClientJobItem { Id = summary.JobId, Status = "Queued" };
+            var jobId = string.IsNullOrWhiteSpace(summary.JobId) ? summary.Id : summary.JobId;
+            if (string.IsNullOrWhiteSpace(jobId))
+            {
+                AppendOutput("提交失败：服务端没有返回任务编号。");
+                return;
+            }
+
+            var job = new ClientJobItem { Id = jobId, Status = "Queued" };
             _jobs[job.Id] = job;
             AppendOutput($"已提交 {fileName} -> {job.Id}");
             RefreshJobList();
@@ -125,6 +136,43 @@ public sealed class MainForm : Form
         catch (Exception ex)
         {
             AppendOutput($"提交失败：{ex.Message}");
+        }
+    }
+
+    private async Task SendGeometryAsync()
+    {
+        if (string.IsNullOrWhiteSpace(_selectedFilePath) || !File.Exists(_selectedFilePath))
+        {
+            MessageBox.Show(this, "请先选择一个包含分子坐标的 txt 文件。", "ChemSculptor 客户端");
+            return;
+        }
+
+        try
+        {
+            var text = await File.ReadAllTextAsync(_selectedFilePath);
+            using var content = new StringContent(text, Encoding.UTF8, "text/plain");
+
+            var response = await _http.PostAsync(Endpoint("/geometries"), content);
+            response.EnsureSuccessStatusCode();
+
+            var result = await response.Content.ReadFromJsonAsync<GeometrySubmitResult>();
+            if (result is null || result.AtomCount == 0)
+            {
+                AppendOutput("坐标发送失败：服务器没有返回分子数据。");
+                return;
+            }
+
+            var elements = string.Join(", ", result.Atoms.Select(atom => atom.Element));
+            AppendOutput($"服务器已接收 {result.SourceName}：{result.Formula}，共 {result.AtomCount} 个原子（{elements}）");
+
+            foreach (var diagnostic in result.Diagnostics)
+            {
+                AppendOutput($"诊断：{diagnostic}");
+            }
+        }
+        catch (Exception ex)
+        {
+            AppendOutput($"坐标发送失败：{ex.Message}");
         }
     }
 
