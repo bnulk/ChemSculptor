@@ -49,3 +49,23 @@ public sealed record GeometrySubmitResult
 
     public IReadOnlyList<string> Diagnostics { get; init; } = [];
 }
+
+public sealed record ChatMessage
+{
+    public required string Role { get; init; }
+
+    public required string Text { get; init; }
+
+    public DateTimeOffset Timestamp { get; init; } = DateTimeOffset.Now;
+}
+
+public sealed class ChatSession
+{
+    public required string Id { get; init; }
+
+    public required string Title { get; init; }
+
+    public List<ChatMessage> Messages { get; } = [];
+
+    public override string ToString() => Title;
+}
