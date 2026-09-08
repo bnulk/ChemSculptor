@@ -7,6 +7,11 @@ namespace ChemSculptor.WinForms;
 public sealed class MainForm : Form
 {
     private readonly HttpClient _http = new() { Timeout = TimeSpan.FromSeconds(30) };
+
+    // 语法糖说明：
+    //   = []           是集合表达式，等价于 new List<ChatSession>()；
+    //   new(...)       是“目标类型 new”，等价于明确写出类型：
+    //                   new Dictionary<string, ClientJobItem>(StringComparer.OrdinalIgnoreCase)。
     private readonly List<ChatSession> _sessions = [];
     private readonly Dictionary<string, ClientJobItem> _jobs = new(StringComparer.OrdinalIgnoreCase);
     private readonly System.Windows.Forms.Timer _timer = new() { Interval = 1500 };
@@ -75,6 +80,12 @@ public sealed class MainForm : Form
         _sessionList.SelectedIndexChanged += (_, _) => SwitchSession();
         _selectFileButton.Click += SelectFile;
         _saveResultButton.Click += SaveResult;
+        // 语法糖说明：async (_, _) => await ... 是异步 Lambda，等价于定义一个方法：
+        // private async void OnSendText(object? sender, EventArgs e)
+        // {
+        //     await SendTextAsync();
+        // }
+        // 再写 _sendTextButton.Click += OnSendText;
         _sendTextButton.Click += async (_, _) => await SendTextAsync();
         _sendGeometryButton.Click += async (_, _) => await SendGeometryAsync();
         _sendJobButton.Click += async (_, _) => await SubmitJobAsync();
@@ -215,6 +226,9 @@ public sealed class MainForm : Form
 
     private void AppendMessage(string role, string text)
     {
+        // 语法糖说明：
+        //   ??= 表示“如果左边为 null 才赋值”；
+        //   ^1  表示“从末尾数第 1 个”，等价于 _sessions[_sessions.Count - 1]。
         _activeSession ??= _sessions[^1];
         _activeSession.Messages.Add(new ChatMessage
         {
@@ -228,6 +242,8 @@ public sealed class MainForm : Form
 
     private void AddBubble(ChatMessage message)
     {
+        // 语法糖说明：message.Role switch { ... } 是 switch 表达式，
+        // 等价于用 if / else if / else 分别给 backColor、foreColor、prefix 赋值。
         var (backColor, foreColor, prefix) = message.Role switch
         {
             "user" => (Color.FromArgb(220, 235, 255), Color.FromArgb(20, 40, 80), "你"),
@@ -351,6 +367,9 @@ public sealed class MainForm : Form
                 return;
             }
 
+            // 语法糖说明：result.Atoms.Select(atom => atom.Element) 等价于循环：
+            // var elementNames = new List<string>();
+            // foreach (var atom in result.Atoms) elementNames.Add(atom.Element);
             var elements = string.Join(", ", result.Atoms.Select(atom => atom.Element));
             AppendMessage("system",
                 $"服务器已接收 {result.SourceName}：{result.Formula}，共 {result.AtomCount} 个原子（{elements}）。");
@@ -422,6 +441,12 @@ public sealed class MainForm : Form
         _polling = true;
         try
         {
+            // 语法糖说明：.Where(...).ToList() 等价于循环：
+            // var active = new List<ClientJobItem>();
+            // foreach (var job in _jobs.Values)
+            // {
+            //     if (job.Status is not ("Passed" or "Failed")) active.Add(job);
+            // }
             var active = _jobs.Values.Where(job => job.Status is not ("Passed" or "Failed")).ToList();
             foreach (var job in active)
             {
@@ -467,6 +492,8 @@ public sealed class MainForm : Form
             {
                 job.ResultText = await resultResponse.Content.ReadAsStringAsync();
                 _latestResultText = job.ResultText;
+                // 语法糖说明：job.ResultText[..400] 取前 400 个字符，
+                // 等价于 job.ResultText.Substring(0, 400)（已保证长度大于 400）。
                 var preview = job.ResultText.Length > 400
                     ? job.ResultText[..400] + "..."
                     : job.ResultText;

@@ -8,6 +8,8 @@ public static class GeometryEndpoints
     {
         var geometries = app.MapGroup("/geometries");
 
+        // 语法糖说明：async Lambda 等价于定义命名方法后传入。
+        // 参数从框架注入：HttpRequest 是当前请求，parser 来自 DI。
         geometries.MapPost("/", async (
             HttpRequest request,
             IGeometryTextParser parser,
@@ -39,6 +41,9 @@ public static class GeometryEndpoints
                 geometry.SourceName,
                 geometry.Formula,
                 AtomCount = geometry.Atoms.Count,
+                // 语法糖说明：geometry.Atoms.Select(atom => new { ... })
+                // 是 LINQ + Lambda，等价于 foreach 逐个取出元素并
+                // 放进一个新的匿名对象列表。
                 Atoms = geometry.Atoms.Select(atom => new
                 {
                     atom.Element,

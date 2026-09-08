@@ -5,6 +5,14 @@ using ChemSculptor.Core;
 using ChemSculptor.Domain;
 using ChemSculptor.InputProcessor;
 
+// 语法糖说明：下面是“顶层语句”。
+// 传统写法是把它包进 Main 方法里：
+// public class Program {
+//     public static void Main(string[] args) {
+//         var builder = WebApplication.CreateBuilder(args);
+//         ...
+//     }
+// }
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddSingleton<IEventBus, InMemoryEventBus>();
@@ -63,6 +71,11 @@ app.MapGet("/", () => Results.Ok(new
     }
 }));
 
+// 语法糖说明：app.MapXxx() 是 C# 扩展方法写法，等价于：
+// WorkflowEndpoints.MapWorkflowEndpoints(app);
+// ContainerEndpoints.MapContainerEndpoints(app);
+// ClientJobEndpoints.MapClientJobEndpoints(app);
+// GeometryEndpoints.MapGeometryEndpoints(app);
 app.MapWorkflowEndpoints();
 app.MapContainerEndpoints();
 app.MapClientJobEndpoints();
