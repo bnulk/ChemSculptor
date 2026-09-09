@@ -5,6 +5,31 @@
 
 ---
 
+## v0.5.1（2026-09-10）：Api 顶层语句改为传统 Main 写法
+
+### 版本
+
+- 当前版本：`0.5.1`
+- 日期：2026-09-10
+- 版本类型：代码风格重构（行为不变）
+
+### 改动目的
+
+按用户学习习惯，把 `ChemSculptor.Api` 的顶层语句改写为传统 `public static async Task Main` 形式，便于对照学习，不改变任何运行行为。
+
+### 改动内容
+
+- 重写 `src/ChemSculptor.Api/Program.cs`：
+  - 新增 `namespace ChemSculptor.Api` 与 `public static class Program`
+  - 原顶层启动语句全部移入 `Main(string[] args)`
+  - 服务注册、示例工作流载入、端点挂载、`app.Run()` 顺序保持不变
+
+### 验证
+
+- `dotnet build src/ChemSculptor.Api/ChemSculptor.Api.csproj`：0 警告 0 错误
+
+---
+
 ## v0.5.0（2026-09-07）：WinForms 对话式界面框架
 
 ### 版本
