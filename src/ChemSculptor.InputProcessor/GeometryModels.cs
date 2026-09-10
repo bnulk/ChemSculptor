@@ -1,16 +1,25 @@
 namespace ChemSculptor.InputProcessor;
 
-public sealed record GeometryAtom(string Element, double X, double Y, double Z);
-
-public sealed record MolecularGeometry
+public sealed class GeometryAtom
 {
-    public required string SourceName { get; init; }
+    public string Element { get; set; } = string.Empty;
 
-    public required string Formula { get; init; }
+    public double X { get; set; }
 
-    public required string RawText { get; init; }
+    public double Y { get; set; }
 
-    public IReadOnlyList<GeometryAtom> Atoms { get; init; } = [];
+    public double Z { get; set; }
+}
 
-    public IReadOnlyList<string> Diagnostics { get; init; } = [];
+public sealed class MolecularGeometry
+{
+    public string SourceName { get; set; } = string.Empty;
+
+    public string Formula { get; set; } = string.Empty;
+
+    public string RawText { get; set; } = string.Empty;
+
+    public List<GeometryAtom> Atoms { get; set; } = new List<GeometryAtom>();
+
+    public List<string> Diagnostics { get; set; } = new List<string>();
 }

@@ -7,13 +7,13 @@ public interface IClientInputParser
         CancellationToken cancellationToken = default);
 }
 
-public sealed record ProcessedClientRequest
+public sealed class ProcessedClientRequest
 {
-    public required string WorkflowId { get; init; }
+    public string WorkflowId { get; set; } = string.Empty;
 
-    public required string Goal { get; init; }
+    public string Goal { get; set; } = string.Empty;
 
-    public required string RawText { get; init; }
+    public string RawText { get; set; } = string.Empty;
 
-    public IReadOnlyList<string> Diagnostics { get; init; } = [];
+    public List<string> Diagnostics { get; set; } = new List<string>();
 }

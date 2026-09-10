@@ -2,7 +2,7 @@ namespace ChemSculptor.Api.Client;
 
 public sealed class ClientJob
 {
-    public required string Id { get; init; }
+    public string Id { get; set; } = string.Empty;
 
     public string Status { get; set; } = "Queued";
 
@@ -10,7 +10,7 @@ public sealed class ClientJob
 
     public string? ResultText { get; set; }
 
-    public DateTimeOffset CreatedAt { get; init; } = DateTimeOffset.UtcNow;
+    public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.UtcNow;
 
     public DateTimeOffset? StartedAt { get; set; }
 

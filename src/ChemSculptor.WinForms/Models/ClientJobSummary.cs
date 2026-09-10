@@ -1,71 +1,77 @@
 namespace ChemSculptor.WinForms;
 
-public sealed record ClientJobSummary
+public sealed class ClientJobSummary
 {
-    public string Id { get; init; } = "";
+    public string Id { get; set; } = string.Empty;
 
-    public string JobId { get; init; } = "";
+    public string JobId { get; set; } = string.Empty;
 
-    public string Status { get; init; } = "";
+    public string Status { get; set; } = string.Empty;
 
-    public string? Message { get; init; }
+    public string? Message { get; set; }
 
-    public DateTimeOffset? CompletedAt { get; init; }
+    public DateTimeOffset? CompletedAt { get; set; }
 
-    public bool HasResult { get; init; }
+    public bool HasResult { get; set; }
 }
 
 public sealed class ClientJobItem
 {
-    public required string Id { get; init; }
+    public string Id { get; set; } = string.Empty;
 
     public string Status { get; set; } = "Queued";
 
     public string? ResultText { get; set; }
 
-    public override string ToString() => $"{Id}    [{Status}]";
+    public override string ToString()
+    {
+        return Id + "    [" + Status + "]";
+    }
 }
 
-public sealed record GeometryAtomDto
+public sealed class GeometryAtomDto
 {
-    public string Element { get; init; } = "";
+    public string Element { get; set; } = string.Empty;
 
-    public double X { get; init; }
+    public double X { get; set; }
 
-    public double Y { get; init; }
+    public double Y { get; set; }
 
-    public double Z { get; init; }
+    public double Z { get; set; }
 }
 
-public sealed record GeometrySubmitResult
+public sealed class GeometrySubmitResult
 {
-    public string SourceName { get; init; } = "";
+    public string SourceName { get; set; } = string.Empty;
 
-    public string Formula { get; init; } = "";
+    public string Formula { get; set; } = string.Empty;
 
-    public int AtomCount { get; init; }
+    public int AtomCount { get; set; }
 
-    public IReadOnlyList<GeometryAtomDto> Atoms { get; init; } = [];
+    public List<GeometryAtomDto> Atoms { get; set; } = new List<GeometryAtomDto>();
 
-    public IReadOnlyList<string> Diagnostics { get; init; } = [];
+    public List<string> Diagnostics { get; set; } = new List<string>();
 }
 
-public sealed record ChatMessage
+public sealed class ChatMessage
 {
-    public required string Role { get; init; }
+    public string Role { get; set; } = string.Empty;
 
-    public required string Text { get; init; }
+    public string Text { get; set; } = string.Empty;
 
-    public DateTimeOffset Timestamp { get; init; } = DateTimeOffset.Now;
+    public DateTimeOffset Timestamp { get; set; } = DateTimeOffset.Now;
 }
 
 public sealed class ChatSession
 {
-    public required string Id { get; init; }
+    public string Id { get; set; } = string.Empty;
 
-    public required string Title { get; init; }
+    public string Title { get; set; } = string.Empty;
 
-    public List<ChatMessage> Messages { get; } = [];
+    public List<ChatMessage> Messages { get; set; } = new List<ChatMessage>();
 
-    public override string ToString() => Title;
+    public override string ToString()
+    {
+        return Title;
+    }
 }

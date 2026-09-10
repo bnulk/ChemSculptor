@@ -10,10 +10,10 @@ namespace ChemSculptor.Api.Client;
 public sealed class ClientJobService
 {
     private readonly ConcurrentDictionary<string, ClientJob> _jobs =
-        new(StringComparer.OrdinalIgnoreCase);
+        new ConcurrentDictionary<string, ClientJob>(StringComparer.OrdinalIgnoreCase);
 
     private readonly Dictionary<string, WorkflowDefinition> _templates =
-        new(StringComparer.OrdinalIgnoreCase);
+        new Dictionary<string, WorkflowDefinition>(StringComparer.OrdinalIgnoreCase);
 
     private readonly IClientInputParser _parser;
     private readonly WorkflowEngine _engine;
@@ -25,44 +25,59 @@ public sealed class ClientJobService
         LoadTemplates();
     }
 
-    public async Task<ClientJob> SubmitAsync(Stream input, CancellationToken cancellationToken)
+    public Task<ClientJob> SubmitAsync(string rawText, CancellationToken cancellationToken)
     {
-        var rawText = await ReadAllTextAsync(input, cancellationToken);
-        var job = new ClientJob
-        {
-            Id = $"job-{Guid.NewGuid():N}"
-        };
+        ClientJob job = new ClientJob();
+        job.Id = "job-" + Guid.NewGuid().ToString("N");
         _jobs[job.Id] = job;
 
-        _ = Task.Run(async () => await ExecuteAsync(job, rawText), cancellationToken);
-        return job;
+        Task executionTask = ExecuteAsync(job, rawText);
+        return Task.FromResult(job);
     }
 
-    public ClientJob? GetJob(string jobId) =>
-        _jobs.TryGetValue(jobId, out var job) ? job : null;
+    public ClientJob? GetJob(string jobId)
+    {
+        ClientJob? job;
+        if (_jobs.TryGetValue(jobId, out job))
+        {
+            return job;
+        }
+
+        return null;
+    }
 
     private async Task ExecuteAsync(ClientJob job, string rawText)
     {
         try
         {
-            var request = await _parser.ParseAsync(rawText);
+            ProcessedClientRequest request = await _parser.ParseAsync(rawText);
             job.Status = "Running";
             job.StartedAt = DateTimeOffset.UtcNow;
-            job.Message = $"已解析输入，工作流：{request.WorkflowId}";
+            job.Message = "已解析输入，工作流：" + request.WorkflowId;
 
-            var definition = BuildDefinition(job.Id, request);
-            var submitted = await _engine.SubmitAsync(definition);
-            var run = await _engine.RunAsync(submitted.Id);
+            WorkflowDefinition definition = BuildDefinition(job.Id, request);
+            WorkflowRun submitted = await _engine.SubmitAsync(definition);
+            WorkflowRun run = await _engine.RunAsync(submitted.Id);
 
-            job.Status = run.State == WorkflowState.Passed ? "Passed" : "Failed";
-            job.Message = $"工作流结束：{run.State}";
+            if (run.State == WorkflowState.Passed)
+            {
+                job.Status = "Passed";
+            }
+            else
+            {
+                job.Status = "Failed";
+            }
+
+            job.Message = "工作流结束：" + run.State.ToString();
             job.ResultText = BuildResultText(job, rawText, run);
         }
         catch (Exception ex)
         {
             job.Status = "Failed";
             job.Message = ex.Message;
-            job.ResultText = $"ChemSculptor Job: {job.Id}\nStatus: Failed\n错误: {ex.Message}";
+            job.ResultText = "ChemSculptor Job: " + job.Id +
+                Environment.NewLine + "Status: Failed" +
+                Environment.NewLine + "错误: " + ex.Message;
         }
         finally
         {
@@ -72,50 +87,87 @@ public sealed class ClientJobService
 
     private WorkflowDefinition BuildDefinition(string jobId, ProcessedClientRequest request)
     {
-        if (_templates.TryGetValue(request.WorkflowId, out var template))
+        WorkflowDefinition? template;
+
+        if (_templates.TryGetValue(request.WorkflowId, out template))
         {
-            return template with { Id = jobId, Goal = request.Goal };
+            return CloneDefinition(template, jobId, request.Goal);
         }
 
-        return new WorkflowDefinition
+        WorkflowDefinition fallback = new WorkflowDefinition();
+        fallback.Id = jobId;
+        fallback.Version = "1.0.0";
+        fallback.Goal = request.Goal;
+        fallback.Nodes = new List<WorkflowNode>();
+
+        WorkflowNode node = new WorkflowNode();
+        node.Id = "client_task";
+        node.Container = "echo";
+        fallback.Nodes.Add(node);
+
+        return fallback;
+    }
+
+    private static WorkflowDefinition CloneDefinition(
+        WorkflowDefinition template,
+        string jobId,
+        string goal)
+    {
+        WorkflowDefinition clone = new WorkflowDefinition();
+        clone.Id = jobId;
+        clone.Version = template.Version;
+        clone.Goal = goal;
+        clone.Nodes = new List<WorkflowNode>();
+
+        for (int index = 0; index < template.Nodes.Count; index++)
         {
-            Id = jobId,
-            Version = "1.0.0",
-            Goal = request.Goal,
-            Nodes =
-            [
-                new WorkflowNode
-                {
-                    Id = "client_task",
-                    Container = "echo"
-                }
-            ]
-        };
+            WorkflowNode sourceNode = template.Nodes[index];
+            WorkflowNode targetNode = new WorkflowNode();
+            targetNode.Id = sourceNode.Id;
+            targetNode.Container = sourceNode.Container;
+            targetNode.DependsOn = new List<string>(sourceNode.DependsOn);
+            targetNode.Gate = sourceNode.Gate;
+            clone.Nodes.Add(targetNode);
+        }
+
+        return clone;
     }
 
     private static string BuildResultText(ClientJob job, string rawText, WorkflowRun run)
     {
-        var builder = new StringBuilder();
-        builder.AppendLine($"ChemSculptor Job: {job.Id}");
-        builder.AppendLine($"Status: {run.State}");
-        builder.AppendLine($"Goal: {run.Definition.Goal}");
+        StringBuilder builder = new StringBuilder();
+        builder.AppendLine("ChemSculptor Job: " + job.Id);
+        builder.AppendLine("Status: " + run.State.ToString());
+        builder.AppendLine("Goal: " + run.Definition.Goal);
         builder.AppendLine();
         builder.AppendLine("--- 原始请求 ---");
         builder.AppendLine(rawText.TrimEnd());
         builder.AppendLine("--- 节点输出 ---");
 
-        foreach (var (nodeId, result) in run.Results.OrderBy(pair => pair.Key, StringComparer.OrdinalIgnoreCase))
-        {
-            builder.AppendLine($"[{nodeId}] {(result.Succeeded ? "Passed" : "Failed")}");
+        List<KeyValuePair<string, TaskResult>> results =
+            new List<KeyValuePair<string, TaskResult>>(run.Results);
+        results.Sort(CompareResults);
 
-            if (!string.IsNullOrWhiteSpace(result.Output))
+        for (int index = 0; index < results.Count; index++)
+        {
+            KeyValuePair<string, TaskResult> pair = results[index];
+            string stateText = "Failed";
+
+            if (pair.Value.Succeeded)
             {
-                builder.AppendLine(result.Output);
+                stateText = "Passed";
             }
 
-            if (!string.IsNullOrWhiteSpace(result.Diagnostics))
+            builder.AppendLine("[" + pair.Key + "] " + stateText);
+
+            if (!string.IsNullOrWhiteSpace(pair.Value.Output))
             {
-                builder.AppendLine(result.Diagnostics);
+                builder.AppendLine(pair.Value.Output);
+            }
+
+            if (!string.IsNullOrWhiteSpace(pair.Value.Diagnostics))
+            {
+                builder.AppendLine(pair.Value.Diagnostics);
             }
         }
 
@@ -123,26 +175,28 @@ public sealed class ClientJobService
         return builder.ToString();
     }
 
-    private static async Task<string> ReadAllTextAsync(Stream input, CancellationToken cancellationToken)
+    private static int CompareResults(
+        KeyValuePair<string, TaskResult> left,
+        KeyValuePair<string, TaskResult> right)
     {
-        using var reader = new StreamReader(input);
-        return await reader.ReadToEndAsync(cancellationToken);
+        return string.Compare(left.Key, right.Key, StringComparison.OrdinalIgnoreCase);
     }
 
     private void LoadTemplates()
     {
-        var workflowsDirectory = Path.Combine(Directory.GetCurrentDirectory(), "workflows");
+        string workflowsDirectory = Path.Combine(Directory.GetCurrentDirectory(), "workflows");
         if (!Directory.Exists(workflowsDirectory))
         {
             return;
         }
 
-        var options = new JsonSerializerOptions(JsonSerializerDefaults.Web);
-        foreach (var file in Directory.EnumerateFiles(workflowsDirectory, "*.json"))
+        JsonSerializerOptions options = new JsonSerializerOptions(JsonSerializerDefaults.Web);
+        foreach (string file in Directory.EnumerateFiles(workflowsDirectory, "*.json"))
         {
-            var json = File.ReadAllText(file);
-            var definition = JsonSerializer.Deserialize<WorkflowDefinition>(json, options);
-            if (definition is not null)
+            string json = File.ReadAllText(file);
+            WorkflowDefinition? definition = JsonSerializer.Deserialize<WorkflowDefinition>(json, options);
+
+            if (definition != null)
             {
                 _templates[definition.Id] = definition;
             }

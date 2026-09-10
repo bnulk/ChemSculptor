@@ -4,41 +4,65 @@ namespace ChemSculptor.Core;
 
 public sealed class InMemoryEventBus : IEventBus
 {
-    private readonly Dictionary<Guid, Func<WorkflowEvent, CancellationToken, Task>> _handlers = [];
-    private readonly Lock _gate = new();
+    private readonly Dictionary<Guid, Func<WorkflowEvent, CancellationToken, Task>> _handlers =
+        new Dictionary<Guid, Func<WorkflowEvent, CancellationToken, Task>>();
 
-    public async Task PublishAsync(WorkflowEvent @event, CancellationToken cancellationToken = default)
+    private readonly Lock _gate = new Lock();
+
+    public async Task PublishAsync(WorkflowEvent eventData, CancellationToken cancellationToken = default)
     {
         Func<WorkflowEvent, CancellationToken, Task>[] handlers;
+
         lock (_gate)
         {
-            handlers = _handlers.Values.ToArray();
+            handlers = new Func<WorkflowEvent, CancellationToken, Task>[_handlers.Count];
+            _handlers.Values.CopyTo(handlers, 0);
         }
 
-        await Task.WhenAll(handlers.Select(handler => handler(@event, cancellationToken)));
+        for (int index = 0; index < handlers.Length; index++)
+        {
+            await handlers[index](eventData, cancellationToken);
+        }
     }
 
     public IDisposable Subscribe(Func<WorkflowEvent, CancellationToken, Task> handler)
     {
-        var id = Guid.NewGuid();
+        Guid id = Guid.NewGuid();
+
         lock (_gate)
         {
-            _handlers[id] = handler;
+            _handlers.Add(id, handler);
         }
 
-        return new Lease(() =>
-        {
-            lock (_gate)
-            {
-                _handlers.Remove(id);
-            }
-        });
+        return new HandlerRegistration(this, id);
     }
 
-    private sealed class Lease(Action dispose) : IDisposable
+    private void RemoveHandler(Guid id)
     {
-        private Action? _dispose = dispose;
+        lock (_gate)
+        {
+            _handlers.Remove(id);
+        }
+    }
 
-        public void Dispose() => Interlocked.Exchange(ref _dispose, null)?.Invoke();
+    private sealed class HandlerRegistration : IDisposable
+    {
+        private InMemoryEventBus? _owner;
+        private readonly Guid _id;
+
+        public HandlerRegistration(InMemoryEventBus owner, Guid id)
+        {
+            _owner = owner;
+            _id = id;
+        }
+
+        public void Dispose()
+        {
+            InMemoryEventBus? owner = Interlocked.Exchange(ref _owner, null);
+            if (owner != null)
+            {
+                owner.RemoveHandler(_id);
+            }
+        }
     }
 }

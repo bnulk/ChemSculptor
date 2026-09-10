@@ -31,23 +31,24 @@ public sealed class WorkflowEngine
         WorkflowDefinition definition,
         CancellationToken cancellationToken = default)
     {
-        var violations = await _rules.ValidateWorkflowAsync(definition, cancellationToken);
+        IReadOnlyList<string> violations = await _rules.ValidateWorkflowAsync(definition, cancellationToken);
         if (violations.Count > 0)
         {
-            throw new InvalidOperationException(
-                $"Workflow rejected by rule engine: {string.Join("; ", violations)}");
+            string message = string.Join("; ", violations);
+            throw new InvalidOperationException("Workflow rejected by rule engine: " + message);
         }
 
-        var run = new WorkflowRun
+        WorkflowRun run = new WorkflowRun();
+        run.Id = definition.Id;
+        run.Definition = definition;
+        run.State = WorkflowState.Ready;
+        run.NodeStates = new Dictionary<string, TaskState>(StringComparer.OrdinalIgnoreCase);
+
+        for (int index = 0; index < definition.Nodes.Count; index++)
         {
-            Id = definition.Id,
-            Definition = definition,
-            State = WorkflowState.Ready,
-            NodeStates = definition.Nodes.ToDictionary(
-                node => node.Id,
-                _ => TaskState.Pending,
-                StringComparer.OrdinalIgnoreCase)
-        };
+            WorkflowNode node = definition.Nodes[index];
+            run.NodeStates.Add(node.Id, TaskState.Pending);
+        }
 
         await _repository.SaveAsync(run, cancellationToken);
         await EmitAsync(WorkflowEventTypes.WorkflowStarted, run.Id, null, null, cancellationToken);
@@ -56,8 +57,11 @@ public sealed class WorkflowEngine
 
     public async Task<WorkflowRun> RunAsync(string workflowId, CancellationToken cancellationToken = default)
     {
-        var run = await _repository.GetAsync(workflowId, cancellationToken)
-            ?? throw new KeyNotFoundException($"Workflow '{workflowId}' was not found.");
+        WorkflowRun? run = await _repository.GetAsync(workflowId, cancellationToken);
+        if (run == null)
+        {
+            throw new KeyNotFoundException("Workflow '" + workflowId + "' was not found.");
+        }
 
         if (!WorkflowStateRules.CanTransition(run.State, WorkflowState.Running))
         {
@@ -68,17 +72,48 @@ public sealed class WorkflowEngine
         run.StartedAt = DateTimeOffset.UtcNow;
         await _repository.SaveAsync(run, cancellationToken);
 
-        var nodes = run.Definition.Nodes.ToDictionary(
-            node => node.Id,
-            StringComparer.OrdinalIgnoreCase);
-        var completed = new Dictionary<string, TaskResult>(StringComparer.OrdinalIgnoreCase);
-        var pending = new HashSet<string>(nodes.Keys, StringComparer.OrdinalIgnoreCase);
+        Dictionary<string, WorkflowNode> nodes =
+            new Dictionary<string, WorkflowNode>(StringComparer.OrdinalIgnoreCase);
+
+        for (int index = 0; index < run.Definition.Nodes.Count; index++)
+        {
+            WorkflowNode node = run.Definition.Nodes[index];
+            nodes.Add(node.Id, node);
+        }
+
+        Dictionary<string, TaskResult> completed =
+            new Dictionary<string, TaskResult>(StringComparer.OrdinalIgnoreCase);
+
+        HashSet<string> pending = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        foreach (string nodeId in nodes.Keys)
+        {
+            pending.Add(nodeId);
+        }
 
         while (pending.Count > 0)
         {
-            var ready = pending
-                .Where(id => nodes[id].DependsOn.All(completed.ContainsKey))
-                .ToList();
+            List<string> ready = new List<string>();
+
+            foreach (string nodeId in pending)
+            {
+                WorkflowNode node = nodes[nodeId];
+                bool dependenciesCompleted = true;
+
+                for (int dependencyIndex = 0; dependencyIndex < node.DependsOn.Count; dependencyIndex++)
+                {
+                    string dependencyId = node.DependsOn[dependencyIndex];
+                    if (!completed.ContainsKey(dependencyId))
+                    {
+                        dependenciesCompleted = false;
+                        break;
+                    }
+                }
+
+                if (dependenciesCompleted)
+                {
+                    ready.Add(nodeId);
+                }
+            }
 
             if (ready.Count == 0)
             {
@@ -89,9 +124,10 @@ public sealed class WorkflowEngine
                     cancellationToken);
             }
 
-            foreach (var nodeId in ready)
+            for (int index = 0; index < ready.Count; index++)
             {
-                var result = await ExecuteNodeAsync(run, nodes[nodeId], completed, cancellationToken);
+                string nodeId = ready[index];
+                TaskResult result = await ExecuteNodeAsync(run, nodes[nodeId], completed, cancellationToken);
                 completed[nodeId] = result;
 
                 if (!result.Succeeded)
@@ -99,12 +135,15 @@ public sealed class WorkflowEngine
                     run.Results = completed;
                     return await FailAsync(
                         run,
-                        $"Node '{nodeId}' failed: {result.Diagnostics}",
+                        "Node '" + nodeId + "' failed: " + result.Diagnostics,
                         cancellationToken);
                 }
             }
 
-            pending.ExceptWith(ready);
+            for (int index = 0; index < ready.Count; index++)
+            {
+                pending.Remove(ready[index]);
+            }
         }
 
         run.State = WorkflowState.Passed;
@@ -122,65 +161,81 @@ public sealed class WorkflowEngine
         IReadOnlyDictionary<string, TaskResult> completed,
         CancellationToken cancellationToken)
     {
-        var container = _containers.Resolve(node.Container)
-            ?? throw new InvalidOperationException($"Skill container '{node.Container}' is not registered.");
+        ISkillContainer? container = _containers.Resolve(node.Container);
+        if (container == null)
+        {
+            throw new InvalidOperationException("Skill container '" + node.Container + "' is not registered.");
+        }
 
         run.NodeStates[node.Id] = TaskState.Running;
         await _repository.SaveAsync(run, cancellationToken);
         await EmitAsync(WorkflowEventTypes.TaskStarted, run.Id, node.Id, null, cancellationToken);
 
         TaskResult result;
+
         try
         {
-            var request = new TaskRequest
+            TaskRequest request = new TaskRequest();
+            request.WorkflowId = run.Id;
+            request.NodeId = node.Id;
+            request.ContainerId = node.Container;
+            request.Inputs = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+
+            foreach (KeyValuePair<string, TaskResult> pair in completed)
             {
-                WorkflowId = run.Id,
-                NodeId = node.Id,
-                ContainerId = node.Container,
-                Inputs = completed.ToDictionary(
-                    pair => pair.Key,
-                    pair => pair.Value.Output ?? string.Empty,
-                    StringComparer.OrdinalIgnoreCase)
-            };
+                string? output = pair.Value.Output;
+                if (output == null)
+                {
+                    output = string.Empty;
+                }
+
+                request.Inputs.Add(pair.Key, output);
+            }
 
             result = await container.ExecuteAsync(request, cancellationToken);
         }
         catch (Exception ex)
         {
-            result = new TaskResult
-            {
-                WorkflowId = run.Id,
-                NodeId = node.Id,
-                Succeeded = false,
-                Diagnostics = ex.Message
-            };
+            result = new TaskResult();
+            result.WorkflowId = run.Id;
+            result.NodeId = node.Id;
+            result.Succeeded = false;
+            result.Diagnostics = ex.Message;
         }
 
-        if (result.Succeeded && node.Gate is not null)
+        if (result.Succeeded && node.Gate != null)
         {
-            var report = await _validation.ValidateAsync(result, cancellationToken);
+            ValidationReport report = await _validation.ValidateAsync(result, cancellationToken);
             if (report.Status == "Failed")
             {
-                result = new TaskResult
-                {
-                    WorkflowId = result.WorkflowId,
-                    NodeId = result.NodeId,
-                    Succeeded = false,
-                    Diagnostics =
-                        $"Validation gate '{node.Gate}' failed (confidence {report.Confidence:P0})."
-                };
+                TaskResult failedResult = new TaskResult();
+                failedResult.WorkflowId = result.WorkflowId;
+                failedResult.NodeId = result.NodeId;
+                failedResult.Succeeded = false;
+                failedResult.Diagnostics = "Validation gate '" + node.Gate +
+                    "' failed (confidence " + report.Confidence.ToString("P0") + ").";
+                result = failedResult;
             }
         }
 
-        run.NodeStates[node.Id] = result.Succeeded ? TaskState.Passed : TaskState.Failed;
-        await _repository.SaveAsync(run, cancellationToken);
-        await EmitAsync(
-            result.Succeeded ? WorkflowEventTypes.TaskCompleted : WorkflowEventTypes.TaskFailed,
-            run.Id,
-            node.Id,
-            result.Diagnostics,
-            cancellationToken);
+        if (result.Succeeded)
+        {
+            run.NodeStates[node.Id] = TaskState.Passed;
+        }
+        else
+        {
+            run.NodeStates[node.Id] = TaskState.Failed;
+        }
 
+        await _repository.SaveAsync(run, cancellationToken);
+
+        string eventType = WorkflowEventTypes.TaskCompleted;
+        if (!result.Succeeded)
+        {
+            eventType = WorkflowEventTypes.TaskFailed;
+        }
+
+        await EmitAsync(eventType, run.Id, node.Id, result.Diagnostics, cancellationToken);
         return result;
     }
 
@@ -204,15 +259,13 @@ public sealed class WorkflowEngine
         string? payload,
         CancellationToken cancellationToken)
     {
-        var @event = new WorkflowEvent
-        {
-            Type = type,
-            WorkflowId = workflowId,
-            NodeId = nodeId,
-            Payload = payload
-        };
+        WorkflowEvent eventData = new WorkflowEvent();
+        eventData.Type = type;
+        eventData.WorkflowId = workflowId;
+        eventData.NodeId = nodeId;
+        eventData.Payload = payload;
 
-        await _repository.AppendEventAsync(@event, cancellationToken);
-        await _events.PublishAsync(@event, cancellationToken);
+        await _repository.AppendEventAsync(eventData, cancellationToken);
+        await _events.PublishAsync(eventData, cancellationToken);
     }
 }

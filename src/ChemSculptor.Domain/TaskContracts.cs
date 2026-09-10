@@ -1,37 +1,37 @@
 namespace ChemSculptor.Domain;
 
-public sealed record TaskRequest
+public sealed class TaskRequest
 {
-    public required string WorkflowId { get; init; }
+    public string WorkflowId { get; set; } = string.Empty;
 
-    public required string NodeId { get; init; }
+    public string NodeId { get; set; } = string.Empty;
 
-    public required string ContainerId { get; init; }
+    public string ContainerId { get; set; } = string.Empty;
 
-    public IReadOnlyDictionary<string, string> Inputs { get; init; } =
+    public Dictionary<string, string> Inputs { get; set; } =
         new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 }
 
-public sealed record TaskResult
+public sealed class TaskResult
 {
-    public required string WorkflowId { get; init; }
+    public string WorkflowId { get; set; } = string.Empty;
 
-    public required string NodeId { get; init; }
+    public string NodeId { get; set; } = string.Empty;
 
-    public required bool Succeeded { get; init; }
+    public bool Succeeded { get; set; }
 
-    public string? Output { get; init; }
+    public string? Output { get; set; }
 
-    public string? Diagnostics { get; init; }
+    public string? Diagnostics { get; set; }
 
-    public DateTimeOffset CompletedAt { get; init; } = DateTimeOffset.UtcNow;
+    public DateTimeOffset CompletedAt { get; set; } = DateTimeOffset.UtcNow;
 }
 
-public sealed record ContainerDescriptor
+public sealed class ContainerDescriptor
 {
-    public required string Id { get; init; }
+    public string Id { get; set; } = string.Empty;
 
-    public required string Version { get; init; }
+    public string Version { get; set; } = string.Empty;
 
-    public IReadOnlyList<string> Capabilities { get; init; } = [];
+    public List<string> Capabilities { get; set; } = new List<string>();
 }

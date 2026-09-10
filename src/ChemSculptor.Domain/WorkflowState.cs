@@ -37,15 +37,15 @@ public static class WorkflowEventTypes
     public const string TaskFailed = "task.failed";
 }
 
-public sealed record WorkflowEvent
+public sealed class WorkflowEvent
 {
-    public required string Type { get; init; }
+    public string Type { get; set; } = string.Empty;
 
-    public required string WorkflowId { get; init; }
+    public string WorkflowId { get; set; } = string.Empty;
 
-    public string? NodeId { get; init; }
+    public string? NodeId { get; set; }
 
-    public string? Payload { get; init; }
+    public string? Payload { get; set; }
 
-    public DateTimeOffset Timestamp { get; init; } = DateTimeOffset.UtcNow;
+    public DateTimeOffset Timestamp { get; set; } = DateTimeOffset.UtcNow;
 }

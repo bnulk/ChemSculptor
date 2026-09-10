@@ -1,23 +1,23 @@
 namespace ChemSculptor.Domain;
 
-public sealed record WorkflowDefinition
+public sealed class WorkflowDefinition
 {
-    public required string Id { get; init; }
+    public string Id { get; set; } = string.Empty;
 
-    public required string Version { get; init; }
+    public string Version { get; set; } = string.Empty;
 
-    public required string Goal { get; init; }
+    public string Goal { get; set; } = string.Empty;
 
-    public IReadOnlyList<WorkflowNode> Nodes { get; init; } = [];
+    public List<WorkflowNode> Nodes { get; set; } = new List<WorkflowNode>();
 }
 
-public sealed record WorkflowNode
+public sealed class WorkflowNode
 {
-    public required string Id { get; init; }
+    public string Id { get; set; } = string.Empty;
 
-    public required string Container { get; init; }
+    public string Container { get; set; } = string.Empty;
 
-    public IReadOnlyList<string> DependsOn { get; init; } = [];
+    public List<string> DependsOn { get; set; } = new List<string>();
 
-    public string? Gate { get; init; }
+    public string? Gate { get; set; }
 }

@@ -5,6 +5,91 @@
 
 ---
 
+## v0.6.0（2026-09-10）：全项目去除可选语法糖
+
+### 版本
+
+- 当前版本：`0.6.0`
+- 日期：2026-09-10
+- 版本类型：代码风格与架构重构（行为保持一致）
+
+### 改动目的
+
+按 `docs/Coding-Conventions.md` 的最终口径重构已有代码：
+
+- 保留 `async / await`
+- 不使用扩展方法调用写法
+- 去除其他可选语法糖，采用传统、显式写法
+
+### 改动内容
+
+Domain：
+
+- `record`、`required`、`init` 改为普通类与可读写属性
+- 集合表达式、对象初始化器改为显式构造与逐项赋值
+
+Core：
+
+- LINQ、Lambda、集合表达式、对象初始化器、表达式体成员改为 `for` / `foreach`、命名方法与显式赋值
+- `WorkflowStateRules` 改为显式构建转换表
+- `WorkflowEngine` 改为显式循环调度，不使用 LINQ
+
+InputProcessor：
+
+- 几何与请求模型改为普通类
+- LINQ、集合表达式、范围切片改为循环、显式集合与 `Substring`
+
+Api：
+
+- 所有端点改为显式静态调用：
+  `EndpointRouteBuilderExtensions.MapGet / MapPost / MapGroup`
+- 端点处理改为命名静态方法，不再使用 Lambda
+- 匿名响应类型改为显式响应类
+- `Program.cs` 保持传统 `Main`，依赖查询不再使用扩展方法
+- `POST /client/jobs` 输入从 multipart 表单改为 `text/plain` 原始文本，避免表单与防伪依赖
+
+WinForms：
+
+- 保持三区对话界面
+- 事件 Lambda 改为命名事件方法
+- LINQ、switch 表达式、字符串插值、范围切片、`??=`、对象初始化器与集合表达式全部改为传统写法
+- 提交任务改为直接发送 `text/plain` 文本，与 Api 新输入方式一致
+
+Tests：
+
+- 测试数据构造改为显式对象与集合
+- `Assert.All` 的 Lambda 改为 `foreach`
+
+### 教程式说明
+
+这次改动不改变系统架构，只改变代码表达方式。核心映射如下：
+
+```text
+record              → class + 可读写属性
+对象初始化器         → new + 逐项属性赋值
+集合表达式 []        → new List<T>() / new T[] { }
+LINQ                → for / foreach
+Lambda              → 命名方法
+扩展方法 app.MapGet  → EndpointRouteBuilderExtensions.MapGet(app, ...)
+匿名类型 new { }     → 显式响应类
+字符串插值 $"..."    → 字符串拼接
+三元 ? :             → if / else
+?? / ??=            → if 判断
+switch 表达式        → if / else
+范围切片 [..n]       → Substring
+```
+
+### 验证
+
+- `dotnet build ChemSculptor.slnx`：0 警告 0 错误
+- `dotnet test ChemSculptor.slnx`：5/5 通过
+- 运行时回归：
+  - 根端点返回 13 个接口
+  - `/geometries` 接收水分子坐标，返回 `H2O`、3 个原子
+  - `/client/jobs` 接收纯文本任务，任务最终为 `Passed` 且结果可读取
+
+---
+
 ## v0.5.1（2026-09-10）：Api 顶层语句改为传统 Main 写法
 
 ### 版本

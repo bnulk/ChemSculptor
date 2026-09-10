@@ -1,72 +1,116 @@
 using ChemSculptor.Core;
 using ChemSculptor.Domain;
+using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Routing;
 
 namespace ChemSculptor.Api;
 
 public static class WorkflowEndpoints
 {
-    public static IEndpointRouteBuilder MapWorkflowEndpoints(this IEndpointRouteBuilder app)
+    public static IEndpointRouteBuilder MapWorkflowEndpoints(IEndpointRouteBuilder app)
     {
-        var workflows = app.MapGroup("/workflows");
+        RouteGroupBuilder workflows = EndpointRouteBuilderExtensions.MapGroup(app, "/workflows");
 
-        workflows.MapPost("/", async (WorkflowDefinition definition, WorkflowEngine engine, CancellationToken ct) =>
-        {
-            try
-            {
-                var run = await engine.SubmitAsync(definition, ct);
-                return Results.Created($"/workflows/{run.Id}", run);
-            }
-            catch (InvalidOperationException ex)
-            {
-                return Results.ValidationProblem(
-                    new Dictionary<string, string[]> { ["definition"] = [ex.Message] });
-            }
-        });
-
-        workflows.MapGet("/", (IWorkflowRepository repository) => Results.Ok(repository.List()));
-
-        workflows.MapGet("/{id}", async (string id, IWorkflowRepository repository, CancellationToken ct) =>
-        {
-            var run = await repository.GetAsync(id, ct);
-            return run is null ? Results.NotFound() : Results.Ok(run);
-        });
-
-        workflows.MapPost("/{id}/run", async (string id, WorkflowEngine engine, CancellationToken ct) =>
-        {
-            try
-            {
-                var run = await engine.RunAsync(id, ct);
-                return Results.Ok(run);
-            }
-            catch (KeyNotFoundException ex)
-            {
-                return Results.NotFound(new { error = ex.Message });
-            }
-        });
-
-        workflows.MapPost("/{id}/intervene", (string id, InterveneRequest request) =>
-            Results.Ok(new
-            {
-                id,
-                request.Operation,
-                request.NodeId,
-                Status = "queued",
-                Note = "intervention hook is a framework stub"
-            }));
-
-        app.MapGet("/tasks/{workflowId}/log",
-            async (string workflowId, IWorkflowRepository repository, CancellationToken ct) =>
-                Results.Ok(await repository.GetEventsAsync(workflowId, ct)));
-
-        app.MapPost("/approvals/{id}", (string id, ApprovalRequest request) =>
-            Results.Ok(new
-            {
-                id,
-                request.Approved,
-                Status = "recorded",
-                Note = "approval hook is a framework stub"
-            }));
+        EndpointRouteBuilderExtensions.MapPost(workflows, "/", SubmitWorkflowAsync);
+        EndpointRouteBuilderExtensions.MapGet(workflows, "/", ListWorkflows);
+        EndpointRouteBuilderExtensions.MapGet(workflows, "/{id}", GetWorkflowAsync);
+        EndpointRouteBuilderExtensions.MapPost(workflows, "/{id}/run", RunWorkflowAsync);
+        EndpointRouteBuilderExtensions.MapPost(workflows, "/{id}/intervene", Intervene);
+        EndpointRouteBuilderExtensions.MapGet(app, "/tasks/{workflowId}/log", GetTaskLogAsync);
+        EndpointRouteBuilderExtensions.MapPost(app, "/approvals/{id}", Approve);
 
         return app;
+    }
+
+    private static async Task<IResult> SubmitWorkflowAsync(
+        WorkflowDefinition definition,
+        WorkflowEngine engine,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            WorkflowRun run = await engine.SubmitAsync(definition, cancellationToken);
+            string location = "/workflows/" + run.Id;
+            return Results.Created(location, run);
+        }
+        catch (InvalidOperationException ex)
+        {
+            Dictionary<string, string[]> errors = new Dictionary<string, string[]>();
+            string[] messages = new string[1];
+            messages[0] = ex.Message;
+            errors.Add("definition", messages);
+            return Results.ValidationProblem(errors);
+        }
+    }
+
+    private static IResult ListWorkflows(IWorkflowRepository repository)
+    {
+        return Results.Ok(repository.List());
+    }
+
+    private static async Task<IResult> GetWorkflowAsync(
+        string id,
+        IWorkflowRepository repository,
+        CancellationToken cancellationToken)
+    {
+        WorkflowRun? run = await repository.GetAsync(id, cancellationToken);
+
+        if (run == null)
+        {
+            return Results.NotFound();
+        }
+
+        return Results.Ok(run);
+    }
+
+    private static async Task<IResult> RunWorkflowAsync(
+        string id,
+        WorkflowEngine engine,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            WorkflowRun run = await engine.RunAsync(id, cancellationToken);
+            return Results.Ok(run);
+        }
+        catch (KeyNotFoundException ex)
+        {
+            ApiError error = new ApiError();
+            error.Error = ex.Message;
+            return Results.NotFound(error);
+        }
+    }
+
+    private static IResult Intervene(string id, InterveneRequest request)
+    {
+        InterventionResponse response = new InterventionResponse();
+        response.Id = id;
+        response.Operation = request.Operation;
+        response.NodeId = request.NodeId;
+        response.Status = "queued";
+        response.Note = "intervention hook is a framework stub";
+
+        return Results.Ok(response);
+    }
+
+    private static async Task<IResult> GetTaskLogAsync(
+        string workflowId,
+        IWorkflowRepository repository,
+        CancellationToken cancellationToken)
+    {
+        IReadOnlyList<WorkflowEvent> events = await repository.GetEventsAsync(workflowId, cancellationToken);
+        return Results.Ok(events);
+    }
+
+    private static IResult Approve(string id, ApprovalRequest request)
+    {
+        ApprovalResponse response = new ApprovalResponse();
+        response.Id = id;
+        response.Approved = request.Approved;
+        response.Status = "recorded";
+        response.Note = "approval hook is a framework stub";
+
+        return Results.Ok(response);
     }
 }

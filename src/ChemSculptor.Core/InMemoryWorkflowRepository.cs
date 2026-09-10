@@ -6,10 +6,10 @@ namespace ChemSculptor.Core;
 public sealed class InMemoryWorkflowRepository : IWorkflowRepository
 {
     private readonly ConcurrentDictionary<string, WorkflowRun> _runs =
-        new(StringComparer.OrdinalIgnoreCase);
+        new ConcurrentDictionary<string, WorkflowRun>(StringComparer.OrdinalIgnoreCase);
 
     private readonly ConcurrentDictionary<string, List<WorkflowEvent>> _logs =
-        new(StringComparer.OrdinalIgnoreCase);
+        new ConcurrentDictionary<string, List<WorkflowEvent>>(StringComparer.OrdinalIgnoreCase);
 
     public Task SaveAsync(WorkflowRun run, CancellationToken cancellationToken = default)
     {
@@ -17,17 +17,37 @@ public sealed class InMemoryWorkflowRepository : IWorkflowRepository
         return Task.CompletedTask;
     }
 
-    public Task<WorkflowRun?> GetAsync(string workflowId, CancellationToken cancellationToken = default) =>
-        Task.FromResult(_runs.TryGetValue(workflowId, out var run) ? run : null);
-
-    public IReadOnlyList<WorkflowRun> List() => _runs.Values.ToList();
-
-    public Task AppendEventAsync(WorkflowEvent @event, CancellationToken cancellationToken = default)
+    public Task<WorkflowRun?> GetAsync(string workflowId, CancellationToken cancellationToken = default)
     {
-        var log = _logs.GetOrAdd(@event.WorkflowId, static _ => []);
+        WorkflowRun? run;
+        if (_runs.TryGetValue(workflowId, out run))
+        {
+            return Task.FromResult<WorkflowRun?>(run);
+        }
+
+        return Task.FromResult<WorkflowRun?>(null);
+    }
+
+    public IReadOnlyList<WorkflowRun> List()
+    {
+        List<WorkflowRun> runs = new List<WorkflowRun>();
+
+        foreach (WorkflowRun run in _runs.Values)
+        {
+            runs.Add(run);
+        }
+
+        return runs;
+    }
+
+    public Task AppendEventAsync(WorkflowEvent eventData, CancellationToken cancellationToken = default)
+    {
+        List<WorkflowEvent> emptyLog = new List<WorkflowEvent>();
+        List<WorkflowEvent> log = _logs.GetOrAdd(eventData.WorkflowId, emptyLog);
+
         lock (log)
         {
-            log.Add(@event);
+            log.Add(eventData);
         }
 
         return Task.CompletedTask;
@@ -37,10 +57,17 @@ public sealed class InMemoryWorkflowRepository : IWorkflowRepository
         string workflowId,
         CancellationToken cancellationToken = default)
     {
-        IReadOnlyList<WorkflowEvent> events = _logs.TryGetValue(workflowId, out var log)
-            ? [.. log]
-            : [];
+        List<WorkflowEvent> events = new List<WorkflowEvent>();
+        List<WorkflowEvent>? log;
 
-        return Task.FromResult(events);
+        if (_logs.TryGetValue(workflowId, out log))
+        {
+            lock (log)
+            {
+                events.AddRange(log);
+            }
+        }
+
+        return Task.FromResult<IReadOnlyList<WorkflowEvent>>(events);
     }
 }

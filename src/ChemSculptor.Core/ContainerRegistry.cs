@@ -6,7 +6,7 @@ namespace ChemSculptor.Core;
 public sealed class ContainerRegistry : IContainerRegistry
 {
     private readonly ConcurrentDictionary<string, ISkillContainer> _containers =
-        new(StringComparer.OrdinalIgnoreCase);
+        new ConcurrentDictionary<string, ISkillContainer>(StringComparer.OrdinalIgnoreCase);
 
     public Task RegisterAsync(ISkillContainer container, CancellationToken cancellationToken = default)
     {
@@ -14,16 +14,30 @@ public sealed class ContainerRegistry : IContainerRegistry
         return Task.CompletedTask;
     }
 
-    public ISkillContainer? Resolve(string containerId) =>
-        _containers.TryGetValue(containerId, out var container) ? container : null;
+    public ISkillContainer? Resolve(string containerId)
+    {
+        ISkillContainer? container;
+        if (_containers.TryGetValue(containerId, out container))
+        {
+            return container;
+        }
 
-    public IReadOnlyList<ContainerDescriptor> List() =>
-        _containers.Values
-            .Select(container => new ContainerDescriptor
-            {
-                Id = container.Name,
-                Version = container.Version,
-                Capabilities = container.Capabilities
-            })
-            .ToList();
+        return null;
+    }
+
+    public IReadOnlyList<ContainerDescriptor> List()
+    {
+        List<ContainerDescriptor> descriptors = new List<ContainerDescriptor>();
+
+        foreach (ISkillContainer container in _containers.Values)
+        {
+            ContainerDescriptor descriptor = new ContainerDescriptor();
+            descriptor.Id = container.Name;
+            descriptor.Version = container.Version;
+            descriptor.Capabilities = new List<string>(container.Capabilities);
+            descriptors.Add(descriptor);
+        }
+
+        return descriptors;
+    }
 }

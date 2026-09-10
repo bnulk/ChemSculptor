@@ -3,6 +3,9 @@ using ChemSculptor.Api.Client;
 using ChemSculptor.Core;
 using ChemSculptor.Domain;
 using ChemSculptor.InputProcessor;
+using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Routing;
 
 namespace ChemSculptor.Api;
 
@@ -10,7 +13,7 @@ public static class Program
 {
     public static async Task Main(string[] args)
     {
-        var builder = WebApplication.CreateBuilder(args);
+        WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
 
         builder.Services.AddSingleton<IEventBus, InMemoryEventBus>();
         builder.Services.AddSingleton<IContainerRegistry, ContainerRegistry>();
@@ -24,55 +27,73 @@ public static class Program
         builder.Services.AddSingleton<IGeometryTextParser, GeometryTextParser>();
         builder.Services.AddSingleton<ClientJobService>();
 
-        var app = builder.Build();
+        WebApplication app = builder.Build();
 
-        var registry = app.Services.GetRequiredService<IContainerRegistry>();
-        await registry.RegisterAsync(app.Services.GetRequiredService<EchoSkillContainer>());
+        IContainerRegistry registry = GetRequiredService<IContainerRegistry>(app.Services);
+        EchoSkillContainer echoContainer = GetRequiredService<EchoSkillContainer>(app.Services);
+        await registry.RegisterAsync(echoContainer);
 
-        var samplePath = Path.Combine(Directory.GetCurrentDirectory(), "workflows", "tadf-mechanism.json");
+        string samplePath = Path.Combine(Directory.GetCurrentDirectory(), "workflows", "tadf-mechanism.json");
         if (File.Exists(samplePath))
         {
-            var jsonOptions = new JsonSerializerOptions(JsonSerializerDefaults.Web);
-            var definition = JsonSerializer.Deserialize<WorkflowDefinition>(
-                await File.ReadAllTextAsync(samplePath),
-                jsonOptions);
+            JsonSerializerOptions jsonOptions = new JsonSerializerOptions(JsonSerializerDefaults.Web);
+            string json = await File.ReadAllTextAsync(samplePath);
+            WorkflowDefinition? definition = JsonSerializer.Deserialize<WorkflowDefinition>(json, jsonOptions);
 
-            if (definition is not null)
+            if (definition != null)
             {
-                var repository = app.Services.GetRequiredService<IWorkflowRepository>();
-                if (await repository.GetAsync(definition.Id) is null)
+                IWorkflowRepository repository = GetRequiredService<IWorkflowRepository>(app.Services);
+                WorkflowRun? existingRun = await repository.GetAsync(definition.Id);
+
+                if (existingRun == null)
                 {
-                    await app.Services.GetRequiredService<WorkflowEngine>().SubmitAsync(definition);
+                    WorkflowEngine engine = GetRequiredService<WorkflowEngine>(app.Services);
+                    await engine.SubmitAsync(definition);
                 }
             }
         }
 
-        app.MapGet("/", () => Results.Ok(new
-        {
-            service = "ChemSculptor minimal core",
-            endpoints = new[]
-            {
-                "POST /workflows",
-                "GET /workflows",
-                "GET /workflows/{id}",
-                "POST /workflows/{id}/run",
-                "POST /workflows/{id}/intervene",
-                "GET /tasks/{workflowId}/log",
-                "POST /approvals/{id}",
-                "GET /containers",
-                "POST /containers/register",
-                "POST /client/jobs",
-                "GET /client/jobs/{id}/status",
-                "GET /client/jobs/{id}/result",
-                "POST /geometries"
-            }
-        }));
+        EndpointRouteBuilderExtensions.MapGet(app, "/", GetServiceInfo);
 
-        app.MapWorkflowEndpoints();
-        app.MapContainerEndpoints();
-        app.MapClientJobEndpoints();
-        app.MapGeometryEndpoints();
+        WorkflowEndpoints.MapWorkflowEndpoints(app);
+        ContainerEndpoints.MapContainerEndpoints(app);
+        ClientJobEndpoints.MapClientJobEndpoints(app);
+        GeometryEndpoints.MapGeometryEndpoints(app);
 
         app.Run();
+    }
+
+    private static IResult GetServiceInfo()
+    {
+        ServiceInfoResponse response = new ServiceInfoResponse();
+        response.Service = "ChemSculptor minimal core";
+        response.Endpoints = new List<string>();
+        response.Endpoints.Add("POST /workflows");
+        response.Endpoints.Add("GET /workflows");
+        response.Endpoints.Add("GET /workflows/{id}");
+        response.Endpoints.Add("POST /workflows/{id}/run");
+        response.Endpoints.Add("POST /workflows/{id}/intervene");
+        response.Endpoints.Add("GET /tasks/{workflowId}/log");
+        response.Endpoints.Add("POST /approvals/{id}");
+        response.Endpoints.Add("GET /containers");
+        response.Endpoints.Add("POST /containers/register");
+        response.Endpoints.Add("POST /client/jobs");
+        response.Endpoints.Add("GET /client/jobs/{id}/status");
+        response.Endpoints.Add("GET /client/jobs/{id}/result");
+        response.Endpoints.Add("POST /geometries");
+
+        return Results.Ok(response);
+    }
+
+    private static T GetRequiredService<T>(IServiceProvider services)
+    {
+        object? service = services.GetService(typeof(T));
+
+        if (service == null)
+        {
+            throw new InvalidOperationException("Required service was not registered: " + typeof(T).FullName);
+        }
+
+        return (T)service;
     }
 }

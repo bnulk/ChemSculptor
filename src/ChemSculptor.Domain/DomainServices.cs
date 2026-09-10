@@ -12,13 +12,13 @@ public interface IValidationGate
     Task<ValidationReport> ValidateAsync(TaskResult result, CancellationToken cancellationToken = default);
 }
 
-public sealed record ValidationReport
+public sealed class ValidationReport
 {
-    public required string Status { get; init; }
+    public string Status { get; set; } = string.Empty;
 
-    public required double Confidence { get; init; }
+    public double Confidence { get; set; }
 
-    public IReadOnlyList<string> Checks { get; init; } = [];
+    public List<string> Checks { get; set; } = new List<string>();
 }
 
 public interface ICaseMemory

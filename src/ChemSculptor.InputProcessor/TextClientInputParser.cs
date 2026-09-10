@@ -8,19 +8,25 @@ public sealed class TextClientInputParser : IClientInputParser
         string rawText,
         CancellationToken cancellationToken = default)
     {
-        var workflowId = DefaultWorkflowId;
-        var goal = "客户端文本任务";
-        var diagnostics = new List<string>();
+        string workflowId = DefaultWorkflowId;
+        string goal = "客户端文本任务";
+        List<string> diagnostics = new List<string>();
 
-        foreach (var rawLine in rawText.Split('\n', StringSplitOptions.RemoveEmptyEntries))
+        char[] separators = new char[1];
+        separators[0] = '\n';
+        string[] lines = rawText.Split(separators, StringSplitOptions.RemoveEmptyEntries);
+
+        for (int index = 0; index < lines.Length; index++)
         {
-            var line = rawLine.Trim();
+            string line = lines[index].Trim();
+            string workflowValue;
+            string goalValue;
 
-            if (TryReadValue(line, "workflow:", out var workflowValue))
+            if (TryReadValue(line, "workflow:", out workflowValue))
             {
                 workflowId = workflowValue;
             }
-            else if (TryReadValue(line, "goal:", out var goalValue))
+            else if (TryReadValue(line, "goal:", out goalValue))
             {
                 goal = goalValue;
             }
@@ -28,16 +34,16 @@ public sealed class TextClientInputParser : IClientInputParser
 
         if (string.Equals(workflowId, DefaultWorkflowId, StringComparison.OrdinalIgnoreCase))
         {
-            diagnostics.Add($"未指定 workflow，使用默认工作流 {DefaultWorkflowId}");
+            diagnostics.Add("未指定 workflow，使用默认工作流 " + DefaultWorkflowId);
         }
 
-        return Task.FromResult(new ProcessedClientRequest
-        {
-            WorkflowId = workflowId,
-            Goal = goal,
-            RawText = rawText,
-            Diagnostics = diagnostics
-        });
+        ProcessedClientRequest request = new ProcessedClientRequest();
+        request.WorkflowId = workflowId;
+        request.Goal = goal;
+        request.RawText = rawText;
+        request.Diagnostics = diagnostics;
+
+        return Task.FromResult(request);
     }
 
     private static bool TryReadValue(string line, string prefix, out string value)
@@ -48,7 +54,7 @@ public sealed class TextClientInputParser : IClientInputParser
             return false;
         }
 
-        value = line[prefix.Length..].Trim();
+        value = line.Substring(prefix.Length).Trim();
         return true;
     }
 }

@@ -2,19 +2,19 @@ namespace ChemSculptor.Domain;
 
 public sealed class WorkflowRun
 {
-    public required string Id { get; init; }
+    public string Id { get; set; } = string.Empty;
 
-    public required WorkflowDefinition Definition { get; init; }
+    public WorkflowDefinition Definition { get; set; } = new WorkflowDefinition();
 
     public WorkflowState State { get; set; } = WorkflowState.Draft;
 
     public Dictionary<string, TaskState> NodeStates { get; set; } =
-        new(StringComparer.OrdinalIgnoreCase);
+        new Dictionary<string, TaskState>(StringComparer.OrdinalIgnoreCase);
 
     public Dictionary<string, TaskResult> Results { get; set; } =
-        new(StringComparer.OrdinalIgnoreCase);
+        new Dictionary<string, TaskResult>(StringComparer.OrdinalIgnoreCase);
 
-    public DateTimeOffset CreatedAt { get; init; } = DateTimeOffset.UtcNow;
+    public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.UtcNow;
 
     public DateTimeOffset? StartedAt { get; set; }
 
