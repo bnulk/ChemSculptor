@@ -9,12 +9,21 @@ using Microsoft.AspNetCore.Routing;
 
 namespace ChemSculptor.Api;
 
+/// <summary>
+/// ChemSculptor.Api 的启动入口。
+/// 负责组装依赖、载入示例工作流、登记路由并启动 Kestrel。
+/// </summary>
 public static class Program
 {
+    /// <summary>
+    /// 应用程序入口。
+    /// 启动阶段只做装配与登记，不处理具体业务请求。
+    /// </summary>
     public static async Task Main(string[] args)
     {
         WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
 
+        // 注册服务到依赖注入容器；单例表示整个进程共用一个实例。
         builder.Services.AddSingleton<IEventBus, InMemoryEventBus>();
         builder.Services.AddSingleton<IContainerRegistry, ContainerRegistry>();
         builder.Services.AddSingleton<IWorkflowRepository, InMemoryWorkflowRepository>();
@@ -27,12 +36,15 @@ public static class Program
         builder.Services.AddSingleton<IGeometryTextParser, GeometryTextParser>();
         builder.Services.AddSingleton<ClientJobService>();
 
+        // 构建可运行的 Web 应用，此时还未开始监听端口。
         WebApplication app = builder.Build();
 
+        // 手动把演示技能容器登记到注册表中。
         IContainerRegistry registry = GetRequiredService<IContainerRegistry>(app.Services);
         EchoSkillContainer echoContainer = GetRequiredService<EchoSkillContainer>(app.Services);
         await registry.RegisterAsync(echoContainer);
 
+        // 若示例工作流文件存在，则载入并登记为 Ready 状态（不执行）。
         string samplePath = Path.Combine(Directory.GetCurrentDirectory(), "workflows", "tadf-mechanism.json");
         if (File.Exists(samplePath))
         {
@@ -53,6 +65,7 @@ public static class Program
             }
         }
 
+        // 使用显式静态调用登记路由，不使用扩展方法写法。
         EndpointRouteBuilderExtensions.MapGet(app, "/", GetServiceInfo);
 
         WorkflowEndpoints.MapWorkflowEndpoints(app);
@@ -60,9 +73,11 @@ public static class Program
         ClientJobEndpoints.MapClientJobEndpoints(app);
         GeometryEndpoints.MapGeometryEndpoints(app);
 
+        // 启动 Kestrel 并进入请求监听循环，直到进程关闭。
         app.Run();
     }
 
+    /// <summary>返回服务说明与可用端点列表。</summary>
     private static IResult GetServiceInfo()
     {
         ServiceInfoResponse response = new ServiceInfoResponse();
@@ -85,6 +100,13 @@ public static class Program
         return Results.Ok(response);
     }
 
+    /// <summary>
+    /// 按类型从服务容器中获取必需的服务。
+    /// 找不到时抛出异常，避免后续出现空引用。
+    /// </summary>
+    /// <typeparam name="T">要获取的服务类型。</typeparam>
+    /// <param name="services">当前应用的服务容器。</param>
+    /// <returns>已注册的服务实例。</returns>
     private static T GetRequiredService<T>(IServiceProvider services)
     {
         object? service = services.GetService(typeof(T));

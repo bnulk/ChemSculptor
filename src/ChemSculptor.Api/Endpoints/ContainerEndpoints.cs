@@ -6,8 +6,12 @@ using Microsoft.AspNetCore.Routing;
 
 namespace ChemSculptor.Api;
 
+/// <summary>
+/// 技能容器相关端点。
+/// </summary>
 public static class ContainerEndpoints
 {
+    /// <summary>登记容器列表与注册端点。</summary>
     public static IEndpointRouteBuilder MapContainerEndpoints(IEndpointRouteBuilder app)
     {
         RouteGroupBuilder containers = EndpointRouteBuilderExtensions.MapGroup(app, "/containers");
@@ -18,11 +22,13 @@ public static class ContainerEndpoints
         return app;
     }
 
+    /// <summary>列出已注册容器。</summary>
     private static IResult ListContainers(IContainerRegistry registry)
     {
         return Results.Ok(registry.List());
     }
 
+    /// <summary>注册内置演示容器。</summary>
     private static async Task<IResult> RegisterContainerAsync(
         RegisterContainerRequest request,
         IContainerRegistry registry,

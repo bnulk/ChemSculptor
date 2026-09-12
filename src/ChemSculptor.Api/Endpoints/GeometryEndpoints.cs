@@ -5,8 +5,12 @@ using Microsoft.AspNetCore.Routing;
 
 namespace ChemSculptor.Api;
 
+/// <summary>
+/// 分子坐标相关端点。
+/// </summary>
 public static class GeometryEndpoints
 {
+    /// <summary>登记坐标接收端点。</summary>
     public static IEndpointRouteBuilder MapGeometryEndpoints(IEndpointRouteBuilder app)
     {
         RouteGroupBuilder geometries = EndpointRouteBuilderExtensions.MapGroup(app, "/geometries");
@@ -16,6 +20,7 @@ public static class GeometryEndpoints
         return app;
     }
 
+    /// <summary>接收文本坐标并返回解析后的分子信息。</summary>
     private static async Task<IResult> SubmitGeometryAsync(
         HttpRequest request,
         IGeometryTextParser parser,

@@ -3,8 +3,12 @@ using ChemSculptor.Domain;
 
 namespace ChemSculptor.Core.Tests;
 
+/// <summary>
+/// 工作流内核行为测试。
+/// </summary>
 public class WorkflowEngineTests
 {
+    /// <summary>验证节点按依赖顺序执行并最终通过。</summary>
     [Fact]
     public async Task RunsNodesInDependencyOrderAndPasses()
     {
@@ -56,6 +60,7 @@ public class WorkflowEngineTests
         Assert.Equal("c", recorder.Order[2]);
     }
 
+    /// <summary>验证验证门拒绝时工作流进入失败状态。</summary>
     [Fact]
     public async Task FailsWorkflowWhenValidationGateRejects()
     {
@@ -81,6 +86,7 @@ public class WorkflowEngineTests
         Assert.Contains("Validation gate", run.Results["soc"].Diagnostics);
     }
 
+    /// <summary>创建用于测试的工作流引擎。</summary>
     private static WorkflowEngine CreateEngine(
         ISkillContainer? container = null,
         IValidationGate? gate = null)
@@ -117,6 +123,7 @@ public class WorkflowEngineTests
             new InMemoryCaseMemory());
     }
 
+    /// <summary>记录节点执行顺序的测试容器。</summary>
     private sealed class RecordingContainer : ISkillContainer
     {
         private readonly List<string> _order;
@@ -170,6 +177,7 @@ public class WorkflowEngineTests
         }
     }
 
+    /// <summary>始终拒绝结果的测试验证门。</summary>
     private sealed class RejectingValidationGate : IValidationGate
     {
         public Task<ValidationReport> ValidateAsync(

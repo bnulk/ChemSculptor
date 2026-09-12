@@ -1,5 +1,6 @@
 namespace ChemSculptor.Api;
 
+/// <summary>人工干预请求。</summary>
 public sealed class InterveneRequest
 {
     public string Operation { get; set; } = string.Empty;
@@ -11,6 +12,7 @@ public sealed class InterveneRequest
     public string? Value { get; set; }
 }
 
+/// <summary>人工审批请求。</summary>
 public sealed class ApprovalRequest
 {
     public bool Approved { get; set; }
@@ -18,6 +20,7 @@ public sealed class ApprovalRequest
     public string? Note { get; set; }
 }
 
+/// <summary>注册技能容器的请求。</summary>
 public sealed class RegisterContainerRequest
 {
     public string Id { get; set; } = string.Empty;
@@ -27,11 +30,13 @@ public sealed class RegisterContainerRequest
     public List<string> Capabilities { get; set; } = new List<string>();
 }
 
+/// <summary>通用错误响应。</summary>
 public sealed class ApiError
 {
     public string Error { get; set; } = string.Empty;
 }
 
+/// <summary>根端点返回的服务说明。</summary>
 public sealed class ServiceInfoResponse
 {
     public string Service { get; set; } = string.Empty;
@@ -39,6 +44,7 @@ public sealed class ServiceInfoResponse
     public List<string> Endpoints { get; set; } = new List<string>();
 }
 
+/// <summary>人工干预端点的响应。</summary>
 public sealed class InterventionResponse
 {
     public string Id { get; set; } = string.Empty;
@@ -52,6 +58,7 @@ public sealed class InterventionResponse
     public string Note { get; set; } = string.Empty;
 }
 
+/// <summary>审批端点的响应。</summary>
 public sealed class ApprovalResponse
 {
     public string Id { get; set; } = string.Empty;
@@ -63,6 +70,7 @@ public sealed class ApprovalResponse
     public string Note { get; set; } = string.Empty;
 }
 
+/// <summary>客户端任务创建成功的响应。</summary>
 public sealed class ClientJobAcceptedResponse
 {
     public string Id { get; set; } = string.Empty;
@@ -72,6 +80,7 @@ public sealed class ClientJobAcceptedResponse
     public string? Message { get; set; }
 }
 
+/// <summary>客户端任务状态响应。</summary>
 public sealed class ClientJobStatusResponse
 {
     public string Id { get; set; } = string.Empty;
@@ -89,6 +98,7 @@ public sealed class ClientJobStatusResponse
     public bool HasResult { get; set; }
 }
 
+/// <summary>坐标响应中的单个原子。</summary>
 public sealed class GeometryAtomResponse
 {
     public string Element { get; set; } = string.Empty;
@@ -100,6 +110,7 @@ public sealed class GeometryAtomResponse
     public double Z { get; set; }
 }
 
+/// <summary>坐标接收成功后的响应。</summary>
 public sealed class GeometrySubmitResponse
 {
     public string SourceName { get; set; } = string.Empty;
@@ -113,6 +124,7 @@ public sealed class GeometrySubmitResponse
     public List<string> Diagnostics { get; set; } = new List<string>();
 }
 
+/// <summary>坐标解析失败时的响应。</summary>
 public sealed class GeometryErrorResponse
 {
     public string Error { get; set; } = string.Empty;

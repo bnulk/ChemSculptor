@@ -2,6 +2,11 @@ using ChemSculptor.Domain;
 
 namespace ChemSculptor.Core;
 
+/// <summary>
+/// 极简工作流内核。
+/// 负责按依赖关系调度节点、调用技能容器、执行验证门，并记录事件与结果。
+/// 本类不包含任何化学逻辑。
+/// </summary>
 public sealed class WorkflowEngine
 {
     private readonly IContainerRegistry _containers;
@@ -27,6 +32,10 @@ public sealed class WorkflowEngine
         _memory = memory;
     }
 
+    /// <summary>
+    /// 提交工作流定义。
+    /// 规则校验通过后创建运行记录，但不会立即执行节点。
+    /// </summary>
     public async Task<WorkflowRun> SubmitAsync(
         WorkflowDefinition definition,
         CancellationToken cancellationToken = default)
@@ -55,6 +64,10 @@ public sealed class WorkflowEngine
         return run;
     }
 
+    /// <summary>
+    /// 执行指定工作流。
+    /// 按 DAG 依赖顺序调度节点，节点失败时终止并记录失败原因。
+    /// </summary>
     public async Task<WorkflowRun> RunAsync(string workflowId, CancellationToken cancellationToken = default)
     {
         WorkflowRun? run = await _repository.GetAsync(workflowId, cancellationToken);
@@ -90,6 +103,7 @@ public sealed class WorkflowEngine
             pending.Add(nodeId);
         }
 
+        // 每轮循环找出“所有依赖都已完成”的节点。
         while (pending.Count > 0)
         {
             List<string> ready = new List<string>();
@@ -115,6 +129,7 @@ public sealed class WorkflowEngine
                 }
             }
 
+            // 找不到就绪节点说明依赖形成环或引用了不存在的节点。
             if (ready.Count == 0)
             {
                 run.Results = completed;
@@ -155,12 +170,14 @@ public sealed class WorkflowEngine
         return run;
     }
 
+    /// <summary>执行单个节点，并在需要时通过验证门检查结果。</summary>
     private async Task<TaskResult> ExecuteNodeAsync(
         WorkflowRun run,
         WorkflowNode node,
         IReadOnlyDictionary<string, TaskResult> completed,
         CancellationToken cancellationToken)
     {
+        // 容器未注册属于技术性错误，直接抛出以便上层记录。
         ISkillContainer? container = _containers.Resolve(node.Container);
         if (container == null)
         {
@@ -239,6 +256,7 @@ public sealed class WorkflowEngine
         return result;
     }
 
+    /// <summary>将工作流标记为失败，并记录失败事件与案例。</summary>
     private async Task<WorkflowRun> FailAsync(
         WorkflowRun run,
         string reason,
@@ -252,6 +270,7 @@ public sealed class WorkflowEngine
         return run;
     }
 
+    /// <summary>发布事件并写入事件日志。</summary>
     private async Task EmitAsync(
         string type,
         string workflowId,

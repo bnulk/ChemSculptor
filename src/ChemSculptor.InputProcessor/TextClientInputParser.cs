@@ -1,9 +1,17 @@
 namespace ChemSculptor.InputProcessor;
 
+/// <summary>
+/// 纯文本客户请求解析器。
+/// 当前只识别 “workflow:” 与 “goal:” 两个前缀行。
+/// </summary>
 public sealed class TextClientInputParser : IClientInputParser
 {
     public const string DefaultWorkflowId = "tadf_mechanism_diagnosis";
 
+    /// <summary>
+    /// 解析输入文本。
+    /// 未指定 workflow 时使用默认工作流，并记录一条诊断信息。
+    /// </summary>
     public Task<ProcessedClientRequest> ParseAsync(
         string rawText,
         CancellationToken cancellationToken = default)
@@ -16,6 +24,7 @@ public sealed class TextClientInputParser : IClientInputParser
         separators[0] = '\n';
         string[] lines = rawText.Split(separators, StringSplitOptions.RemoveEmptyEntries);
 
+        // 逐行读取键值前缀，其他内容暂时忽略。
         for (int index = 0; index < lines.Length; index++)
         {
             string line = lines[index].Trim();
@@ -46,6 +55,7 @@ public sealed class TextClientInputParser : IClientInputParser
         return Task.FromResult(request);
     }
 
+    /// <summary>读取以指定前缀开头的行的值。</summary>
     private static bool TryReadValue(string line, string prefix, out string value)
     {
         if (!line.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))

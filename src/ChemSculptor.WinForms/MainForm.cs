@@ -3,13 +3,21 @@ using System.Text;
 
 namespace ChemSculptor.WinForms;
 
+/// <summary>
+/// ChemSculptor 客户端主窗口。
+/// 界面分为左侧会话列表、中间对话区、底部输入区。
+/// </summary>
 public sealed class MainForm : Form
 {
+    // HTTP 客户端：用于与本地或远程 ChemSculptor.Api 通信。
     private readonly HttpClient _http;
+
+    // 会话与任务运行状态。
     private readonly List<ChatSession> _sessions;
     private readonly Dictionary<string, ClientJobItem> _jobs;
     private readonly System.Windows.Forms.Timer _timer;
 
+    // 界面控件。
     private readonly TextBox _serverUrlBox;
     private readonly Button _selectFileButton;
     private readonly Button _saveResultButton;
@@ -29,6 +37,7 @@ public sealed class MainForm : Form
     private bool _polling;
     private int _sessionCounter;
 
+    /// <summary>初始化窗口、控件与事件订阅。</summary>
     public MainForm()
     {
         _http = new HttpClient();
@@ -117,6 +126,7 @@ public sealed class MainForm : Form
         AppendMessage("hint", "当前为界面骨架：自然语言理解将在后续版本接入；坐标发送与任务提交已可用。");
     }
 
+    /// <summary>构建三区界面布局。</summary>
     private void BuildLayout()
     {
         Panel sidebar = new Panel();
@@ -195,51 +205,61 @@ public sealed class MainForm : Form
         Resize += OnFormResize;
     }
 
+    /// <summary>窗口尺寸变化时重新计算消息卡片宽度。</summary>
     private void OnFormResize(object? sender, EventArgs e)
     {
         UpdateBubbleWidths();
     }
 
+    /// <summary>新建会话按钮事件。</summary>
     private void OnNewSessionClick(object? sender, EventArgs e)
     {
         CreateSession("新会话");
     }
 
+    /// <summary>切换会话事件。</summary>
     private void OnSessionIndexChanged(object? sender, EventArgs e)
     {
         SwitchSession();
     }
 
+    /// <summary>选择 txt 文件事件。</summary>
     private void OnSelectFileClick(object? sender, EventArgs e)
     {
         SelectFile();
     }
 
+    /// <summary>保存最近结果事件。</summary>
     private void OnSaveResultClick(object? sender, EventArgs e)
     {
         SaveResult();
     }
 
+    /// <summary>发送自然语言文本事件。</summary>
     private async void OnSendTextClick(object? sender, EventArgs e)
     {
         await SendTextAsync();
     }
 
+    /// <summary>发送坐标文件事件。</summary>
     private async void OnSendGeometryClick(object? sender, EventArgs e)
     {
         await SendGeometryAsync();
     }
 
+    /// <summary>提交任务文件事件。</summary>
     private async void OnSendJobClick(object? sender, EventArgs e)
     {
         await SubmitJobAsync();
     }
 
+    /// <summary>定时轮询任务状态事件。</summary>
     private async void OnTimerTick(object? sender, EventArgs e)
     {
         await PollActiveJobsAsync();
     }
 
+    /// <summary>创建一个新的本地会话并选中它。</summary>
     private void CreateSession(string title)
     {
         _sessionCounter++;
@@ -253,6 +273,7 @@ public sealed class MainForm : Form
         _sessionList.SelectedItem = session;
     }
 
+    /// <summary>切换到列表中选择的会话并刷新消息。</summary>
     private void SwitchSession()
     {
         if (_sessionList.SelectedItem == null)
@@ -270,6 +291,7 @@ public sealed class MainForm : Form
         RenderChat();
     }
 
+    /// <summary>清空并重新绘制当前会话的全部消息。</summary>
     private void RenderChat()
     {
         _chatFlow.SuspendLayout();
@@ -288,6 +310,7 @@ public sealed class MainForm : Form
         ScrollToBottom();
     }
 
+    /// <summary>向当前会话追加一条消息。</summary>
     private void AppendMessage(string role, string text)
     {
         if (_activeSession == null)
@@ -305,6 +328,7 @@ public sealed class MainForm : Form
         ScrollToBottom();
     }
 
+    /// <summary>把一条消息渲染成对话卡片。</summary>
     private void AddBubble(ChatMessage message)
     {
         Color backColor = Color.FromArgb(243, 244, 246);
@@ -360,6 +384,7 @@ public sealed class MainForm : Form
         _chatFlow.Controls.Add(bubble);
     }
 
+    /// <summary>根据窗口宽度调整所有消息卡片的换行宽度。</summary>
     private void UpdateBubbleWidths()
     {
         if (_chatFlow.IsDisposed)
@@ -384,12 +409,14 @@ public sealed class MainForm : Form
         _chatFlow.PerformLayout();
     }
 
+    /// <summary>把对话区滚动到底部。</summary>
     private void ScrollToBottom()
     {
         _chatPanel.PerformLayout();
         _chatPanel.AutoScrollPosition = new Point(0, _chatPanel.VerticalScroll.Maximum);
     }
 
+    /// <summary>选择一个 txt 文件作为坐标或任务输入。</summary>
     private void SelectFile()
     {
         OpenFileDialog dialog = new OpenFileDialog();
@@ -406,6 +433,7 @@ public sealed class MainForm : Form
         dialog.Dispose();
     }
 
+    /// <summary>发送自然语言文本；当前只记录到本地会话。</summary>
     private Task SendTextAsync()
     {
         string text = _inputBox.Text.Trim();
@@ -422,6 +450,7 @@ public sealed class MainForm : Form
         return Task.CompletedTask;
     }
 
+    /// <summary>把坐标文本发送到 POST /geometries。</summary>
     private async Task SendGeometryAsync()
     {
         string filePath;
@@ -477,6 +506,7 @@ public sealed class MainForm : Form
         }
     }
 
+    /// <summary>把任务文本发送到 POST /client/jobs。</summary>
     private async Task SubmitJobAsync()
     {
         string filePath;
@@ -529,6 +559,7 @@ public sealed class MainForm : Form
         }
     }
 
+    /// <summary>轮询所有未结束任务的状态。</summary>
     private async Task PollActiveJobsAsync()
     {
         if (_polling)
@@ -565,6 +596,7 @@ public sealed class MainForm : Form
         }
     }
 
+    /// <summary>刷新单个任务的状态，并在结果就绪时读取结果。</summary>
     private async Task RefreshJobAsync(ClientJobItem job)
     {
         HttpResponseMessage statusResponse =
@@ -615,6 +647,7 @@ public sealed class MainForm : Form
         }
     }
 
+    /// <summary>把最近一次任务结果保存为用户选择的 txt 文件。</summary>
     private void SaveResult()
     {
         if (string.IsNullOrWhiteSpace(_latestResultText))
@@ -638,6 +671,7 @@ public sealed class MainForm : Form
         dialog.Dispose();
     }
 
+    /// <summary>检查是否已选择有效文件，并返回其路径。</summary>
     private bool TryGetSelectedFile(out string filePath)
     {
         if (string.IsNullOrWhiteSpace(_selectedFilePath))
@@ -658,6 +692,7 @@ public sealed class MainForm : Form
         return true;
     }
 
+    /// <summary>根据服务地址和路径拼出完整请求地址。</summary>
     private Uri Endpoint(string path)
     {
         string baseUrl = _serverUrlBox.Text.Trim().TrimEnd('/');

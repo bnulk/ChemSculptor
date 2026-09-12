@@ -3,6 +3,10 @@ using ChemSculptor.Domain;
 
 namespace ChemSculptor.Core;
 
+/// <summary>
+/// 演示用技能容器。
+/// 不执行任何真实计算，只把上游输出拼接后返回，用于验证整条链路。
+/// </summary>
 public sealed class EchoSkillContainer : ISkillContainer
 {
     private readonly List<string> _capabilities;
@@ -29,6 +33,7 @@ public sealed class EchoSkillContainer : ISkillContainer
         get { return _capabilities; }
     }
 
+    /// <summary>执行演示任务并返回透传结果。</summary>
     public Task<TaskResult> ExecuteAsync(
         TaskRequest request,
         CancellationToken cancellationToken = default)
@@ -66,6 +71,7 @@ public sealed class EchoSkillContainer : ISkillContainer
         return Task.FromResult(result);
     }
 
+    /// <summary>演示容器始终报告健康。</summary>
     public Task<bool> HealthAsync(CancellationToken cancellationToken = default)
     {
         return Task.FromResult(true);

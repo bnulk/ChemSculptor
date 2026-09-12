@@ -5,8 +5,12 @@ using Microsoft.AspNetCore.Routing;
 
 namespace ChemSculptor.Api;
 
+/// <summary>
+/// 客户端任务相关端点。
+/// </summary>
 public static class ClientJobEndpoints
 {
+    /// <summary>登记创建任务、查询状态和读取结果的路由。</summary>
     public static IEndpointRouteBuilder MapClientJobEndpoints(IEndpointRouteBuilder app)
     {
         RouteGroupBuilder jobs = EndpointRouteBuilderExtensions.MapGroup(app, "/client/jobs");
@@ -18,6 +22,7 @@ public static class ClientJobEndpoints
         return app;
     }
 
+    /// <summary>接收客户端纯文本任务并创建任务记录。</summary>
     private static async Task<IResult> UploadClientJobAsync(
         HttpRequest request,
         ClientJobService service,
@@ -48,6 +53,7 @@ public static class ClientJobEndpoints
         return Results.Accepted(location, response);
     }
 
+    /// <summary>查询任务状态。</summary>
     private static IResult GetClientJobStatus(string id, ClientJobService service)
     {
         ClientJob? job = service.GetJob(id);
@@ -71,6 +77,7 @@ public static class ClientJobEndpoints
         return Results.Ok(response);
     }
 
+    /// <summary>读取任务结果文本。</summary>
     private static IResult GetClientJobResult(string id, ClientJobService service)
     {
         ClientJob? job = service.GetJob(id);

@@ -3,6 +3,10 @@ using ChemSculptor.Domain;
 
 namespace ChemSculptor.Core;
 
+/// <summary>
+/// 占位规则引擎：不进行任何校验，全部放行。
+/// 真实规则实现后应替换本类。
+/// </summary>
 public sealed class AllowAllRuleEngine : IRuleEngine
 {
     public Task<IReadOnlyList<string>> ValidateWorkflowAsync(
@@ -14,6 +18,10 @@ public sealed class AllowAllRuleEngine : IRuleEngine
     }
 }
 
+/// <summary>
+/// 占位验证门：所有结果都直接通过。
+/// 真实验证逻辑实现后应替换本类。
+/// </summary>
 public sealed class PassThroughValidationGate : IValidationGate
 {
     public Task<ValidationReport> ValidateAsync(
@@ -30,6 +38,9 @@ public sealed class PassThroughValidationGate : IValidationGate
     }
 }
 
+/// <summary>
+/// 内存版案例记忆：只记录运行结果，暂不提供检索。
+/// </summary>
 public sealed class InMemoryCaseMemory : ICaseMemory
 {
     private readonly ConcurrentQueue<WorkflowRun> _cases = new ConcurrentQueue<WorkflowRun>();

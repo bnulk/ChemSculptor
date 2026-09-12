@@ -6,8 +6,12 @@ using Microsoft.AspNetCore.Routing;
 
 namespace ChemSculptor.Api;
 
+/// <summary>
+/// 工作流相关端点。
+/// </summary>
 public static class WorkflowEndpoints
 {
+    /// <summary>登记工作流、任务日志与审批相关路由。</summary>
     public static IEndpointRouteBuilder MapWorkflowEndpoints(IEndpointRouteBuilder app)
     {
         RouteGroupBuilder workflows = EndpointRouteBuilderExtensions.MapGroup(app, "/workflows");
@@ -23,6 +27,7 @@ public static class WorkflowEndpoints
         return app;
     }
 
+    /// <summary>提交工作流定义。</summary>
     private static async Task<IResult> SubmitWorkflowAsync(
         WorkflowDefinition definition,
         WorkflowEngine engine,
@@ -44,11 +49,13 @@ public static class WorkflowEndpoints
         }
     }
 
+    /// <summary>列出所有工作流运行记录。</summary>
     private static IResult ListWorkflows(IWorkflowRepository repository)
     {
         return Results.Ok(repository.List());
     }
 
+    /// <summary>按标识查询工作流。</summary>
     private static async Task<IResult> GetWorkflowAsync(
         string id,
         IWorkflowRepository repository,
@@ -64,6 +71,7 @@ public static class WorkflowEndpoints
         return Results.Ok(run);
     }
 
+    /// <summary>执行指定工作流。</summary>
     private static async Task<IResult> RunWorkflowAsync(
         string id,
         WorkflowEngine engine,
@@ -82,6 +90,7 @@ public static class WorkflowEndpoints
         }
     }
 
+    /// <summary>人工干预占位端点。</summary>
     private static IResult Intervene(string id, InterveneRequest request)
     {
         InterventionResponse response = new InterventionResponse();
@@ -94,6 +103,7 @@ public static class WorkflowEndpoints
         return Results.Ok(response);
     }
 
+    /// <summary>读取指定工作流的事件日志。</summary>
     private static async Task<IResult> GetTaskLogAsync(
         string workflowId,
         IWorkflowRepository repository,
@@ -103,6 +113,7 @@ public static class WorkflowEndpoints
         return Results.Ok(events);
     }
 
+    /// <summary>人工审批占位端点。</summary>
     private static IResult Approve(string id, ApprovalRequest request)
     {
         ApprovalResponse response = new ApprovalResponse();

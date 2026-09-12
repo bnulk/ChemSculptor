@@ -7,6 +7,10 @@ using ChemSculptor.InputProcessor;
 
 namespace ChemSculptor.Api.Client;
 
+/// <summary>
+/// 客户端任务服务。
+/// 负责接收文本任务、后台执行工作流，并提供状态与结果查询。
+/// </summary>
 public sealed class ClientJobService
 {
     private readonly ConcurrentDictionary<string, ClientJob> _jobs =
@@ -25,16 +29,19 @@ public sealed class ClientJobService
         LoadTemplates();
     }
 
+    /// <summary>创建任务并在后台开始执行。</summary>
     public Task<ClientJob> SubmitAsync(string rawText, CancellationToken cancellationToken)
     {
         ClientJob job = new ClientJob();
         job.Id = "job-" + Guid.NewGuid().ToString("N");
         _jobs[job.Id] = job;
 
+        // 立即返回任务编号，实际执行在后台异步进行。
         Task executionTask = ExecuteAsync(job, rawText);
         return Task.FromResult(job);
     }
 
+    /// <summary>按任务编号查询任务；不存在时返回 null。</summary>
     public ClientJob? GetJob(string jobId)
     {
         ClientJob? job;
@@ -46,6 +53,7 @@ public sealed class ClientJobService
         return null;
     }
 
+    /// <summary>执行任务：解析输入、执行工作流并生成结果文本。</summary>
     private async Task ExecuteAsync(ClientJob job, string rawText)
     {
         try
@@ -85,6 +93,7 @@ public sealed class ClientJobService
         }
     }
 
+    /// <summary>根据解析结果选择模板或构建兜底工作流。</summary>
     private WorkflowDefinition BuildDefinition(string jobId, ProcessedClientRequest request)
     {
         WorkflowDefinition? template;
@@ -108,6 +117,7 @@ public sealed class ClientJobService
         return fallback;
     }
 
+    /// <summary>复制模板并替换任务标识与目标描述。</summary>
     private static WorkflowDefinition CloneDefinition(
         WorkflowDefinition template,
         string jobId,
@@ -133,6 +143,7 @@ public sealed class ClientJobService
         return clone;
     }
 
+    /// <summary>生成便于阅读的结果文本。</summary>
     private static string BuildResultText(ClientJob job, string rawText, WorkflowRun run)
     {
         StringBuilder builder = new StringBuilder();
@@ -175,6 +186,7 @@ public sealed class ClientJobService
         return builder.ToString();
     }
 
+    /// <summary>按节点标识排序结果，便于稳定输出。</summary>
     private static int CompareResults(
         KeyValuePair<string, TaskResult> left,
         KeyValuePair<string, TaskResult> right)
@@ -182,6 +194,7 @@ public sealed class ClientJobService
         return string.Compare(left.Key, right.Key, StringComparison.OrdinalIgnoreCase);
     }
 
+    /// <summary>从 workflows 目录载入所有工作流模板。</summary>
     private void LoadTemplates()
     {
         string workflowsDirectory = Path.Combine(Directory.GetCurrentDirectory(), "workflows");

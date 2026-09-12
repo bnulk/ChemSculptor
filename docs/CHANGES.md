@@ -5,6 +5,59 @@
 
 ---
 
+## v0.6.1（2026-09-12）：补充标准中文 C# 注释并最终确定编码约定
+
+### 版本
+
+- 当前版本：`0.6.1`
+- 日期：2026-09-12
+- 版本类型：代码注释与规范补充（不改变运行行为）
+
+### 改动目的
+
+为现有代码补充标准中文 C# 注释，并把以下原则正式确立为项目约定：
+
+1. 禁止顶层语句
+2. 去除可选语法糖
+3. `async / await` 不属于要避免的语法糖，必须保留
+4. 不使用扩展方法调用写法，改为显式静态调用
+5. 注释统一使用标准 C# 注释风格与中文说明
+
+### 改动内容
+
+为以下项目补充 XML 注释与关键逻辑注释：
+
+```text
+ChemSculptor.Domain
+ChemSculptor.Core
+ChemSculptor.InputProcessor
+ChemSculptor.Api
+ChemSculptor.WinForms
+ChemSculptor.Core.Tests
+```
+
+注释规范：
+
+- 公共类型、接口、方法和属性使用 `/// <summary>` XML 注释
+- 关键内部逻辑使用 `//` 中文行注释
+- 注释说明职责、输入输出、边界条件与平台必需机制的原因
+
+同步更新：
+
+```text
+docs/Coding-Conventions.md
+  增加注释规范章节
+  明确 async/await 例外
+  明确扩展方法必须显式静态调用
+```
+
+### 验证
+
+- `dotnet build ChemSculptor.slnx`：0 警告 0 错误
+- `dotnet test ChemSculptor.slnx`：5/5 通过
+
+---
+
 ## v0.6.0（2026-09-10）：全项目去除可选语法糖
 
 ### 版本

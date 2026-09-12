@@ -1,5 +1,8 @@
 namespace ChemSculptor.WinForms;
 
+/// <summary>
+/// 服务端返回的客户端任务摘要。
+/// </summary>
 public sealed class ClientJobSummary
 {
     public string Id { get; set; } = string.Empty;
@@ -15,6 +18,7 @@ public sealed class ClientJobSummary
     public bool HasResult { get; set; }
 }
 
+/// <summary>客户端任务列表中的一项。</summary>
 public sealed class ClientJobItem
 {
     public string Id { get; set; } = string.Empty;
@@ -29,6 +33,7 @@ public sealed class ClientJobItem
     }
 }
 
+/// <summary>坐标响应中的单个原子。</summary>
 public sealed class GeometryAtomDto
 {
     public string Element { get; set; } = string.Empty;
@@ -40,6 +45,7 @@ public sealed class GeometryAtomDto
     public double Z { get; set; }
 }
 
+/// <summary>坐标接收响应。</summary>
 public sealed class GeometrySubmitResult
 {
     public string SourceName { get; set; } = string.Empty;
@@ -53,6 +59,7 @@ public sealed class GeometrySubmitResult
     public List<string> Diagnostics { get; set; } = new List<string>();
 }
 
+/// <summary>会话中的一条消息。</summary>
 public sealed class ChatMessage
 {
     public string Role { get; set; } = string.Empty;
@@ -62,6 +69,7 @@ public sealed class ChatMessage
     public DateTimeOffset Timestamp { get; set; } = DateTimeOffset.Now;
 }
 
+/// <summary>一个本地会话。</summary>
 public sealed class ChatSession
 {
     public string Id { get; set; } = string.Empty;
