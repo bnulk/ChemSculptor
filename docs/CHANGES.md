@@ -5,6 +5,90 @@
 
 ---
 
+## v0.7.0（2026-09-13）：几何接收与解析框架骨架
+
+### 版本
+
+- 当前版本：`0.7.0`
+- 日期：2026-09-13
+- 版本类型：新增框架（不包含真实解析逻辑）
+
+### 改动目的
+
+为复杂几何输入（例如 ONIOM 分层模型）建立可扩展的处理框架，把以下四层职责分开：
+
+```text
+原始文件层 → 解析器层 → 规范模型层 → 验证层
+```
+
+当前只搭建接口、模型和流程骨架，不实现任何具体格式解析，也不改动现有 `/geometries` 的简单 XYZ 行为。
+
+### 改动内容
+
+在 `ChemSculptor.InputProcessor` 下新增 `GeometryIntake` 框架：
+
+```text
+GeometryIntakeModels.cs
+  原始文件、规范几何、原子、片段、层、链接原子、约束、诊断
+
+GeometryParserFramework.cs
+  解析器接口、解析结果、解析器注册表
+  XYZ / Gaussian / ORCA / ONIOM 解析器骨架
+
+GeometryValidationFramework.cs
+  验证器接口、验证报告、骨架验证器
+
+GeometryAssetFramework.cs
+  几何资产、资产仓储接口、内存实现
+
+GeometryIntakeService.cs
+  串联“提交 → 选择解析器 → 解析 → 验证 → 保存资产”
+```
+
+### 教程式说明
+
+#### 处理流程
+
+```text
+RawGeometrySubmission（原始提交）
+   ↓
+GeometryParserRegistry（选择解析器）
+   ↓
+IGeometryParser（格式解析器，当前为骨架）
+   ↓
+CanonicalGeometry（规范几何模型）
+   ↓
+IGeometryValidator（验证器，当前为骨架）
+   ↓
+GeometryAsset（原始文件 + 解析结果 + 验证报告）
+   ↓
+InMemoryGeometryAssetRepository（保存资产）
+```
+
+#### 分层设计要点
+
+- 接收层只保存原始文件，不解释格式
+- 每种格式对应一个解析器，不再把不同格式的判断堆进同一个方法
+- 解析器统一输出 `CanonicalGeometry`
+- ONIOM 的层、片段、链接原子、约束属于规范模型，不属于计算任务参数
+- 验证器独立于解析器，便于以后增加坐标、分层、链接原子等检查
+
+#### 当前状态
+
+```text
+已建立：接口、模型、注册表、资产仓储、接收服务
+未实现：具体格式解析、具体验证规则
+未接入：Api 端点仍使用原有简单 XYZ 解析流程
+```
+
+### 验证
+
+- `dotnet build ChemSculptor.slnx`：0 警告 0 错误
+- `dotnet test ChemSculptor.slnx`：5/5 通过
+- 现有 `/geometries` 行为和已有客户端功能未改变
+
+---
+
 ## v0.6.1（2026-09-12）：补充标准中文 C# 注释并最终确定编码约定
 
 ### 版本
