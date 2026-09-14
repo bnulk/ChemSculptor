@@ -24,7 +24,7 @@ tests/
 |---|---|
 | 极简内核 | `ChemSculptor.Core.WorkflowEngine` + `WorkflowStateRules` |
 | 消息总线 | `IEventBus` / `InMemoryEventBus` |
-| 技能容器统一契约 | `ISkillContainer` / `IContainerRegistry` |
+| 技能统一契约 | `ISkill` / `ISkillRegistry` |
 | 声明式工作流模板 | `WorkflowDefinition` / `WorkflowNode` |
 | 规则引擎 | `IRuleEngine`（当前 `AllowAllRuleEngine` 占位） |
 | 验证门 | `IValidationGate`（当前 `PassThroughValidationGate` 占位） |
@@ -59,7 +59,7 @@ curl -X POST http://localhost:5000/workflows -H "Content-Type: application/json"
 
 1. `IRuleEngine`：把设计文档中的“条件—动作”规则落库并实现校验。
 2. `IValidationGate`：按节点接入结构/优化/激发态/SOC/MECP 各阶段验证。
-3. `ISkillContainer`：新增 `structure_builder`、`gaussian_opt`、`orca_tddfit`、
+3. `ISkill`：新增 `structure_builder`、`gaussian_opt`、`orca_tddfit`、
    `nto_analysis`、`soc_calc`、`mecp_search` 等容器实现。
 4. `ILlmGateway`：接入 LLM 的“自然语言 → 工作流草案”建议，草案仍走规则校验。
 5. 持久化：把 `IWorkflowRepository` 从内存实现换成 PostgreSQL/SQLite。

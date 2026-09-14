@@ -28,8 +28,8 @@ public sealed class WorkflowNode
     /// <summary>节点唯一标识，同一个工作流内不允许重复。</summary>
     public string Id { get; set; } = string.Empty;
 
-    /// <summary>要调用的技能容器名称。</summary>
-    public string Container { get; set; } = string.Empty;
+    /// <summary>要调用的技能名称。</summary>
+    public string Skill { get; set; } = string.Empty;
 
     /// <summary>前置节点标识列表，所有前置节点完成后本节点才可执行。</summary>
     public List<string> DependsOn { get; set; } = new List<string>();

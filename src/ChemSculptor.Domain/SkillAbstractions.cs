@@ -1,40 +1,40 @@
 namespace ChemSculptor.Domain;
 
 /// <summary>
-/// 技能容器统一契约。
+/// 技能统一契约。
 /// 内核只依赖该接口，不依赖任何具体化学软件实现。
 /// </summary>
-public interface ISkillContainer
+public interface ISkill
 {
-    /// <summary>容器唯一名称。</summary>
+    /// <summary>技能唯一名称。</summary>
     string Name { get; }
 
-    /// <summary>容器版本。</summary>
+    /// <summary>技能版本。</summary>
     string Version { get; }
 
-    /// <summary>容器能力标签。</summary>
+    /// <summary>技能能力标签。</summary>
     IReadOnlyList<string> Capabilities { get; }
 
     /// <summary>执行一次任务并返回结果。</summary>
     Task<TaskResult> ExecuteAsync(TaskRequest request, CancellationToken cancellationToken = default);
 
-    /// <summary>检查容器当前是否可用。</summary>
+    /// <summary>检查技能当前是否可用。</summary>
     Task<bool> HealthAsync(CancellationToken cancellationToken = default);
 }
 
 /// <summary>
-/// 技能容器注册表。
+/// 技能注册表。
 /// </summary>
-public interface IContainerRegistry
+public interface ISkillRegistry
 {
-    /// <summary>注册一个技能容器。</summary>
-    Task RegisterAsync(ISkillContainer container, CancellationToken cancellationToken = default);
+    /// <summary>注册一个技能。</summary>
+    Task RegisterAsync(ISkill skill, CancellationToken cancellationToken = default);
 
-    /// <summary>按名称查找技能容器；找不到时返回 null。</summary>
-    ISkillContainer? Resolve(string containerId);
+    /// <summary>按名称查找技能；找不到时返回 null。</summary>
+    ISkill? Resolve(string skillId);
 
-    /// <summary>列出所有已注册容器的元信息。</summary>
-    IReadOnlyList<ContainerDescriptor> List();
+    /// <summary>列出所有已注册技能的元信息。</summary>
+    IReadOnlyList<SkillDescriptor> List();
 }
 
 /// <summary>

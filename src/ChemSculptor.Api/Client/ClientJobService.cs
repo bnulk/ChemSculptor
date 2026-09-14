@@ -111,7 +111,7 @@ public sealed class ClientJobService
 
         WorkflowNode node = new WorkflowNode();
         node.Id = "client_task";
-        node.Container = "echo";
+        node.Skill = "echo";
         fallback.Nodes.Add(node);
 
         return fallback;
@@ -134,7 +134,7 @@ public sealed class ClientJobService
             WorkflowNode sourceNode = template.Nodes[index];
             WorkflowNode targetNode = new WorkflowNode();
             targetNode.Id = sourceNode.Id;
-            targetNode.Container = sourceNode.Container;
+            targetNode.Skill = sourceNode.Skill;
             targetNode.DependsOn = new List<string>(sourceNode.DependsOn);
             targetNode.Gate = sourceNode.Gate;
             clone.Nodes.Add(targetNode);

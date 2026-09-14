@@ -119,7 +119,7 @@ public sealed record WorkflowDefinition
 public sealed record WorkflowNode
 {
     public required string Id { get; init; }
-    public required string Container { get; init; }
+    public required string Skill { get; init; }
     public IReadOnlyList<string> DependsOn { get; init; } = [];
     public string? Gate { get; init; }
 }
@@ -133,9 +133,9 @@ public sealed record WorkflowNode
   "version": "1.0.0",
   "goal": "判断超分子体系是否为 TADF 并定位主要发光通道",
   "nodes": [
-    { "id": "structure", "container": "echo", "dependsOn": [] },
-    { "id": "s0_opt", "container": "echo", "dependsOn": [ "structure" ] },
-    { "id": "soc", "container": "echo", "dependsOn": [ "nto" ], "gate": "validate_soc_quality" }
+    { "id": "structure", "skill": "echo", "dependsOn": [] },
+    { "id": "s0_opt", "skill": "echo", "dependsOn": [ "structure" ] },
+    { "id": "soc", "skill": "echo", "dependsOn": [ "nto" ], "gate": "validate_soc_quality" }
   ]
 }
 ```
@@ -156,7 +156,7 @@ public sealed record WorkflowNode
 打开 `src/ChemSculptor.Domain/SkillAbstractions.cs` 和 `DomainServices.cs`，你会看到一批接口：
 
 ```csharp
-public interface ISkillContainer
+public interface ISkill
 {
     string Name { get; }
     string Version { get; }
@@ -172,8 +172,8 @@ public interface ISkillContainer
 
 | 接口 | 对应设计文档概念 | 当前实现 |
 |---|---|---|
-| `ISkillContainer` | 技能容器统一契约 | `EchoSkillContainer` |
-| `IContainerRegistry` | 容器注册/发现 | `ContainerRegistry` |
+| `ISkill` | 技能统一契约 | `EchoSkill` |
+| `ISkillRegistry` | 技能注册/发现 | `SkillRegistry` |
 | `IEventBus` | 消息总线 | `InMemoryEventBus` |
 | `IWorkflowRepository` | 状态/日志持久化 | `InMemoryWorkflowRepository` |
 | `IRuleEngine` | 规则引擎 | `AllowAllRuleEngine`（占位） |
@@ -243,7 +243,7 @@ foreach (var nodeId in ready)
 
 这就是“只执行 DAG，不含化学逻辑”的内核。
 
-#### 演示容器 `EchoSkillContainer.cs`
+#### 演示技能 `EchoSkill.cs`
 
 `echo` 容器不调用任何化学软件，只是把上游输出拼成字符串返回。它的意义是：证明“容器契约 → 调度 → 验证 → 日志 → 记忆”这条链路能跑通。
 
@@ -263,9 +263,9 @@ public sealed class AllowAllRuleEngine : IRuleEngine
 
 `Program.cs` 做三件事：
 
-1. **注册依赖**（依赖注入）：把 `IEventBus`、`IContainerRegistry`、`IRuleEngine` 等接口映射到实现类。
+1. **注册依赖**（依赖注入）：把 `IEventBus`、`ISkillRegistry`、`IRuleEngine` 等接口映射到实现类。
 2. **注册示例容器并载入示例工作流**：启动时自动注册 `echo` 容器，读取 `tadf-mechanism.json`。
-3. **映射端点**：调用 `MapWorkflowEndpoints()` 和 `MapContainerEndpoints()`。
+3. **映射端点**：调用 `MapWorkflowEndpoints()` 和 `MapSkillEndpoints()`。
 
 端点一览：
 
@@ -278,8 +278,8 @@ public sealed class AllowAllRuleEngine : IRuleEngine
 | `POST` | `/workflows/{id}/intervene` | 人工干预（当前为框架占位） |
 | `GET` | `/tasks/{workflowId}/log` | 获取事件日志（回放/溯源） |
 | `POST` | `/approvals/{id}` | 人工审批（当前为框架占位） |
-| `GET` | `/containers` | 列出已注册容器 |
-| `POST` | `/containers/register` | 注册容器 |
+| `GET` | `/skills` | 列出已注册技能 |
+| `POST` | `/skills/register` | 注册技能 |
 
 这些端点直接对应设计文档 3.4 节的“内核接口”。
 
@@ -391,14 +391,14 @@ curl http://127.0.0.1:5080/tasks/tadf_mechanism_diagnosis/log
 
 ### 7.1 新建一个技能容器
 
-在 `src/ChemSculptor.Core` 下新建 `StructureBuilderContainer.cs`：
+在 `src/ChemSculptor.Core` 下新建 `StructureBuilderSkill.cs`：
 
 ```csharp
 using ChemSculptor.Domain;
 
 namespace ChemSculptor.Core;
 
-public sealed class StructureBuilderContainer : ISkillContainer
+public sealed class StructureBuilderSkill : ISkill
 {
     public string Name => "structure_builder";
 
@@ -430,10 +430,10 @@ public sealed class StructureBuilderContainer : ISkillContainer
 在 `Program.cs` 里加两行：
 
 ```csharp
-builder.Services.AddSingleton<StructureBuilderContainer>();
+builder.Services.AddSingleton<StructureBuilderSkill>();
 
 // 启动注册容器时，追加：
-await registry.RegisterAsync(app.Services.GetRequiredService<StructureBuilderContainer>());
+await registry.RegisterAsync(app.Services.GetRequiredService<StructureBuilderSkill>());
 ```
 
 ### 7.3 改工作流 JSON
@@ -441,7 +441,7 @@ await registry.RegisterAsync(app.Services.GetRequiredService<StructureBuilderCon
 把 `tadf-mechanism.json` 的第一个节点改成：
 
 ```json
-{ "id": "structure", "container": "structure_builder", "dependsOn": [] }
+{ "id": "structure", "skill": "structure_builder", "dependsOn": [] }
 ```
 
 其余节点暂时还用 `echo`，这样你就能看到“真实容器 + 演示容器”混合执行。
@@ -512,7 +512,7 @@ builder.Services.AddSingleton<IRuleEngine, ChemRuleEngine>();
 
 **Q：接口到底有什么用？我直接写类不行吗？**
 
-接口让“使用者”和“实现者”解耦。内核只依赖 `ISkillContainer`，所以今天用 `echo`，明天换成 `GaussianContainer`，内核代码不用改。
+接口让“使用者”和“实现者”解耦。内核只依赖 `ISkill`，所以今天用 `echo`，明天换成 `GaussianSkill`，内核代码不用改。
 
 **Q：为什么有 AllowAllRuleEngine 这种“什么都不干”的类？**
 

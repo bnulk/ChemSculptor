@@ -11,8 +11,8 @@ public sealed class TaskRequest
     /// <summary>任务对应的节点标识。</summary>
     public string NodeId { get; set; } = string.Empty;
 
-    /// <summary>要调用的技能容器标识。</summary>
-    public string ContainerId { get; set; } = string.Empty;
+    /// <summary>要调用的技能标识。</summary>
+    public string SkillId { get; set; } = string.Empty;
 
     /// <summary>上游节点的输出，键为上游节点标识。</summary>
     public Dictionary<string, string> Inputs { get; set; } =
@@ -44,17 +44,17 @@ public sealed class TaskResult
 }
 
 /// <summary>
-/// 技能容器对外展示的元信息。
+/// 技能对外展示的元信息。
 /// 它只包含名称、版本和能力标签，不包含可执行逻辑。
 /// </summary>
-public sealed class ContainerDescriptor
+public sealed class SkillDescriptor
 {
-    /// <summary>容器唯一标识。</summary>
+    /// <summary>技能唯一标识。</summary>
     public string Id { get; set; } = string.Empty;
 
-    /// <summary>容器版本号。</summary>
+    /// <summary>技能版本号。</summary>
     public string Version { get; set; } = string.Empty;
 
-    /// <summary>容器能力标签。</summary>
+    /// <summary>技能能力标签。</summary>
     public List<string> Capabilities { get; set; } = new List<string>();
 }

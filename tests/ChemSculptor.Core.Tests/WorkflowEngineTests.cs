@@ -12,7 +12,7 @@ public class WorkflowEngineTests
     [Fact]
     public async Task RunsNodesInDependencyOrderAndPasses()
     {
-        RecordingContainer recorder = new RecordingContainer();
+        RecordingSkill recorder = new RecordingSkill();
         WorkflowEngine engine = CreateEngine(recorder);
 
         WorkflowDefinition definition = new WorkflowDefinition();
@@ -23,17 +23,17 @@ public class WorkflowEngineTests
 
         WorkflowNode nodeA = new WorkflowNode();
         nodeA.Id = "a";
-        nodeA.Container = recorder.Name;
+        nodeA.Skill = recorder.Name;
 
         WorkflowNode nodeB = new WorkflowNode();
         nodeB.Id = "b";
-        nodeB.Container = recorder.Name;
+        nodeB.Skill = recorder.Name;
         nodeB.DependsOn = new List<string>();
         nodeB.DependsOn.Add("a");
 
         WorkflowNode nodeC = new WorkflowNode();
         nodeC.Id = "c";
-        nodeC.Container = recorder.Name;
+        nodeC.Skill = recorder.Name;
         nodeC.DependsOn = new List<string>();
         nodeC.DependsOn.Add("a");
         nodeC.DependsOn.Add("b");
@@ -64,7 +64,7 @@ public class WorkflowEngineTests
     [Fact]
     public async Task FailsWorkflowWhenValidationGateRejects()
     {
-        WorkflowEngine engine = CreateEngine(new EchoSkillContainer(), new RejectingValidationGate());
+        WorkflowEngine engine = CreateEngine(new EchoSkill(), new RejectingValidationGate());
 
         WorkflowDefinition definition = new WorkflowDefinition();
         definition.Id = "wf_gate";
@@ -74,7 +74,7 @@ public class WorkflowEngineTests
 
         WorkflowNode node = new WorkflowNode();
         node.Id = "soc";
-        node.Container = "echo";
+        node.Skill = "echo";
         node.Gate = "validate_soc_quality";
         definition.Nodes.Add(node);
 
@@ -88,17 +88,17 @@ public class WorkflowEngineTests
 
     /// <summary>创建用于测试的工作流引擎。</summary>
     private static WorkflowEngine CreateEngine(
-        ISkillContainer? container = null,
+        ISkill? skill = null,
         IValidationGate? gate = null)
     {
-        ISkillContainer actualContainer;
-        if (container == null)
+        ISkill actualSkill;
+        if (skill == null)
         {
-            actualContainer = new EchoSkillContainer();
+            actualSkill = new EchoSkill();
         }
         else
         {
-            actualContainer = container;
+            actualSkill = skill;
         }
 
         IValidationGate actualGate;
@@ -111,8 +111,8 @@ public class WorkflowEngineTests
             actualGate = gate;
         }
 
-        ContainerRegistry registry = new ContainerRegistry();
-        registry.RegisterAsync(actualContainer).GetAwaiter().GetResult();
+        SkillRegistry registry = new SkillRegistry();
+        registry.RegisterAsync(actualSkill).GetAwaiter().GetResult();
 
         return new WorkflowEngine(
             registry,
@@ -124,12 +124,12 @@ public class WorkflowEngineTests
     }
 
     /// <summary>记录节点执行顺序的测试容器。</summary>
-    private sealed class RecordingContainer : ISkillContainer
+    private sealed class RecordingSkill : ISkill
     {
         private readonly List<string> _order;
         private readonly List<string> _capabilities;
 
-        public RecordingContainer()
+        public RecordingSkill()
         {
             _order = new List<string>();
             _capabilities = new List<string>();

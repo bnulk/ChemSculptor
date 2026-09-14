@@ -25,12 +25,12 @@ public static class Program
 
         // 注册服务到依赖注入容器；单例表示整个进程共用一个实例。
         builder.Services.AddSingleton<IEventBus, InMemoryEventBus>();
-        builder.Services.AddSingleton<IContainerRegistry, ContainerRegistry>();
+        builder.Services.AddSingleton<ISkillRegistry, SkillRegistry>();
         builder.Services.AddSingleton<IWorkflowRepository, InMemoryWorkflowRepository>();
         builder.Services.AddSingleton<IRuleEngine, AllowAllRuleEngine>();
         builder.Services.AddSingleton<IValidationGate, PassThroughValidationGate>();
         builder.Services.AddSingleton<ICaseMemory, InMemoryCaseMemory>();
-        builder.Services.AddSingleton<EchoSkillContainer>();
+        builder.Services.AddSingleton<EchoSkill>();
         builder.Services.AddSingleton<WorkflowEngine>();
         builder.Services.AddSingleton<IClientInputParser, TextClientInputParser>();
         builder.Services.AddSingleton<IGeometryTextParser, GeometryTextParser>();
@@ -40,9 +40,9 @@ public static class Program
         WebApplication app = builder.Build();
 
         // 手动把演示技能容器登记到注册表中。
-        IContainerRegistry registry = GetRequiredService<IContainerRegistry>(app.Services);
-        EchoSkillContainer echoContainer = GetRequiredService<EchoSkillContainer>(app.Services);
-        await registry.RegisterAsync(echoContainer);
+        ISkillRegistry skillRegistry = GetRequiredService<ISkillRegistry>(app.Services);
+        EchoSkill echoSkill = GetRequiredService<EchoSkill>(app.Services);
+        await skillRegistry.RegisterAsync(echoSkill);
 
         // 若示例工作流文件存在，则载入并登记为 Ready 状态（不执行）。
         string samplePath = Path.Combine(Directory.GetCurrentDirectory(), "workflows", "tadf-mechanism.json");
@@ -69,7 +69,7 @@ public static class Program
         EndpointRouteBuilderExtensions.MapGet(app, "/", GetServiceInfo);
 
         WorkflowEndpoints.MapWorkflowEndpoints(app);
-        ContainerEndpoints.MapContainerEndpoints(app);
+        SkillEndpoints.MapSkillEndpoints(app);
         ClientJobEndpoints.MapClientJobEndpoints(app);
         GeometryEndpoints.MapGeometryEndpoints(app);
 
@@ -90,8 +90,8 @@ public static class Program
         response.Endpoints.Add("POST /workflows/{id}/intervene");
         response.Endpoints.Add("GET /tasks/{workflowId}/log");
         response.Endpoints.Add("POST /approvals/{id}");
-        response.Endpoints.Add("GET /containers");
-        response.Endpoints.Add("POST /containers/register");
+        response.Endpoints.Add("GET /skills");
+        response.Endpoints.Add("POST /skills/register");
         response.Endpoints.Add("POST /client/jobs");
         response.Endpoints.Add("GET /client/jobs/{id}/status");
         response.Endpoints.Add("GET /client/jobs/{id}/result");

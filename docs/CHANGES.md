@@ -5,6 +5,105 @@
 
 ---
 
+## v0.8.0（2026-09-15）：技能命名统一去除 Container
+
+### 版本
+
+- 当前版本：`0.8.0`
+- 日期：2026-09-15
+- 版本类型：架构命名重构（接口路径与字段名同步调整）
+
+### 改动目的
+
+为避免“技能容器”“DI 容器”“Docker 容器”三个概念混淆，统一技能相关命名，不再使用 `Container`：
+
+```text
+IContainerRegistry → ISkillRegistry
+ContainerRegistry  → SkillRegistry
+ISkillContainer    → ISkill
+EchoSkillContainer → EchoSkill
+ContainerDescriptor → SkillDescriptor
+WorkflowNode.Container → WorkflowNode.Skill
+TaskRequest.ContainerId → TaskRequest.SkillId
+```
+
+### 改动内容
+
+Domain：
+
+- `ISkillContainer` 改为 `ISkill`
+- `IContainerRegistry` 改为 `ISkillRegistry`
+- `ContainerDescriptor` 改为 `SkillDescriptor`
+- `WorkflowNode.Container` 改为 `WorkflowNode.Skill`
+- `TaskRequest.ContainerId` 改为 `TaskRequest.SkillId`
+
+Core：
+
+- `ContainerRegistry.cs` 改为 `SkillRegistry.cs`
+- `EchoSkillContainer.cs` 改为 `EchoSkill.cs`
+- `WorkflowEngine` 改为通过 `ISkillRegistry` 解析并调用 `ISkill`
+
+Api：
+
+- `RegisterContainerRequest` 改为 `RegisterSkillRequest`
+- `ContainerEndpoints` 改为 `SkillEndpoints`
+- 路由 `/containers` 改为 `/skills`
+- 路由 `/containers/register` 改为 `/skills/register`
+- 示例工作流 JSON 字段 `container` 改为 `skill`
+
+Tests：
+
+- 测试实现 `RecordingContainer` 改为 `RecordingSkill`
+- 所有技能接口与注册表引用同步更新
+
+文档：
+
+- `README.md` 和教程中的技能命名同步更新
+- `docs/Coding-Conventions.md` 增加技能命名约定：技能相关命名禁止使用 `Container`
+
+### 教程式说明
+
+命名职责现在非常明确：
+
+```text
+DI 容器（DI Container）
+  负责创建对象和管理生命周期
+
+SkillRegistry
+  负责登记和查找技能
+
+ISkill / EchoSkill
+  负责执行具体科学能力
+
+Docker 容器
+  以后作为技能的运行环境
+```
+
+接口路径变化：
+
+```text
+旧：GET  /containers
+新：GET  /skills
+
+旧：POST /containers/register
+新：POST /skills/register
+```
+
+工作流定义变化：
+
+```json
+旧：{ "id": "structure", "container": "echo" }
+新：{ "id": "structure", "skill": "echo" }
+```
+
+### 验证
+
+- `dotnet build ChemSculptor.slnx`：构建通过
+- `dotnet test ChemSculptor.slnx`：测试通过
+- 技能相关命名扫描不再出现 `Container`（WinForms 自带 `SplitContainer` 除外）
+
+---
+
 ## v0.7.0（2026-09-13）：几何接收与解析框架骨架
 
 ### 版本

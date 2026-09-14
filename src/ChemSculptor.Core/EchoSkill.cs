@@ -4,14 +4,14 @@ using ChemSculptor.Domain;
 namespace ChemSculptor.Core;
 
 /// <summary>
-/// 演示用技能容器。
+/// 演示用技能。
 /// 不执行任何真实计算，只把上游输出拼接后返回，用于验证整条链路。
 /// </summary>
-public sealed class EchoSkillContainer : ISkillContainer
+public sealed class EchoSkill : ISkill
 {
     private readonly List<string> _capabilities;
 
-    public EchoSkillContainer()
+    public EchoSkill()
     {
         _capabilities = new List<string>();
         _capabilities.Add("demo");
@@ -66,12 +66,12 @@ public sealed class EchoSkillContainer : ISkillContainer
         result.WorkflowId = request.WorkflowId;
         result.NodeId = request.NodeId;
         result.Succeeded = true;
-        result.Output = "[" + request.ContainerId + "] ok (" + inputBuilder.ToString() + ")";
+        result.Output = "[" + request.SkillId + "] ok (" + inputBuilder.ToString() + ")";
 
         return Task.FromResult(result);
     }
 
-    /// <summary>演示容器始终报告健康。</summary>
+    /// <summary>演示技能始终报告健康。</summary>
     public Task<bool> HealthAsync(CancellationToken cancellationToken = default)
     {
         return Task.FromResult(true);

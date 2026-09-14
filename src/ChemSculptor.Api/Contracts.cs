@@ -20,8 +20,8 @@ public sealed class ApprovalRequest
     public string? Note { get; set; }
 }
 
-/// <summary>注册技能容器的请求。</summary>
-public sealed class RegisterContainerRequest
+/// <summary>注册技能的请求。</summary>
+public sealed class RegisterSkillRequest
 {
     public string Id { get; set; } = string.Empty;
 

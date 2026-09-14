@@ -9,7 +9,7 @@ namespace ChemSculptor.Core;
 /// </summary>
 public sealed class WorkflowEngine
 {
-    private readonly IContainerRegistry _containers;
+    private readonly ISkillRegistry _skills;
     private readonly IEventBus _events;
     private readonly IWorkflowRepository _repository;
     private readonly IRuleEngine _rules;
@@ -17,14 +17,14 @@ public sealed class WorkflowEngine
     private readonly ICaseMemory _memory;
 
     public WorkflowEngine(
-        IContainerRegistry containers,
+        ISkillRegistry skills,
         IEventBus events,
         IWorkflowRepository repository,
         IRuleEngine rules,
         IValidationGate validation,
         ICaseMemory memory)
     {
-        _containers = containers;
+        _skills = skills;
         _events = events;
         _repository = repository;
         _rules = rules;
@@ -178,10 +178,10 @@ public sealed class WorkflowEngine
         CancellationToken cancellationToken)
     {
         // 容器未注册属于技术性错误，直接抛出以便上层记录。
-        ISkillContainer? container = _containers.Resolve(node.Container);
-        if (container == null)
+        ISkill? skill = _skills.Resolve(node.Skill);
+        if (skill == null)
         {
-            throw new InvalidOperationException("Skill container '" + node.Container + "' is not registered.");
+            throw new InvalidOperationException("Skill '" + node.Skill + "' is not registered.");
         }
 
         run.NodeStates[node.Id] = TaskState.Running;
@@ -195,7 +195,7 @@ public sealed class WorkflowEngine
             TaskRequest request = new TaskRequest();
             request.WorkflowId = run.Id;
             request.NodeId = node.Id;
-            request.ContainerId = node.Container;
+            request.SkillId = node.Skill;
             request.Inputs = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 
             foreach (KeyValuePair<string, TaskResult> pair in completed)
@@ -209,7 +209,7 @@ public sealed class WorkflowEngine
                 request.Inputs.Add(pair.Key, output);
             }
 
-            result = await container.ExecuteAsync(request, cancellationToken);
+            result = await skill.ExecuteAsync(request, cancellationToken);
         }
         catch (Exception ex)
         {

@@ -15,6 +15,7 @@
 - 所有代码必须使用传统入口写法，禁止顶层语句
 - 所有语法糖默认禁止，但 `async / await` 不属于要避免的语法糖
 - 代码注释统一使用标准 C# 注释风格，并使用中文说明
+- 技能相关类型、文件名、端点和字段命名不得使用 `Container`
 
 ## 2. 禁止使用的可选语法糖
 
@@ -133,10 +134,45 @@ public ...
 
 ## 7. 最终口径
 
+### 7.1 技能命名
+
+```text
+正确：
+  ISkill
+  ISkillRegistry
+  SkillRegistry
+  EchoSkill
+  SkillDescriptor
+  WorkflowNode.Skill
+  TaskRequest.SkillId
+  /skills
+
+禁止用于技能命名：
+  ISkillContainer
+  IContainerRegistry
+  ContainerRegistry
+  EchoSkillContainer
+  ContainerDescriptor
+  WorkflowNode.Container
+  TaskRequest.ContainerId
+  /containers
+```
+
+例外：
+
+```text
+依赖注入容器（DI Container）是基础设施术语，可以继续使用。
+Docker 容器是运行环境术语，可以继续使用。
+WinForms 的 SplitContainer 是框架界面控件，不属于技能命名。
+```
+
+### 7.2 总口径
+
 ```text
 禁止：
   顶层语句
   扩展方法调用写法（必须显式写静态类和静态方法调用）
+  技能相关命名中的 Container
   其余所有可选语法糖
 
 允许保留：
