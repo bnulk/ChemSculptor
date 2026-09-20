@@ -15,6 +15,7 @@ src/
   ChemSculptor.Core/            极简内核：事件总线、技能注册、DAG 引擎、状态机、仓储
   ChemSculptor.InputProcessor/  客户输入与几何解析框架
   ChemSculptor.Compute/         计算模型、默认方案与计算扩展接口
+  ChemSculptor.Compute.Gaussian/ Gaussian 输入文件生成
   ChemSculptor.Api/             Minimal API 宿主：工作流、技能、日志、审批端点
   ChemSculptor.WinForms/        独立客户端界面
 tests/

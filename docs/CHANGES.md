@@ -5,6 +5,103 @@
 
 ---
 
+## v0.11.0（2026-09-20）：Gaussian 输入文件生成第三阶段
+
+### 版本
+
+- 当前版本：`0.11.0`
+- 日期：2026-09-20
+- 版本类型：新增输入生成（不执行计算程序）
+
+### 改动目的
+
+把默认单点计算方案和规范几何转换为 Gaussian 输入文件，为后续本机执行和输出解析打基础。
+
+当前阶段只生成输入文件：
+
+```text
+不启动 Gaussian
+不解析输出
+不写入结果
+```
+
+### 改动内容
+
+新增项目：
+
+```text
+src/ChemSculptor.Compute.Gaussian
+```
+
+新增类型：
+
+```text
+GaussianInputOptions
+  内存、核数、检查点路径和标题
+
+GaussianInputWriter
+  生成 Gaussian 单点输入文件
+```
+
+默认输入内容：
+
+```text
+%chk=<与输入文件同名的 .chk>
+%mem=<调用方提供的内存设置>
+%nprocshared=4
+
+#p CAM-B3LYP/6-31G* SP
+
+标题
+
+0 1
+O x y z
+H x y z
+...
+```
+
+### 设计说明
+
+输入生成与程序执行分离：
+
+```text
+CalculationSpec
+  提供任务类型、方法、基组、电荷和多重度
+
+CanonicalGeometry
+  提供原子坐标
+
+GaussianInputOptions
+  提供内存、核数、检查点路径和标题
+
+GaussianInputWriter
+  只负责生成输入文件
+```
+
+当前只支持：
+
+```text
+CalculationTaskType.SinglePoint
+```
+
+其他任务类型返回 `NotSupportedException`。
+
+### 验证
+
+新增测试：
+
+```text
+GaussianInputWriterTests
+  ├── 默认 CAM-B3LYP/6-31G* 单点输入内容正确
+  └── 非单点任务被拒绝
+```
+
+- `dotnet build ChemSculptor.slnx`：0 警告 0 错误
+- `dotnet test ChemSculptor.slnx`：10/10 通过
+- 未启动任何计算程序
+
+---
+
 ## v0.10.0（2026-09-20）：计算工作区管理第二阶段
 
 ### 版本
