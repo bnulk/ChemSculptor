@@ -11,11 +11,14 @@
 ```text
 ChemSculptor.slnx
 src/
-  ChemSculptor.Domain/  领域契约：工作流模型、容器协议、规则/验证/记忆接口
-  ChemSculptor.Core/    极简内核：事件总线、容器注册、DAG 引擎、状态机、仓储
-  ChemSculptor.Api/     Minimal API 宿主：工作流、容器、日志、审批端点
+  ChemSculptor.Domain/          领域契约：工作流模型、技能协议、规则/验证/记忆接口
+  ChemSculptor.Core/            极简内核：事件总线、技能注册、DAG 引擎、状态机、仓储
+  ChemSculptor.InputProcessor/  客户输入与几何解析框架
+  ChemSculptor.Compute/         计算模型、默认方案与计算扩展接口
+  ChemSculptor.Api/             Minimal API 宿主：工作流、技能、日志、审批端点
+  ChemSculptor.WinForms/        独立客户端界面
 tests/
-  ChemSculptor.Core.Tests/  内核依赖序、验证门、状态机测试
+  ChemSculptor.Core.Tests/      内核依赖序、验证门、状态机测试
 ```
 
 ## 与原设计对应关系

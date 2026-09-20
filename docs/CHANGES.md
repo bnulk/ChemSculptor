@@ -5,6 +5,213 @@
 
 ---
 
+## v0.10.0（2026-09-20）：计算工作区管理第二阶段
+
+### 版本
+
+- 当前版本：`0.10.0`
+- 日期：2026-09-20
+- 版本类型：新增工作区管理（不执行计算）
+
+### 改动目的
+
+实现计算工作区的目录规则与创建逻辑，为后续保存几何资产、生成输入文件、运行计算和保存结果提供统一文件结构。
+
+默认工作区根目录：
+
+```text
+%ProgramData%\ChemSculptor
+```
+
+### 改动内容
+
+`ChemSculptor.Compute` 新增：
+
+```text
+CalculationWorkspaceOptions
+  工作区根目录与各子目录名称配置
+
+CalculationWorkspacePaths
+  几何文件、作业清单、坐标、输出、结果等固定文件名
+
+WorkspaceManager
+  实现 ICalculationWorkspace
+  负责路径生成、目录创建和标识校验
+```
+
+`ICalculationWorkspace` 新增：
+
+```text
+EnsureGeometryWorkspaceAsync
+EnsureJobWorkspaceAsync
+```
+
+新增测试：
+
+```text
+WorkspaceManagerTests
+  ├── 路径生成符合约定
+  ├── 创建工作区时目录实际存在
+  └── 非法标识被拒绝
+```
+
+### 目录结构
+
+```text
+%ProgramData%\ChemSculptor/
+  geometries/
+    <geometryId>/
+      original.txt
+      canonical.json
+      validation.json
+
+  jobs/
+    <jobId>/
+      manifest.json
+      input/
+        molecule.xyz
+      run/
+        output.log
+      results/
+        result.json
+        summary.txt
+        validation.json
+```
+
+### 安全约束
+
+- 目录名只允许字母、数字、连字符和下划线
+- 禁止路径分隔符和 `..`
+- 路径由 ID 生成，不使用用户提供的文件名
+- 工作区根目录可配置，不写死在代码中
+
+### 验证
+
+- `dotnet build ChemSculptor.slnx`：0 警告 0 错误
+- `dotnet test ChemSculptor.slnx`：8/8 通过
+- 未调用任何计算程序
+
+---
+
+## v0.9.0（2026-09-20）：计算模型与接口第一阶段
+
+### 版本
+
+- 当前版本：`0.9.0`
+- 日期：2026-09-20
+- 版本类型：新增计算框架（仅模型与接口，不执行计算）
+
+### 改动目的
+
+建立计算任务的数据结构和扩展点，为后续本机 Gaussian 单点计算、远程集群和 ORCA 适配预留统一基础。
+
+当前阶段只定义：
+
+```text
+计算任务类型
+计算方案
+计算参数
+计算作业
+计算结果
+执行上下文
+风险与审批模型
+```
+
+不实现具体程序执行、输入文件生成和输出解析。
+
+### 改动内容
+
+新增项目：
+
+```text
+src/ChemSculptor.Compute
+```
+
+新增模型：
+
+```text
+CalculationTaskType
+CalculationSpec
+CalculationParameter
+CalculationRequest
+CalculationTask
+CalculationJob
+CalculationResult
+CalculationExecutionContext
+CalculationValidationReport
+RiskAssessment
+CalculationQuestion
+CalculationPlan
+ApprovalDecision
+```
+
+新增扩展接口：
+
+```text
+IQuantumProgramAdapter
+IComputeBackend
+ICalculationQueue
+ICalculationScheduler
+ICalculationWorkspace
+ICalculationRepository
+ICalculationParameterValidator
+IScientificRiskEvaluator
+IApprovalService
+ICalculationPlanner
+ISinglePointCalculationService
+```
+
+新增默认方案：
+
+```text
+CalculationDefaults
+  默认程序：Gaussian 16
+  默认任务：SinglePoint
+  默认方法：CAM-B3LYP
+  默认基组：6-31G*
+  默认电荷：0
+  默认多重度：1
+  默认核数：4
+```
+
+### 设计说明
+
+计算模型保持程序无关：
+
+```text
+模型和接口中不绑定具体程序
+程序名称使用字符串保存
+只有默认方案中写入默认程序 Gaussian 16
+Gaussian / ORCA 的差异由后续程序适配器实现
+```
+
+计算与执行分离：
+
+```text
+CalculationSpec
+  描述“怎么算”
+
+CalculationJob
+  描述“算哪一次”
+
+IQuantumProgramAdapter
+  负责输入生成、命令构建、输出解析
+
+IComputeBackend
+  负责本机或远程执行
+
+ICalculationScheduler
+  负责并发控制，当前只预留接口
+```
+
+### 验证
+
+- `dotnet build ChemSculptor.slnx`：0 警告 0 错误
+- `dotnet test ChemSculptor.slnx`：5/5 通过
+- 代码中除默认程序 `Gaussian 16` 外，不包含具体计算程序绑定
+
+---
+
 ## v0.8.0（2026-09-15）：技能命名统一去除 Container
 
 ### 版本
