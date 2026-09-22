@@ -4,6 +4,8 @@
     <ProjectReference Include="..\ChemSculptor.Core\ChemSculptor.Core.csproj" />
     <ProjectReference Include="..\ChemSculptor.Domain\ChemSculptor.Domain.csproj" />
     <ProjectReference Include="..\ChemSculptor.InputProcessor\ChemSculptor.InputProcessor.csproj" />
+    <ProjectReference Include="..\ChemSculptor.Compute\ChemSculptor.Compute.csproj" />
+    <ProjectReference Include="..\ChemSculptor.Compute.Gaussian\ChemSculptor.Compute.Gaussian.csproj" />
   </ItemGroup>
 
   <PropertyGroup>

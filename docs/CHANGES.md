@@ -5,6 +5,182 @@
 
 ---
 
+## v0.13.0（2026-09-22）：交互窗口“单点计算”命令
+
+### 版本
+
+- 当前版本：`0.13.0`
+- 日期：2026-09-22
+- 版本类型：客户端交互命令（不启动计算程序）
+
+### 改动目的
+
+不增加按钮，改为通过交互窗口命令触发单点计算调试流程：
+
+```text
+用户输入：单点计算
+点击：发送
+```
+
+客户端读取当前选择的坐标文件，调用服务器已有端点，并显示输入文件生成结果。
+
+### 改动内容
+
+WinForms：
+
+- 新增命令常量 `单点计算`。
+- `SendTextAsync` 识别该命令后调用 `TriggerSinglePointAsync`。
+- 新增 `TriggerSinglePointAsync`：
+  - 读取当前选择的 txt 坐标文件
+  - 组装 `SinglePointCalculationRequestDto`
+  - 调用 `POST /calculations/single-point`
+  - 显示作业标识、状态和输入文件路径
+
+服务器：
+
+- 复用已有 `/calculations/single-point` 端点。
+- 当前只生成 Gaussian 输入文件，不启动 g16。
+
+### 使用方式
+
+```text
+1. 启动 Api 和 WinForms
+2. 在 WinForms 顶部选择 samples/water.xyz.txt
+3. 在底部输入框输入：单点计算
+4. 点击“发送”
+```
+
+对话区会显示：
+
+```text
+单点计算已触发：job-xxxx，状态 InputGenerated。
+输入文件：<工作区路径>\input\job-xxxx.gjf
+Gaussian 输入文件已生成，尚未启动计算程序。
+```
+
+### 验证
+
+- `dotnet build ChemSculptor.slnx`：0 警告 0 错误
+- `dotnet test ChemSculptor.slnx`：10/10 通过
+- 服务器端输入生成链路已完成人工验证
+
+---
+
+## v0.12.1（2026-09-22）：移除 WinForms 临时单点计算调试按钮
+
+### 版本
+
+- 当前版本：`0.12.1`
+- 日期：2026-09-22
+- 版本类型：界面调整（行为保持不变）
+
+### 改动目的
+
+为后续通过交互窗口命令触发单点计算做准备，先移除 WinForms 中的临时“单点计算（调试）”按钮，恢复原有布局。
+
+### 改动内容
+
+- 移除 `MainForm` 中的 `_triggerSinglePointButton` 字段、初始化和事件订阅。
+- 移除按钮对应的 `OnTriggerSinglePointClick` 与 `TriggerSinglePointAsync` 方法。
+- 移除不再使用的 `System.Text.Json` 引用。
+- 保留以下服务器端和客户端模型：
+  - `POST /calculations/single-point`
+  - `SinglePointCalculationRequest`
+  - `SinglePointCalculationResponse`
+  - WinForms 中的单点请求与响应 DTO
+
+### 验证
+
+- `dotnet build ChemSculptor.slnx`：0 警告 0 错误
+- WinForms 布局恢复为：
+  - 发送
+  - 发送坐标
+  - 提交任务
+
+---
+
+## v0.12.0（2026-09-22）：WinForms 触发单点计算调试链路
+
+### 版本
+
+- 当前版本：`0.12.0`
+- 日期：2026-09-22
+- 版本类型：调试链路（不启动计算程序）
+
+### 改动目的
+
+让 WinForms 客户端可以触发一次单点计算调试请求，服务器完成：
+
+```text
+接收坐标
+解析坐标
+创建工作区
+生成 Gaussian 输入文件
+返回作业标识与文件路径
+```
+
+当前不启动 Gaussian，也不解析输出，仅用于打通客户端到输入文件生成的链路。
+
+### 改动内容
+
+InputProcessor：
+
+- 新增 `CanonicalGeometryMapper`，把旧解析结果转换为规范几何模型。
+
+Api：
+
+- 新增 `/calculations/single-point` 端点。
+- 新增单点计算请求、响应和错误响应契约。
+- Api 引用 `ChemSculptor.Compute` 与 `ChemSculptor.Compute.Gaussian`。
+- `Program.cs` 注册工作区与 Gaussian 输入生成器，并将依赖注入调用改为显式静态调用。
+
+WinForms：
+
+- 新增“单点计算（调试）”按钮。
+- 新增单点计算请求与响应客户端模型。
+- 按钮触发时发送坐标文本、默认电荷 0 和默认多重度 1。
+- 服务器返回后，在对话区显示作业标识、状态和生成的输入文件路径。
+
+工作区：
+
+- `%ProgramData%\ChemSculptor` 作为首选根目录。
+- 如果 ProgramData 不可写，回退到当前用户 LocalAppData。
+- 如果 LocalAppData 也不可写，回退到系统临时目录，保证受限环境可调试。
+
+### 调试调用链
+
+```text
+WinForms“单点计算（调试）”按钮
+  → POST /calculations/single-point
+  → GeometryTextParser 解析坐标
+  → CanonicalGeometryMapper 转换几何
+  → WorkspaceManager 创建作业目录
+  → GaussianInputWriter 生成 .gjf
+  → 返回 InputGenerated 与输入文件路径
+```
+
+### 当前限制
+
+```text
+不启动 g16
+不解析计算输出
+不保存长期计算作业记录
+内存暂用 4GB 调试默认值，后续根据电子数计算
+电荷和多重度暂用 0 和 1，后续接入交互确认
+```
+
+### 验证
+
+- `dotnet build ChemSculptor.slnx`：0 警告 0 错误
+- `dotnet test ChemSculptor.slnx`：10/10 通过
+- 端到端调用 `/calculations/single-point`：
+  - 返回状态 `InputGenerated`
+  - Gaussian 输入文件成功生成
+  - 文件包含 `%nprocshared=4`
+  - 文件包含 `#p CAM-B3LYP/6-31G* SP`
+
+---
+
 ## v0.11.0（2026-09-20）：Gaussian 输入文件生成第三阶段
 
 ### 版本

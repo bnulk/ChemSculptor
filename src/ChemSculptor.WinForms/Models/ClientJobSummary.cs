@@ -83,3 +83,32 @@ public sealed class ChatSession
         return Title;
     }
 }
+
+/// <summary>触发单点计算的客户端请求。</summary>
+public sealed class SinglePointCalculationRequestDto
+{
+    /// <summary>分子坐标文本。</summary>
+    public string CoordinateText { get; set; } = string.Empty;
+
+    /// <summary>总电荷。</summary>
+    public int Charge { get; set; }
+
+    /// <summary>自旋多重度。</summary>
+    public int Multiplicity { get; set; } = 1;
+}
+
+/// <summary>触发单点计算后的客户端响应。</summary>
+public sealed class SinglePointCalculationResultDto
+{
+    /// <summary>计算作业标识。</summary>
+    public string JobId { get; set; } = string.Empty;
+
+    /// <summary>当前状态。</summary>
+    public string Status { get; set; } = string.Empty;
+
+    /// <summary>生成的输入文件路径。</summary>
+    public string InputFilePath { get; set; } = string.Empty;
+
+    /// <summary>面向用户的说明。</summary>
+    public string Message { get; set; } = string.Empty;
+}

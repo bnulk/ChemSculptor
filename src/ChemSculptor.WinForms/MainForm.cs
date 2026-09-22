@@ -1,5 +1,6 @@
 using System.Net.Http.Json;
 using System.Text;
+using System.Text.Json;
 
 namespace ChemSculptor.WinForms;
 
@@ -9,6 +10,8 @@ namespace ChemSculptor.WinForms;
 /// </summary>
 public sealed class MainForm : Form
 {
+    private const string SinglePointCommand = "单点计算";
+
     // HTTP 客户端：用于与本地或远程 ChemSculptor.Api 通信。
     private readonly HttpClient _http;
 
@@ -434,20 +437,81 @@ public sealed class MainForm : Form
     }
 
     /// <summary>发送自然语言文本；当前只记录到本地会话。</summary>
-    private Task SendTextAsync()
+    private async Task SendTextAsync()
     {
         string text = _inputBox.Text.Trim();
 
         if (string.IsNullOrEmpty(text))
         {
             AppendMessage("error", "请先在输入框写下你的目标。");
-            return Task.CompletedTask;
+            return;
         }
 
         _inputBox.Clear();
         AppendMessage("user", text);
+
+        if (string.Equals(text, SinglePointCommand, StringComparison.OrdinalIgnoreCase))
+        {
+            await TriggerSinglePointAsync();
+            return;
+        }
+
         AppendMessage("hint", "文本已记录到当前会话。自然语言理解将在后续版本由服务器端接入。");
-        return Task.CompletedTask;
+    }
+
+    /// <summary>
+    /// 执行“单点计算”交互命令。
+    /// 使用当前选择的坐标文件触发服务器输入文件生成。
+    /// </summary>
+    private async Task TriggerSinglePointAsync()
+    {
+        string filePath;
+        if (!TryGetSelectedFile(out filePath))
+        {
+            return;
+        }
+
+        try
+        {
+            string coordinateText = await File.ReadAllTextAsync(filePath);
+
+            SinglePointCalculationRequestDto request = new SinglePointCalculationRequestDto();
+            request.CoordinateText = coordinateText;
+            request.Charge = 0;
+            request.Multiplicity = 1;
+
+            string json = JsonSerializer.Serialize(request);
+            StringContent content = new StringContent(json, Encoding.UTF8, "application/json");
+
+            HttpResponseMessage response =
+                await _http.PostAsync(Endpoint("/calculations/single-point"), content);
+
+            if (!response.IsSuccessStatusCode)
+            {
+                string errorText = await response.Content.ReadAsStringAsync();
+                AppendMessage("error", "单点计算触发失败：" + errorText);
+                return;
+            }
+
+            SinglePointCalculationResultDto? result =
+                await response.Content.ReadFromJsonAsync<SinglePointCalculationResultDto>();
+
+            if (result == null)
+            {
+                AppendMessage("error", "单点计算触发失败：服务器没有返回结果。");
+                return;
+            }
+
+            AppendMessage(
+                "system",
+                "单点计算已触发：" + result.JobId + "，状态 " + result.Status + "。");
+            AppendMessage("hint", "输入文件：" + result.InputFilePath);
+            AppendMessage("hint", result.Message);
+        }
+        catch (Exception ex)
+        {
+            AppendMessage("error", "单点计算触发失败：" + ex.Message);
+        }
     }
 
     /// <summary>把坐标文本发送到 POST /geometries。</summary>

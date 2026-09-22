@@ -1,11 +1,14 @@
 using System.Text.Json;
 using ChemSculptor.Api.Client;
+using ChemSculptor.Compute;
+using ChemSculptor.Compute.Gaussian;
 using ChemSculptor.Core;
 using ChemSculptor.Domain;
 using ChemSculptor.InputProcessor;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace ChemSculptor.Api;
 
@@ -24,17 +27,25 @@ public static class Program
         WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
 
         // 注册服务到依赖注入容器；单例表示整个进程共用一个实例。
-        builder.Services.AddSingleton<IEventBus, InMemoryEventBus>();
-        builder.Services.AddSingleton<ISkillRegistry, SkillRegistry>();
-        builder.Services.AddSingleton<IWorkflowRepository, InMemoryWorkflowRepository>();
-        builder.Services.AddSingleton<IRuleEngine, AllowAllRuleEngine>();
-        builder.Services.AddSingleton<IValidationGate, PassThroughValidationGate>();
-        builder.Services.AddSingleton<ICaseMemory, InMemoryCaseMemory>();
-        builder.Services.AddSingleton<EchoSkill>();
-        builder.Services.AddSingleton<WorkflowEngine>();
-        builder.Services.AddSingleton<IClientInputParser, TextClientInputParser>();
-        builder.Services.AddSingleton<IGeometryTextParser, GeometryTextParser>();
-        builder.Services.AddSingleton<ClientJobService>();
+        ServiceCollectionServiceExtensions.AddSingleton<IEventBus, InMemoryEventBus>(builder.Services);
+        ServiceCollectionServiceExtensions.AddSingleton<ISkillRegistry, SkillRegistry>(builder.Services);
+        ServiceCollectionServiceExtensions.AddSingleton<IWorkflowRepository, InMemoryWorkflowRepository>(builder.Services);
+        ServiceCollectionServiceExtensions.AddSingleton<IRuleEngine, AllowAllRuleEngine>(builder.Services);
+        ServiceCollectionServiceExtensions.AddSingleton<IValidationGate, PassThroughValidationGate>(builder.Services);
+        ServiceCollectionServiceExtensions.AddSingleton<ICaseMemory, InMemoryCaseMemory>(builder.Services);
+        ServiceCollectionServiceExtensions.AddSingleton<EchoSkill>(builder.Services);
+        ServiceCollectionServiceExtensions.AddSingleton<WorkflowEngine>(builder.Services);
+        ServiceCollectionServiceExtensions.AddSingleton<IClientInputParser, TextClientInputParser>(builder.Services);
+        ServiceCollectionServiceExtensions.AddSingleton<IGeometryTextParser, GeometryTextParser>(builder.Services);
+        ServiceCollectionServiceExtensions.AddSingleton<ClientJobService>(builder.Services);
+
+        CalculationWorkspaceOptions workspaceOptions = CalculationWorkspaceOptions.CreateDefault();
+        ServiceCollectionServiceExtensions.AddSingleton<CalculationWorkspaceOptions>(
+            builder.Services,
+            workspaceOptions);
+        ServiceCollectionServiceExtensions.AddSingleton<ICalculationWorkspace, WorkspaceManager>(
+            builder.Services);
+        ServiceCollectionServiceExtensions.AddSingleton<GaussianInputWriter>(builder.Services);
 
         // 构建可运行的 Web 应用，此时还未开始监听端口。
         WebApplication app = builder.Build();
@@ -72,6 +83,7 @@ public static class Program
         SkillEndpoints.MapSkillEndpoints(app);
         ClientJobEndpoints.MapClientJobEndpoints(app);
         GeometryEndpoints.MapGeometryEndpoints(app);
+        CalculationEndpoints.MapCalculationEndpoints(app);
 
         // 启动 Kestrel 并进入请求监听循环，直到进程关闭。
         app.Run();
@@ -96,6 +108,7 @@ public static class Program
         response.Endpoints.Add("GET /client/jobs/{id}/status");
         response.Endpoints.Add("GET /client/jobs/{id}/result");
         response.Endpoints.Add("POST /geometries");
+        response.Endpoints.Add("POST /calculations/single-point");
 
         return Results.Ok(response);
     }

@@ -131,3 +131,42 @@ public sealed class GeometryErrorResponse
 
     public List<string> Diagnostics { get; set; } = new List<string>();
 }
+
+/// <summary>触发单点计算的请求。</summary>
+public sealed class SinglePointCalculationRequest
+{
+    /// <summary>分子坐标文本。</summary>
+    public string CoordinateText { get; set; } = string.Empty;
+
+    /// <summary>总电荷。</summary>
+    public int Charge { get; set; }
+
+    /// <summary>自旋多重度。</summary>
+    public int Multiplicity { get; set; } = 1;
+}
+
+/// <summary>单点计算触发结果。</summary>
+public sealed class SinglePointCalculationResponse
+{
+    /// <summary>计算作业标识。</summary>
+    public string JobId { get; set; } = string.Empty;
+
+    /// <summary>当前状态。</summary>
+    public string Status { get; set; } = string.Empty;
+
+    /// <summary>生成的输入文件路径。</summary>
+    public string InputFilePath { get; set; } = string.Empty;
+
+    /// <summary>面向用户的说明。</summary>
+    public string Message { get; set; } = string.Empty;
+}
+
+/// <summary>计算触发失败时的响应。</summary>
+public sealed class CalculationErrorResponse
+{
+    /// <summary>错误说明。</summary>
+    public string Error { get; set; } = string.Empty;
+
+    /// <summary>诊断信息。</summary>
+    public List<string> Diagnostics { get; set; } = new List<string>();
+}
