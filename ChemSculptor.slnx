@@ -3,6 +3,7 @@
     <Project Path="src/ChemSculptor.Api/ChemSculptor.Api.csproj" />
     <Project Path="src/ChemSculptor.Compute.Gaussian/ChemSculptor.Compute.Gaussian.csproj" />
     <Project Path="src/ChemSculptor.Compute/ChemSculptor.Compute.csproj" />
+    <Project Path="src/ChemSculptor.Conversation/ChemSculptor.Conversation.csproj" />
     <Project Path="src/ChemSculptor.Core/ChemSculptor.Core.csproj" />
     <Project Path="src/ChemSculptor.Domain/ChemSculptor.Domain.csproj" />
     <Project Path="src/ChemSculptor.InputProcessor/ChemSculptor.InputProcessor.csproj" />

@@ -112,3 +112,44 @@ public sealed class SinglePointCalculationResultDto
     /// <summary>面向用户的说明。</summary>
     public string Message { get; set; } = string.Empty;
 }
+
+/// <summary>发送给服务器的智能体原始消息。</summary>
+public sealed class AgentMessageRequestDto
+{
+    /// <summary>客户端会话标识。</summary>
+    public string SessionId { get; set; } = string.Empty;
+
+    /// <summary>用户原始自然语言文本。</summary>
+    public string Text { get; set; } = string.Empty;
+
+    /// <summary>当前选择的坐标文本。</summary>
+    public string CoordinateText { get; set; } = string.Empty;
+
+    /// <summary>总电荷。</summary>
+    public int Charge { get; set; }
+
+    /// <summary>自旋多重度。</summary>
+    public int Multiplicity { get; set; } = 1;
+}
+
+/// <summary>服务器处理智能体消息后的响应。</summary>
+public sealed class AgentMessageResultDto
+{
+    /// <summary>服务器解释出的任务类型。</summary>
+    public string TaskType { get; set; } = string.Empty;
+
+    /// <summary>计算作业标识。</summary>
+    public string JobId { get; set; } = string.Empty;
+
+    /// <summary>当前状态。</summary>
+    public string Status { get; set; } = string.Empty;
+
+    /// <summary>生成的输入文件路径。</summary>
+    public string InputFilePath { get; set; } = string.Empty;
+
+    /// <summary>面向用户的说明。</summary>
+    public string Message { get; set; } = string.Empty;
+
+    /// <summary>诊断信息。</summary>
+    public List<string> Diagnostics { get; set; } = new List<string>();
+}

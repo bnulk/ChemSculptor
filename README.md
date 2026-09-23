@@ -16,6 +16,7 @@ src/
   ChemSculptor.InputProcessor/  客户输入与几何解析框架
   ChemSculptor.Compute/         计算模型、默认方案与计算扩展接口
   ChemSculptor.Compute.Gaussian/ Gaussian 输入文件生成
+  ChemSculptor.Conversation/    会话、消息、意图与回复
   ChemSculptor.Api/             Minimal API 宿主：工作流、技能、日志、审批端点
   ChemSculptor.WinForms/        独立客户端界面
 tests/

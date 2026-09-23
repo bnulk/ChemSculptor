@@ -2,6 +2,7 @@ using System.Text.Json;
 using ChemSculptor.Api.Client;
 using ChemSculptor.Compute;
 using ChemSculptor.Compute.Gaussian;
+using ChemSculptor.Conversation;
 using ChemSculptor.Core;
 using ChemSculptor.Domain;
 using ChemSculptor.InputProcessor;
@@ -46,6 +47,14 @@ public static class Program
         ServiceCollectionServiceExtensions.AddSingleton<ICalculationWorkspace, WorkspaceManager>(
             builder.Services);
         ServiceCollectionServiceExtensions.AddSingleton<GaussianInputWriter>(builder.Services);
+        ServiceCollectionServiceExtensions.AddSingleton<ITaskInterpreter, RuleBasedTaskInterpreter>(
+            builder.Services);
+        ServiceCollectionServiceExtensions.AddSingleton<SinglePointCalculationExecutor>(
+            builder.Services);
+        ServiceCollectionServiceExtensions.AddSingleton<IConversationRepository, InMemoryConversationRepository>(
+            builder.Services);
+        ServiceCollectionServiceExtensions.AddSingleton<IConversationService, ConversationService>(
+            builder.Services);
 
         // 构建可运行的 Web 应用，此时还未开始监听端口。
         WebApplication app = builder.Build();
@@ -84,6 +93,7 @@ public static class Program
         ClientJobEndpoints.MapClientJobEndpoints(app);
         GeometryEndpoints.MapGeometryEndpoints(app);
         CalculationEndpoints.MapCalculationEndpoints(app);
+        AgentEndpoints.MapAgentEndpoints(app);
 
         // 启动 Kestrel 并进入请求监听循环，直到进程关闭。
         app.Run();
@@ -109,6 +119,7 @@ public static class Program
         response.Endpoints.Add("GET /client/jobs/{id}/result");
         response.Endpoints.Add("POST /geometries");
         response.Endpoints.Add("POST /calculations/single-point");
+        response.Endpoints.Add("POST /agent/messages");
 
         return Results.Ok(response);
     }

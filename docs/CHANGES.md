@@ -5,6 +5,118 @@
 
 ---
 
+## v0.14.0（2026-09-23）：独立会话层与原始消息处理
+
+### 版本
+
+- 当前版本：`0.14.0`
+- 日期：2026-09-23
+- 版本类型：新增会话层（不引入 LLM）
+
+### 改动目的
+
+按“客户端只发送原始文本，服务器负责解释”的原则，把会话、消息、意图和回复从 Api 中独立出来，形成 `ChemSculptor.Conversation`。
+
+当前阶段仍只识别单点计算，但处理形式已经改为：
+
+```text
+客户端原始文本
+   ↓
+Conversation 解释意图
+   ↓
+服务器根据意图调用计算执行器
+```
+
+### 改动内容
+
+新增项目：
+
+```text
+src/ChemSculptor.Conversation
+```
+
+新增模型：
+
+```text
+ConversationSession
+ConversationMessage
+ConversationRequest
+ConversationIntent
+ConversationQuestion
+ConversationReply
+```
+
+新增接口与实现：
+
+```text
+IConversationRepository
+IConversationService
+InMemoryConversationRepository
+ConversationService
+```
+
+Api 调整：
+
+- `AgentEndpoints` 改为先调用 `IConversationService`。
+- Conversation 返回结构化 `ConversationReply` 和 `ConversationIntent`。
+- 只有在意图为单点计算时，才调用 `SinglePointCalculationExecutor`。
+- `Program.cs` 注册会话服务和内存会话仓储。
+
+WinForms 调整：
+
+- `AgentMessageRequestDto` 增加 `SessionId`。
+- 发送消息时携带当前会话标识。
+- 客户端仍然不解释用户文本。
+
+测试新增：
+
+```text
+ConversationServiceTests
+  ├── “单点计算”被识别为单点任务
+  ├── 未知任务被拒绝
+  └── 用户消息和智能体回复写入会话历史
+```
+
+### 处理流程
+
+```text
+WinForms 发送原始文本
+   ↓
+POST /agent/messages
+   ↓
+ConversationService.HandleMessageAsync
+   ├── 创建或读取会话
+   ├── 保存用户消息
+   ├── 调用 ITaskInterpreter
+   ├── 生成 ConversationIntent
+   └── 保存智能体回复
+   ↓
+AgentEndpoints 检查 Intent
+   ├── 单点计算 → SinglePointCalculationExecutor
+   └── 其他     → 返回暂不支持
+   ↓
+返回 AgentMessageResponse
+```
+
+### 设计边界
+
+```text
+Conversation：会话、消息、意图、回复
+Compute：计算模型、默认方案、任务解释
+Compute.Gaussian：Gaussian 输入生成
+Api：HTTP 路由与编排
+WinForms：界面与 HTTP 客户端
+```
+
+Conversation 不生成 Gaussian 输入文件，也不直接处理 HTTP。
+
+### 验证
+
+- `dotnet build ChemSculptor.slnx`：0 警告 0 错误
+- `dotnet test ChemSculptor.slnx`：13/13 通过
+
+---
+
 ## v0.13.0（2026-09-22）：交互窗口“单点计算”命令
 
 ### 版本

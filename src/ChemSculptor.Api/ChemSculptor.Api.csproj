@@ -6,6 +6,7 @@
     <ProjectReference Include="..\ChemSculptor.InputProcessor\ChemSculptor.InputProcessor.csproj" />
     <ProjectReference Include="..\ChemSculptor.Compute\ChemSculptor.Compute.csproj" />
     <ProjectReference Include="..\ChemSculptor.Compute.Gaussian\ChemSculptor.Compute.Gaussian.csproj" />
+    <ProjectReference Include="..\ChemSculptor.Conversation\ChemSculptor.Conversation.csproj" />
   </ItemGroup>
 
   <PropertyGroup>
