@@ -61,8 +61,6 @@ Agent → Compute.Gaussian
 SessionId
 Text
 CoordinateText
-Charge
-Multiplicity
 ```
 
 ### 服务器请求
@@ -73,8 +71,6 @@ Multiplicity
 SessionId
 Text
 CoordinateText
-Charge
-Multiplicity
 ```
 
 ### 会话解释结果
@@ -201,9 +197,9 @@ AgentMessageRequestDto request = new AgentMessageRequestDto();
 request.SessionId = _activeSession.Id;
 request.Text = text;
 request.CoordinateText = coordinateText;
-request.Charge = 0;
-request.Multiplicity = 1;
 ```
+
+客户端不决定电荷和多重度。它们由服务器端默认方案提供，后续通过服务器端交互确认。
 
 ### 发送请求
 
@@ -225,9 +221,7 @@ Content-Type: application/json
 {
   "sessionId": "session-1",
   "text": "单点计算",
-  "coordinateText": "O 0.000000 0.000000 0.117300\nH ...",
-  "charge": 0,
-  "multiplicity": 1
+  "coordinateText": "O 0.000000 0.000000 0.117300\nH ..."
 }
 ```
 
@@ -274,8 +268,6 @@ AgentRequest agentRequest = new AgentRequest();
 agentRequest.SessionId = request.SessionId;
 agentRequest.Text = request.Text;
 agentRequest.CoordinateText = request.CoordinateText;
-agentRequest.Charge = request.Charge;
-agentRequest.Multiplicity = request.Multiplicity;
 
 AgentResult result = await agentService.HandleMessageAsync(agentRequest, cancellationToken);
 ```
@@ -413,8 +405,6 @@ if (conversationReply.Intent.TaskType != CalculationTaskType.SinglePoint)
 ```csharp
 SinglePointExecutionResult executionResult = await executor.ExecuteAsync(
     request.CoordinateText,
-    request.Charge,
-    request.Multiplicity,
     cancellationToken);
 ```
 
@@ -444,7 +434,7 @@ Api 只负责 HTTP
 6. 保存 molecule.xyz
 7. 转换为 CanonicalGeometry
 8. 创建默认单点方案
-9. 写入电荷和多重度
+9. 使用服务器默认电荷和多重度
 10. 生成 Gaussian 输入文件
 ```
 
@@ -536,14 +526,8 @@ Multiplicity = 1
 ProcessorCount = 4
 ```
 
-执行器根据请求覆盖电荷和多重度：
-
-```csharp
-spec.Charge = charge;
-spec.Multiplicity = multiplicity;
-```
-
-并把参数来源标记为 `User`。
+执行器直接使用默认方案中的电荷和多重度。当前阶段客户端不传这两个值，
+后续要修改时由服务器端参数交互和审批完成。
 
 ---
 
@@ -708,8 +692,6 @@ $body = @{
     sessionId = "session-debug"
     text = "单点计算"
     coordinateText = $coordinates
-    charge = 0
-    multiplicity = 1
 } | ConvertTo-Json
 
 Invoke-RestMethod `

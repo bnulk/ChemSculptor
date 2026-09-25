@@ -89,12 +89,6 @@ public sealed class SinglePointCalculationRequestDto
 {
     /// <summary>分子坐标文本。</summary>
     public string CoordinateText { get; set; } = string.Empty;
-
-    /// <summary>总电荷。</summary>
-    public int Charge { get; set; }
-
-    /// <summary>自旋多重度。</summary>
-    public int Multiplicity { get; set; } = 1;
 }
 
 /// <summary>触发单点计算后的客户端响应。</summary>
@@ -124,12 +118,6 @@ public sealed class AgentMessageRequestDto
 
     /// <summary>当前选择的坐标文本。</summary>
     public string CoordinateText { get; set; } = string.Empty;
-
-    /// <summary>总电荷。</summary>
-    public int Charge { get; set; }
-
-    /// <summary>自旋多重度。</summary>
-    public int Multiplicity { get; set; } = 1;
 }
 
 /// <summary>服务器处理智能体消息后的响应。</summary>

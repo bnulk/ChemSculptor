@@ -29,8 +29,6 @@ public static class CalculationEndpoints
     {
         AgentSinglePointRequest agentRequest = new AgentSinglePointRequest();
         agentRequest.CoordinateText = request.CoordinateText;
-        agentRequest.Charge = request.Charge;
-        agentRequest.Multiplicity = request.Multiplicity;
 
         AgentResult result = await agentService.ExecuteSinglePointAsync(
             agentRequest,

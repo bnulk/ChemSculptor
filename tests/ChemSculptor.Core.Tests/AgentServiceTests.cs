@@ -25,8 +25,6 @@ public class AgentServiceTests
             request.SessionId = "session-1";
             request.Text = "优化这个分子";
             request.CoordinateText = "O 0.0 0.0 0.0";
-            request.Charge = 0;
-            request.Multiplicity = 1;
 
             AgentResult result = await service.HandleMessageAsync(request);
 
@@ -56,8 +54,6 @@ public class AgentServiceTests
                 "O 0.000000 0.000000 0.117300\n" +
                 "H 0.000000 0.757200 -0.469200\n" +
                 "H 0.000000 -0.757200 -0.469200";
-            request.Charge = 0;
-            request.Multiplicity = 1;
 
             AgentResult result = await service.HandleMessageAsync(request);
 

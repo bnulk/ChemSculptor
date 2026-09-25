@@ -478,8 +478,6 @@ public sealed class MainForm : Form
 
             request.Text = text;
             request.CoordinateText = coordinateText;
-            request.Charge = 0;
-            request.Multiplicity = 1;
 
             string json = JsonSerializer.Serialize(request);
             StringContent content = new StringContent(json, Encoding.UTF8, "application/json");

@@ -5,6 +5,77 @@
 
 ---
 
+## v0.16.0（2026-09-25）：客户端不再生成化学参数
+
+### 版本
+
+- 当前版本：`0.16.0`
+- 日期：2026-09-25
+- 版本类型：职责边界调整（客户端只发送文本和坐标）
+
+### 改动目的
+
+贯彻“客户端只负责传送，不处理客户信息”的原则：
+
+```text
+客户端不决定电荷
+客户端不决定自旋多重度
+客户端不选择计算方法
+客户端只发送原始文本和坐标文本
+```
+
+所有化学与计算相关参数由服务器端默认方案、规则和后续交互决定。
+
+### 改动内容
+
+WinForms：
+
+- `AgentMessageRequestDto` 移除 `Charge` 和 `Multiplicity`。
+- `SinglePointCalculationRequestDto` 移除 `Charge` 和 `Multiplicity`。
+- `SendAgentMessageAsync` 不再写入这两个字段。
+
+Api：
+
+- `AgentMessageRequest` 移除 `Charge` 和 `Multiplicity`。
+- `SinglePointCalculationRequest` 移除 `Charge` 和 `Multiplicity`。
+- `AgentEndpoints` 与 `CalculationEndpoints` 不再映射这两个字段。
+
+Agent：
+
+- `AgentRequest` 移除 `Charge` 和 `Multiplicity`。
+- `AgentSinglePointRequest` 移除 `Charge` 和 `Multiplicity`。
+- `AgentService` 调用执行器时只传坐标。
+- `SinglePointCalculationExecutor.ExecuteAsync` 改为只接收坐标文本。
+
+Compute：
+
+- 电荷和多重度继续由 `CalculationDefaults` 在服务器端提供：
+
+```text
+Charge       = 0
+Multiplicity = 1
+```
+
+### 当前行为
+
+```text
+客户端
+  → SessionId + Text + CoordinateText
+  → Agent
+  → Conversation 解释意图
+  → 单点执行器使用服务器默认方案
+  → 生成 Gaussian 输入文件
+```
+
+用户以后要修改电荷或多重度时，必须通过服务器端参数交互、风险检查和人工确认完成。
+
+### 验证
+
+- `dotnet build ChemSculptor.slnx`：0 警告 0 错误
+- `dotnet test ChemSculptor.slnx`：15/15 通过
+
+---
+
 ## v0.15.0（2026-09-25）：拆分独立智能体编排层
 
 ### 版本

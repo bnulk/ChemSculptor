@@ -52,8 +52,6 @@ public sealed class AgentService : IAgentService
 
         SinglePointExecutionResult executionResult = await _executor.ExecuteAsync(
             request.CoordinateText,
-            request.Charge,
-            request.Multiplicity,
             cancellationToken);
 
         return BuildSinglePointResult(conversationReply, executionResult);
@@ -66,8 +64,6 @@ public sealed class AgentService : IAgentService
     {
         SinglePointExecutionResult executionResult = await _executor.ExecuteAsync(
             request.CoordinateText,
-            request.Charge,
-            request.Multiplicity,
             cancellationToken);
 
         AgentResult result = new AgentResult();

@@ -1,4 +1,3 @@
-using System.Globalization;
 using ChemSculptor.Compute;
 using ChemSculptor.Compute.Gaussian;
 using ChemSculptor.InputProcessor;
@@ -55,8 +54,6 @@ public sealed class SinglePointCalculationExecutor
     /// <summary>执行单点计算流程。</summary>
     public async Task<SinglePointExecutionResult> ExecuteAsync(
         string coordinateText,
-        int charge,
-        int multiplicity,
         CancellationToken cancellationToken)
     {
         SinglePointExecutionResult result = new SinglePointExecutionResult();
@@ -92,15 +89,8 @@ public sealed class SinglePointCalculationExecutor
             CanonicalGeometry canonicalGeometry =
                 CanonicalGeometryMapper.FromMolecularGeometry(molecularGeometry, jobId);
 
+            // 化学参数由服务器端默认方案提供，当前不使用客户端参数。
             CalculationSpec spec = CalculationDefaults.CreateDefaultSinglePoint();
-            spec.Charge = charge;
-            spec.Multiplicity = multiplicity;
-
-            SetParameterValue(spec, "charge", charge.ToString(CultureInfo.InvariantCulture));
-            SetParameterValue(
-                spec,
-                "multiplicity",
-                multiplicity.ToString(CultureInfo.InvariantCulture));
 
             string inputFileName = jobId + ".gjf";
             string inputPath = Path.Combine(_workspace.GetInputDirectory(jobId), inputFileName);
@@ -134,20 +124,4 @@ public sealed class SinglePointCalculationExecutor
         }
     }
 
-    private static void SetParameterValue(
-        CalculationSpec spec,
-        string parameterName,
-        string value)
-    {
-        for (int index = 0; index < spec.Parameters.Count; index++)
-        {
-            CalculationParameter parameter = spec.Parameters[index];
-
-            if (string.Equals(parameter.Name, parameterName, StringComparison.OrdinalIgnoreCase))
-            {
-                parameter.CurrentValue = value;
-                parameter.Source = ParameterSource.User;
-            }
-        }
-    }
 }

@@ -31,8 +31,6 @@ public static class AgentEndpoints
         agentRequest.SessionId = request.SessionId;
         agentRequest.Text = request.Text;
         agentRequest.CoordinateText = request.CoordinateText;
-        agentRequest.Charge = request.Charge;
-        agentRequest.Multiplicity = request.Multiplicity;
 
         AgentResult result = await agentService.HandleMessageAsync(agentRequest, cancellationToken);
 
