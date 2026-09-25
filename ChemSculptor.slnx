@@ -1,5 +1,6 @@
 <Solution>
   <Folder Name="/src/">
+    <Project Path="src/ChemSculptor.Agent/ChemSculptor.Agent.csproj" />
     <Project Path="src/ChemSculptor.Api/ChemSculptor.Api.csproj" />
     <Project Path="src/ChemSculptor.Compute.Gaussian/ChemSculptor.Compute.Gaussian.csproj" />
     <Project Path="src/ChemSculptor.Compute/ChemSculptor.Compute.csproj" />

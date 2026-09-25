@@ -5,6 +5,93 @@
 
 ---
 
+## v0.15.0（2026-09-25）：拆分独立智能体编排层
+
+### 版本
+
+- 当前版本：`0.15.0`
+- 日期：2026-09-25
+- 版本类型：架构拆分（Api 变薄，编排独立）
+
+### 改动目的
+
+把“HTTP 路由”和“智能体编排”分开，避免 Api 随着任务类型增加而变重：
+
+```text
+Api：只做 HTTP 适配
+Agent：负责意图到计算执行的编排
+Conversation：负责会话、消息、意图和回复
+Compute：负责计算模型与执行
+```
+
+### 改动内容
+
+新增项目：
+
+```text
+src/ChemSculptor.Agent
+```
+
+新增类型：
+
+```text
+AgentRequest
+AgentSinglePointRequest
+AgentResult
+IAgentService
+AgentService
+AgentServiceRegistration
+```
+
+迁移内容：
+
+```text
+SinglePointCalculationExecutor
+  从 ChemSculptor.Api 迁移到 ChemSculptor.Agent
+```
+
+Api 调整：
+
+- `AgentEndpoints` 只把 HTTP 请求转换为 `AgentRequest` 并调用 `IAgentService`。
+- `CalculationEndpoints` 只把 HTTP 请求转换为 `AgentSinglePointRequest` 并调用 `IAgentService`。
+- Api 不再直接引用 Conversation、Compute、Compute.Gaussian。
+- Api 通过 `AgentServiceRegistration.AddAgentServices` 注册智能体服务。
+
+依赖关系：
+
+```text
+Api → Agent
+Agent → Conversation → Compute → InputProcessor
+Agent → Compute.Gaussian
+```
+
+### 处理流程
+
+```text
+WinForms 原始文本
+   ↓ HTTP
+Api /agent/messages
+   ↓
+IAgentService.HandleMessageAsync
+   ↓
+ConversationService
+   ↓
+RuleBasedTaskInterpreter
+   ↓
+AgentService 根据意图调用 SinglePointCalculationExecutor
+   ↓
+生成 Gaussian 输入文件
+   ↓
+Api 返回 HTTP 响应
+```
+
+### 验证
+
+- `dotnet build ChemSculptor.slnx`：0 警告 0 错误
+- `dotnet test ChemSculptor.slnx`：15/15 通过
+
+---
+
 ## v0.14.0（2026-09-23）：独立会话层与原始消息处理
 
 ### 版本

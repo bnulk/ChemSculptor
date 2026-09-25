@@ -1,5 +1,4 @@
-using ChemSculptor.Compute;
-using ChemSculptor.Conversation;
+using ChemSculptor.Agent;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
@@ -8,7 +7,7 @@ namespace ChemSculptor.Api;
 
 /// <summary>
 /// 智能体消息端点。
-/// 客户端只发送原始自然语言，服务器负责解释任务类型。
+/// 只负责把 HTTP 请求转换为智能体请求并返回响应。
 /// </summary>
 public static class AgentEndpoints
 {
@@ -22,63 +21,49 @@ public static class AgentEndpoints
         return app;
     }
 
-    /// <summary>
-    /// 先把原始消息交给会话层，再根据意图决定是否执行计算。
-    /// </summary>
+    /// <summary>把客户端原始消息交给智能体处理。</summary>
     private static async Task<IResult> SubmitMessageAsync(
         AgentMessageRequest request,
-        IConversationService conversationService,
-        SinglePointCalculationExecutor executor,
+        IAgentService agentService,
         CancellationToken cancellationToken)
     {
-        ConversationRequest conversationRequest = new ConversationRequest();
-        conversationRequest.SessionId = request.SessionId;
-        conversationRequest.Text = request.Text;
+        AgentRequest agentRequest = new AgentRequest();
+        agentRequest.SessionId = request.SessionId;
+        agentRequest.Text = request.Text;
+        agentRequest.CoordinateText = request.CoordinateText;
+        agentRequest.Charge = request.Charge;
+        agentRequest.Multiplicity = request.Multiplicity;
 
-        ConversationReply conversationReply =
-            await conversationService.HandleMessageAsync(conversationRequest, cancellationToken);
+        AgentResult result = await agentService.HandleMessageAsync(agentRequest, cancellationToken);
 
-        if (!conversationReply.Intent.IsSupported)
+        if (!result.IsSupported)
         {
             AgentMessageResponse unsupported = new AgentMessageResponse();
-            unsupported.TaskType = string.Empty;
+            unsupported.TaskType = GetTaskTypeText(result);
             unsupported.Status = "Unsupported";
-            unsupported.Message = conversationReply.ReplyMessage;
-            unsupported.Diagnostics = new List<string>(conversationReply.Diagnostics);
+            unsupported.Message = result.Error;
+            unsupported.Diagnostics = new List<string>(result.Diagnostics);
             return Results.BadRequest(unsupported);
         }
 
-        if (conversationReply.Intent.TaskType != CalculationTaskType.SinglePoint)
-        {
-            AgentMessageResponse notImplemented = new AgentMessageResponse();
-            notImplemented.TaskType = string.Empty;
-            notImplemented.Status = "NotImplemented";
-            notImplemented.Message = "该任务类型尚未实现。";
-            return Results.BadRequest(notImplemented);
-        }
-
-        SinglePointExecutionResult executionResult = await executor.ExecuteAsync(
-            request.CoordinateText,
-            request.Charge,
-            request.Multiplicity,
-            cancellationToken);
-
-        if (!executionResult.Succeeded)
-        {
-            CalculationErrorResponse error = new CalculationErrorResponse();
-            error.Error = executionResult.Error;
-            error.Diagnostics = new List<string>(executionResult.Diagnostics);
-            return Results.BadRequest(error);
-        }
-
         AgentMessageResponse response = new AgentMessageResponse();
-        response.TaskType = CalculationTaskType.SinglePoint.ToString();
-        response.JobId = executionResult.JobId;
-        response.Status = executionResult.Status;
-        response.InputFilePath = executionResult.InputFilePath;
-        response.Message = conversationReply.ReplyMessage + " " + executionResult.Message;
-        response.Diagnostics = new List<string>(conversationReply.Diagnostics);
+        response.TaskType = GetTaskTypeText(result);
+        response.JobId = result.JobId;
+        response.Status = result.Status;
+        response.InputFilePath = result.InputFilePath;
+        response.Message = result.Message;
+        response.Diagnostics = new List<string>(result.Diagnostics);
 
         return Results.Ok(response);
+    }
+
+    private static string GetTaskTypeText(AgentResult result)
+    {
+        if (result.TaskType == null)
+        {
+            return string.Empty;
+        }
+
+        return result.TaskType.Value.ToString();
     }
 }

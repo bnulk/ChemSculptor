@@ -1,4 +1,4 @@
-using ChemSculptor.Compute;
+using ChemSculptor.Agent;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
@@ -7,7 +7,7 @@ namespace ChemSculptor.Api;
 
 /// <summary>
 /// 计算相关端点。
-/// 当前阶段只触发到“生成输入文件”，不启动计算程序。
+/// 只负责把 HTTP 请求交给智能体编排层。
 /// </summary>
 public static class CalculationEndpoints
 {
@@ -24,28 +24,31 @@ public static class CalculationEndpoints
     /// <summary>直接触发的单点计算调试端点。</summary>
     private static async Task<IResult> SubmitSinglePointAsync(
         SinglePointCalculationRequest request,
-        SinglePointCalculationExecutor executor,
+        IAgentService agentService,
         CancellationToken cancellationToken)
     {
-        SinglePointExecutionResult executionResult = await executor.ExecuteAsync(
-            request.CoordinateText,
-            request.Charge,
-            request.Multiplicity,
+        AgentSinglePointRequest agentRequest = new AgentSinglePointRequest();
+        agentRequest.CoordinateText = request.CoordinateText;
+        agentRequest.Charge = request.Charge;
+        agentRequest.Multiplicity = request.Multiplicity;
+
+        AgentResult result = await agentService.ExecuteSinglePointAsync(
+            agentRequest,
             cancellationToken);
 
-        if (!executionResult.Succeeded)
+        if (!result.IsSupported)
         {
             CalculationErrorResponse error = new CalculationErrorResponse();
-            error.Error = executionResult.Error;
-            error.Diagnostics = new List<string>(executionResult.Diagnostics);
+            error.Error = result.Error;
+            error.Diagnostics = new List<string>(result.Diagnostics);
             return Results.BadRequest(error);
         }
 
         SinglePointCalculationResponse response = new SinglePointCalculationResponse();
-        response.JobId = executionResult.JobId;
-        response.Status = executionResult.Status;
-        response.InputFilePath = executionResult.InputFilePath;
-        response.Message = executionResult.Message;
+        response.JobId = result.JobId;
+        response.Status = result.Status;
+        response.InputFilePath = result.InputFilePath;
+        response.Message = result.Message;
 
         return Results.Ok(response);
     }

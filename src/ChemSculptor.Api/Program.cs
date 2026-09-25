@@ -1,8 +1,6 @@
 using System.Text.Json;
 using ChemSculptor.Api.Client;
-using ChemSculptor.Compute;
-using ChemSculptor.Compute.Gaussian;
-using ChemSculptor.Conversation;
+using ChemSculptor.Agent;
 using ChemSculptor.Core;
 using ChemSculptor.Domain;
 using ChemSculptor.InputProcessor;
@@ -40,21 +38,7 @@ public static class Program
         ServiceCollectionServiceExtensions.AddSingleton<IGeometryTextParser, GeometryTextParser>(builder.Services);
         ServiceCollectionServiceExtensions.AddSingleton<ClientJobService>(builder.Services);
 
-        CalculationWorkspaceOptions workspaceOptions = CalculationWorkspaceOptions.CreateDefault();
-        ServiceCollectionServiceExtensions.AddSingleton<CalculationWorkspaceOptions>(
-            builder.Services,
-            workspaceOptions);
-        ServiceCollectionServiceExtensions.AddSingleton<ICalculationWorkspace, WorkspaceManager>(
-            builder.Services);
-        ServiceCollectionServiceExtensions.AddSingleton<GaussianInputWriter>(builder.Services);
-        ServiceCollectionServiceExtensions.AddSingleton<ITaskInterpreter, RuleBasedTaskInterpreter>(
-            builder.Services);
-        ServiceCollectionServiceExtensions.AddSingleton<SinglePointCalculationExecutor>(
-            builder.Services);
-        ServiceCollectionServiceExtensions.AddSingleton<IConversationRepository, InMemoryConversationRepository>(
-            builder.Services);
-        ServiceCollectionServiceExtensions.AddSingleton<IConversationService, ConversationService>(
-            builder.Services);
+        AgentServiceRegistration.AddAgentServices(builder.Services);
 
         // 构建可运行的 Web 应用，此时还未开始监听端口。
         WebApplication app = builder.Build();

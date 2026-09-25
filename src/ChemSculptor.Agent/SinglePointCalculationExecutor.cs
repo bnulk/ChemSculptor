@@ -4,11 +4,9 @@ using ChemSculptor.Compute.Gaussian;
 using ChemSculptor.InputProcessor;
 using ChemSculptor.InputProcessor.GeometryIntake;
 
-namespace ChemSculptor.Api;
+namespace ChemSculptor.Agent;
 
-/// <summary>
-/// 单点计算调试执行结果。
-/// </summary>
+/// <summary>单点计算调试执行结果。</summary>
 public sealed class SinglePointExecutionResult
 {
     /// <summary>是否成功。</summary>
@@ -34,7 +32,7 @@ public sealed class SinglePointExecutionResult
 }
 
 /// <summary>
-/// 单点计算调试执行器。
+/// 单点计算执行器。
 /// 负责解析坐标、创建工作区和生成输入文件，不启动计算程序。
 /// </summary>
 public sealed class SinglePointCalculationExecutor
@@ -54,7 +52,7 @@ public sealed class SinglePointCalculationExecutor
         _inputWriter = inputWriter;
     }
 
-    /// <summary>执行单点计算调试流程。</summary>
+    /// <summary>执行单点计算流程。</summary>
     public async Task<SinglePointExecutionResult> ExecuteAsync(
         string coordinateText,
         int charge,

@@ -4,6 +4,7 @@
 领域契约、极简内核、Minimal API 宿主和一个可跑的示例工作流，不含任何化学逻辑。
 
 > 面向初学者的完整讲解教程见 [docs/ChemSculptor-Tutorial.md](docs/ChemSculptor-Tutorial.md)。
+> 单点计算完整调用链说明见 [docs/SinglePoint-Calculation-Walkthrough.md](docs/SinglePoint-Calculation-Walkthrough.md)。
 > 版本与改动记录见 [docs/CHANGES.md](docs/CHANGES.md)。
 
 ## 项目结构
@@ -17,6 +18,7 @@ src/
   ChemSculptor.Compute/         计算模型、默认方案与计算扩展接口
   ChemSculptor.Compute.Gaussian/ Gaussian 输入文件生成
   ChemSculptor.Conversation/    会话、消息、意图与回复
+  ChemSculptor.Agent/           智能体编排：意图到计算执行
   ChemSculptor.Api/             Minimal API 宿主：工作流、技能、日志、审批端点
   ChemSculptor.WinForms/        独立客户端界面
 tests/

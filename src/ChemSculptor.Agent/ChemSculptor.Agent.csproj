@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\ChemSculptor.Conversation\ChemSculptor.Conversation.csproj" />
+    <ProjectReference Include="..\ChemSculptor.Compute\ChemSculptor.Compute.csproj" />
+    <ProjectReference Include="..\ChemSculptor.Compute.Gaussian\ChemSculptor.Compute.Gaussian.csproj" />
+    <ProjectReference Include="..\ChemSculptor.InputProcessor\ChemSculptor.InputProcessor.csproj" />
+  </ItemGroup>
+
+</Project>

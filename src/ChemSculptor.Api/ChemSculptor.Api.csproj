@@ -1,18 +1,16 @@
 <Project Sdk="Microsoft.NET.Sdk.Web">
 
-  <ItemGroup>
-    <ProjectReference Include="..\ChemSculptor.Core\ChemSculptor.Core.csproj" />
-    <ProjectReference Include="..\ChemSculptor.Domain\ChemSculptor.Domain.csproj" />
-    <ProjectReference Include="..\ChemSculptor.InputProcessor\ChemSculptor.InputProcessor.csproj" />
-    <ProjectReference Include="..\ChemSculptor.Compute\ChemSculptor.Compute.csproj" />
-    <ProjectReference Include="..\ChemSculptor.Compute.Gaussian\ChemSculptor.Compute.Gaussian.csproj" />
-    <ProjectReference Include="..\ChemSculptor.Conversation\ChemSculptor.Conversation.csproj" />
-  </ItemGroup>
-
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
   </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\ChemSculptor.Agent\ChemSculptor.Agent.csproj" />
+    <ProjectReference Include="..\ChemSculptor.Core\ChemSculptor.Core.csproj" />
+    <ProjectReference Include="..\ChemSculptor.Domain\ChemSculptor.Domain.csproj" />
+    <ProjectReference Include="..\ChemSculptor.InputProcessor\ChemSculptor.InputProcessor.csproj" />
+  </ItemGroup>
 
 </Project>
