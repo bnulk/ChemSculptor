@@ -1,7 +1,7 @@
 # ChemSculptor“单点计算”代码全流程说明
 
-> 适用版本：v0.19.0 之后
-> 当前阶段目标：客户端发送原始文本，服务器识别“单点计算”，启动本机 g16，完成程序专用结果与通用结果的双向翻译
+> 适用版本：v0.20.0 之后
+> 当前阶段目标：客户端发送原始文本，服务器通过显式 Skill 集合完成单点计算、结果提取和结果验证
 > 当前未实现：科学结果验证、自动查错纠错、远程执行
 
 本文按真实代码顺序讲解一次“单点计算”从客户端到服务器的全过程。建议对照代码阅读。
@@ -19,15 +19,17 @@
    ↓
 解析坐标、创建工作区、生成 Gaussian 输入文件
    ↓
+GaussianInputGenerationSkill
+   ↓
 构建 g16 命令并提交本机执行后端
    ↓
-后台监控进程并解析 output.log
+后台监控进程
    ↓
-Gaussian 专用结果翻译为通用结果
+GaussianSinglePointResultExtractionSkill
    ↓
-通用处理方案翻译为 Gaussian 专用处理方案
+CalculationResultValidationSkill
    ↓
-保存 result.json、processing-plan.json、program-processing-plan.json
+保存 result.json 和 processing-plan.json
    ↓
 客户端显示结果
 ```
@@ -45,6 +47,9 @@ Gaussian 专用结果翻译为通用结果
 | `ChemSculptor.Compute` | 计算模型、默认方案、任务解释 |
 | `ChemSculptor.Compute.Gaussian` | Gaussian 输入、输出解析及程序专用翻译 |
 | `ChemSculptor.Compute.Local` | 本机进程启动、状态跟踪和日志保存 |
+| `ChemSculptor.Skills.Common` | 通用能力 Skill |
+| `ChemSculptor.Skills.Gaussian` | Gaussian 能力 Skill |
+| `ChemSculptor.Skills.Orca` | ORCA Skill 目录框架 |
 | `ChemSculptor.InputProcessor` | 坐标解析与规范几何转换 |
 
 依赖方向：
@@ -620,7 +625,8 @@ g16 <jobId>.gjf <output.log>
 
 ```text
 src/ChemSculptor.Agent/CalculationJobMonitor.cs
-src/ChemSculptor.Compute.Gaussian/GaussianOutputParser.cs
+src/ChemSculptor.Skills.Gaussian/GaussianSinglePointResultExtraction
+src/ChemSculptor.Skills.Common/CalculationResultValidation
 src/ChemSculptor.Compute/FileCalculationRepository.cs
 ```
 
@@ -638,10 +644,11 @@ Failed
 Canceled
 ```
 
-如果状态为 `Completed` 且输出文件存在，监控器调用：
+如果状态为 `Completed` 且输出文件存在，监控器通过技能注册表调用：
 
 ```text
-Gaussian16ProgramAdapter.ParseOutputAsync
+GaussianSinglePointResultExtractionSkill
+  → Gaussian16ProgramAdapter.ParseOutputAsync
   → GaussianOutputParser.ParseAsync
 ```
 
@@ -683,6 +690,12 @@ EnergyMissing
 OutputMissing
 ```
 
+结果随后交给：
+
+```text
+CalculationResultValidationSkill
+```
+
 Agent 的 `RuleBasedCalculationProcessingPlanner` 只读取这些通用分类，生成
 通用处理方案：
 
@@ -693,7 +706,7 @@ CalculationProcessingPlan
   Actions
 ```
 
-Gaussian 模块再把通用方案翻译为专用方案：
+异常框架预留了 Gaussian 专用方案翻译：
 
 ```text
 GaussianProcessingPlan
@@ -709,7 +722,6 @@ GaussianProcessingPlan
 ```text
 jobs/<jobId>/results/result.json
 jobs/<jobId>/results/processing-plan.json
-jobs/<jobId>/results/program-processing-plan.json
 ```
 
 作业状态写入：
@@ -804,8 +816,7 @@ AgentMessageResultDto? result =
 │   └── stderr.log
 └── results\
     ├── result.json
-    ├── processing-plan.json
-    └── program-processing-plan.json
+    └── processing-plan.json
 ```
 
 Gaussian 执行时还会在工作目录中产生临时输入和检查点文件。正常结束后可以检查：
@@ -819,7 +830,6 @@ stderr.log    子进程标准错误
 manifest.json 作业状态、路径和诊断
 result.json   能量、程序、方法、基组和规范化诊断
 processing-plan.json          智能体生成的通用处理方案
-program-processing-plan.json  翻译后的计算程序专用处理方案
 ```
 
 如果解析成功，`result.json` 中会包含：
@@ -876,6 +886,8 @@ Gaussian16ProgramAdapter.BuildExecutionContext
 LocalProcessBackend.SubmitAsync
 LocalProcessBackend.MonitorProcessAsync
 CalculationJobMonitor.MonitorAsync
+GaussianSinglePointResultExtractionSkill.ExecuteAsync
+CalculationResultValidationSkill.ExecuteAsync
 GaussianOutputParser.ParseAsync
 GaussianResultTranslator.Translate
 RuleBasedCalculationProcessingPlanner.CreatePlan
@@ -954,12 +966,15 @@ Get-Content "<返回的 inputFilePath>"
 12. Compute.Gaussian/Gaussian16ProgramAdapter.cs
 13. Compute.Local/LocalProcessBackend.cs
 14. Agent/CalculationJobMonitor.cs
-15. Compute.Gaussian/GaussianOutputParser.cs
-16. Compute.Gaussian/GaussianResultTranslator.cs
-17. Agent/RuleBasedCalculationProcessingPlanner.cs
-18. Compute.Gaussian/GaussianProcessingPlanTranslator.cs
-19. Compute/FileCalculationRepository.cs
-20. tests/*Tests.cs
+15. Skills.Gaussian/GaussianInputGeneration/GaussianInputGenerationSkill.cs
+16. Skills.Gaussian/GaussianSinglePointResultExtraction/GaussianSinglePointResultExtractionSkill.cs
+17. Skills.Common/CalculationResultValidation/CalculationResultValidationSkill.cs
+18. Compute.Gaussian/GaussianOutputParser.cs
+19. Compute.Gaussian/GaussianResultTranslator.cs
+20. Agent/RuleBasedCalculationProcessingPlanner.cs
+21. Compute.Gaussian/GaussianProcessingPlanTranslator.cs
+22. Compute/FileCalculationRepository.cs
+23. tests/*Tests.cs
 ```
 
 ---
@@ -985,4 +1000,4 @@ Get-Content "<返回的 inputFilePath>"
 
 ## 27. 一句话总结
 
-> 当前“单点计算”链路是：客户端原样发送文本和坐标，会话层解释出单点计算意图，执行器解析坐标、创建工作区、按 CAM-B3LYP/6-31G* 默认方案生成 Gaussian 输入文件，通过程序适配器和本机执行后端启动 `g16`，再由后台监控器解析 `output.log`，把 Gaussian 专用结果翻译为通用结果，由智能体生成通用处理方案，最后翻译为 Gaussian 专用处理方案并保存。
+> 当前“单点计算”链路是：客户端原样发送文本和坐标，会话层解释出单点计算意图，执行器创建作业并通过 `GaussianInputGenerationSkill` 生成输入，通过本机执行后端启动 `g16`，再由后台监控器调用 `GaussianSinglePointResultExtractionSkill` 和 `CalculationResultValidationSkill`，保存通用结果和处理方案。异常处理只保留技能框架，尚未执行。

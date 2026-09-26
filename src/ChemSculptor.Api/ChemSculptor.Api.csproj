@@ -11,6 +11,10 @@
     <ProjectReference Include="..\ChemSculptor.Core\ChemSculptor.Core.csproj" />
     <ProjectReference Include="..\ChemSculptor.Domain\ChemSculptor.Domain.csproj" />
     <ProjectReference Include="..\ChemSculptor.InputProcessor\ChemSculptor.InputProcessor.csproj" />
+    <ProjectReference Include="..\ChemSculptor.Compute.Local\ChemSculptor.Compute.Local.csproj" />
+    <ProjectReference Include="..\ChemSculptor.Skills.Common\ChemSculptor.Skills.Common.csproj" />
+    <ProjectReference Include="..\ChemSculptor.Skills.Gaussian\ChemSculptor.Skills.Gaussian.csproj" />
+    <ProjectReference Include="..\ChemSculptor.Skills.Orca\ChemSculptor.Skills.Orca.csproj" />
   </ItemGroup>
 
 </Project>

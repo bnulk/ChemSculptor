@@ -10,9 +10,9 @@ namespace ChemSculptor.Agent;
 public sealed class CalculationJobMonitor : ICalculationJobMonitor
 {
     private readonly IComputeBackend _computeBackend;
-    private readonly IQuantumProgramAdapter _programAdapter;
     private readonly ICalculationProcessingPlanner _processingPlanner;
     private readonly ICalculationRepository _repository;
+    private readonly ISkillInvoker _skillInvoker;
     private readonly CalculationJobMonitorOptions _options;
     private readonly ConcurrentDictionary<string, Task> _monitorTasks =
         new ConcurrentDictionary<string, Task>(StringComparer.OrdinalIgnoreCase);
@@ -20,19 +20,14 @@ public sealed class CalculationJobMonitor : ICalculationJobMonitor
     /// <summary>创建计算作业监控器。</summary>
     public CalculationJobMonitor(
         IComputeBackend computeBackend,
-        IQuantumProgramAdapter programAdapter,
         ICalculationProcessingPlanner processingPlanner,
         ICalculationRepository repository,
+        ISkillInvoker skillInvoker,
         CalculationJobMonitorOptions options)
     {
         if (computeBackend == null)
         {
             throw new ArgumentNullException(nameof(computeBackend));
-        }
-
-        if (programAdapter == null)
-        {
-            throw new ArgumentNullException(nameof(programAdapter));
         }
 
         if (processingPlanner == null)
@@ -43,6 +38,11 @@ public sealed class CalculationJobMonitor : ICalculationJobMonitor
         if (repository == null)
         {
             throw new ArgumentNullException(nameof(repository));
+        }
+
+        if (skillInvoker == null)
+        {
+            throw new ArgumentNullException(nameof(skillInvoker));
         }
 
         if (options == null)
@@ -58,9 +58,9 @@ public sealed class CalculationJobMonitor : ICalculationJobMonitor
         }
 
         _computeBackend = computeBackend;
-        _programAdapter = programAdapter;
         _processingPlanner = processingPlanner;
         _repository = repository;
+        _skillInvoker = skillInvoker;
         _options = options;
     }
 
@@ -106,9 +106,22 @@ public sealed class CalculationJobMonitor : ICalculationJobMonitor
             }
             else
             {
-                result = await _programAdapter.ParseOutputAsync(
-                    job.OutputFilePath,
-                    CancellationToken.None);
+                CalculationResultExtractionRequest extractionRequest =
+                    new CalculationResultExtractionRequest();
+                extractionRequest.JobId = job.JobId;
+                extractionRequest.Program = job.Spec.Program;
+                extractionRequest.OutputFilePath = job.OutputFilePath;
+                extractionRequest.Spec = job.Spec;
+
+                CalculationResultExtractionResult extractionResult =
+                    await _skillInvoker.InvokeAsync<
+                        CalculationResultExtractionRequest,
+                        CalculationResultExtractionResult>(
+                            CalculationSkillIds.GaussianSinglePointResultExtraction,
+                            extractionRequest,
+                            CancellationToken.None);
+
+                result = extractionResult.Result;
 
                 if (finalState == CalculationJobState.Failed
                     && result.FailureKind == CalculationFailureKind.None)
@@ -128,23 +141,26 @@ public sealed class CalculationJobMonitor : ICalculationJobMonitor
             CalculationProcessingPlan processingPlan =
                 _processingPlanner.CreatePlan(job, result);
 
-            ProgramProcessingPlan programPlan =
-                await _programAdapter.TranslateProcessingPlanAsync(
-                    job,
-                    processingPlan,
-                    CancellationToken.None);
+            CalculationResultValidationRequest validationRequest =
+                new CalculationResultValidationRequest();
+            validationRequest.Job = job;
+            validationRequest.Result = result;
+
+            CalculationResultValidationResult validationResult =
+                await _skillInvoker.InvokeAsync<
+                    CalculationResultValidationRequest,
+                    CalculationResultValidationResult>(
+                        CalculationSkillIds.CalculationResultValidation,
+                        validationRequest,
+                        CancellationToken.None);
 
             await _repository.SaveResultAsync(result, CancellationToken.None);
             await _repository.SaveProcessingPlanAsync(
                 processingPlan,
                 CancellationToken.None);
-            await _repository.SaveProgramProcessingPlanAsync(
-                programPlan,
-                CancellationToken.None);
 
             if (finalState == CalculationJobState.Completed
-                && result.NormalTermination
-                && result.Energy.HasValue)
+                && validationResult.Passed)
             {
                 job.State = CalculationJobState.Parsed;
             }

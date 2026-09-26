@@ -5,6 +5,8 @@
 生成、本机计算进程后端、Minimal API 宿主和独立 WinForms 客户端。
 
 > 面向初学者的完整讲解教程见 [docs/ChemSculptor-Tutorial.md](docs/ChemSculptor-Tutorial.md)。
+> Skill 集合设计教程见 [docs/ChemSculptor-Skill-Collection-Tutorial.md](docs/ChemSculptor-Skill-Collection-Tutorial.md)。
+> Skill 集合与工作流组织教程见 [docs/Skill-Collections-and-Workflow-Tutorial.md](docs/Skill-Collections-and-Workflow-Tutorial.md)。
 > 单点计算完整调用链说明见 [docs/SinglePoint-Calculation-Walkthrough.md](docs/SinglePoint-Calculation-Walkthrough.md)。
 > 版本与改动记录见 [docs/CHANGES.md](docs/CHANGES.md)。
 
@@ -19,8 +21,11 @@ src/
   ChemSculptor.Compute/         计算模型、默认方案与计算扩展接口
   ChemSculptor.Compute.Gaussian/ Gaussian 输入生成、命令与运行上下文
   ChemSculptor.Compute.Local/    本机进程执行后端
+  ChemSculptor.Skills.Common/   通用技能：结果验证等
+  ChemSculptor.Skills.Gaussian/ Gaussian 技能：输入、结果、异常框架
+  ChemSculptor.Skills.Orca/     ORCA 技能目录框架
   ChemSculptor.Conversation/    会话、消息、意图与回复
-  ChemSculptor.Agent/           智能体编排：意图到计算执行
+  ChemSculptor.Agent/           智能体编排：只依赖技能注册表和通用模型
   ChemSculptor.Api/             Minimal API 宿主：工作流、技能、日志、审批端点
   ChemSculptor.WinForms/        独立客户端界面
 tests/

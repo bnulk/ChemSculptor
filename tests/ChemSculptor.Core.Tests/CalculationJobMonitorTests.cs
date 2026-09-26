@@ -1,6 +1,9 @@
 using ChemSculptor.Agent;
 using ChemSculptor.Compute;
 using ChemSculptor.Compute.Gaussian;
+using ChemSculptor.Core;
+using ChemSculptor.Skills.Common.CalculationResultValidation;
+using ChemSculptor.Skills.Gaussian.GaussianSinglePointResultExtraction;
 
 namespace ChemSculptor.Core.Tests;
 
@@ -57,6 +60,16 @@ public class CalculationJobMonitorTests
                     processingPlanTranslator,
                     adapterOptions);
 
+            GaussianSinglePointResultExtractionSkill extractionSkill =
+                new GaussianSinglePointResultExtractionSkill(programAdapter);
+            CalculationResultValidationSkill validationSkill =
+                new CalculationResultValidationSkill();
+
+            SkillRegistry skillRegistry = new SkillRegistry();
+            await skillRegistry.RegisterAsync(extractionSkill);
+            await skillRegistry.RegisterAsync(validationSkill);
+            SkillJsonInvoker skillInvoker = new SkillJsonInvoker(skillRegistry);
+
             CompletedComputeBackend backend = new CompletedComputeBackend();
             CalculationJobMonitorOptions monitorOptions =
                 new CalculationJobMonitorOptions();
@@ -64,9 +77,9 @@ public class CalculationJobMonitorTests
 
             CalculationJobMonitor monitor = new CalculationJobMonitor(
                 backend,
-                programAdapter,
                 new RuleBasedCalculationProcessingPlanner(),
                 repository,
+                skillInvoker,
                 monitorOptions);
 
             monitor.Start(job);
@@ -99,11 +112,8 @@ public class CalculationJobMonitorTests
 
             string processingPlanPath =
                 workspace.GetJobProcessingPlanPath(job.JobId);
-            string programProcessingPlanPath =
-                workspace.GetJobProgramProcessingPlanPath(job.JobId);
 
             Assert.True(File.Exists(processingPlanPath));
-            Assert.True(File.Exists(programProcessingPlanPath));
         }
         finally
         {

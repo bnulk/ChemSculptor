@@ -9,6 +9,9 @@
     <Project Path="src/ChemSculptor.Core/ChemSculptor.Core.csproj" />
     <Project Path="src/ChemSculptor.Domain/ChemSculptor.Domain.csproj" />
     <Project Path="src/ChemSculptor.InputProcessor/ChemSculptor.InputProcessor.csproj" />
+    <Project Path="src/ChemSculptor.Skills.Common/ChemSculptor.Skills.Common.csproj" />
+    <Project Path="src/ChemSculptor.Skills.Gaussian/ChemSculptor.Skills.Gaussian.csproj" />
+    <Project Path="src/ChemSculptor.Skills.Orca/ChemSculptor.Skills.Orca.csproj" />
     <Project Path="src/ChemSculptor.WinForms/ChemSculptor.WinForms.csproj" />
   </Folder>
   <Folder Name="/tests/">

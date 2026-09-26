@@ -11,7 +11,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\ChemSculptor.Conversation\ChemSculptor.Conversation.csproj" />
     <ProjectReference Include="..\ChemSculptor.Compute\ChemSculptor.Compute.csproj" />
     <ProjectReference Include="..\ChemSculptor.Domain\ChemSculptor.Domain.csproj" />
   </ItemGroup>

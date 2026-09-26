@@ -26,6 +26,9 @@
     <ProjectReference Include="..\..\src\ChemSculptor.Conversation\ChemSculptor.Conversation.csproj" />
     <ProjectReference Include="..\..\src\ChemSculptor.Agent\ChemSculptor.Agent.csproj" />
     <ProjectReference Include="..\..\src\ChemSculptor.Compute.Local\ChemSculptor.Compute.Local.csproj" />
+    <ProjectReference Include="..\..\src\ChemSculptor.Skills.Common\ChemSculptor.Skills.Common.csproj" />
+    <ProjectReference Include="..\..\src\ChemSculptor.Skills.Gaussian\ChemSculptor.Skills.Gaussian.csproj" />
+    <ProjectReference Include="..\..\src\ChemSculptor.Skills.Orca\ChemSculptor.Skills.Orca.csproj" />
   </ItemGroup>
 
 </Project>

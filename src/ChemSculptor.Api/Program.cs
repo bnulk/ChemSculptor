@@ -2,8 +2,12 @@ using System.Text.Json;
 using ChemSculptor.Api.Client;
 using ChemSculptor.Agent;
 using ChemSculptor.Core;
+using ChemSculptor.Compute.Local;
 using ChemSculptor.Domain;
 using ChemSculptor.InputProcessor;
+using ChemSculptor.Skills.Common;
+using ChemSculptor.Skills.Gaussian;
+using ChemSculptor.Skills.Orca;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
@@ -33,20 +37,30 @@ public static class Program
         ServiceCollectionServiceExtensions.AddSingleton<IValidationGate, PassThroughValidationGate>(builder.Services);
         ServiceCollectionServiceExtensions.AddSingleton<ICaseMemory, InMemoryCaseMemory>(builder.Services);
         ServiceCollectionServiceExtensions.AddSingleton<EchoSkill>(builder.Services);
+        ServiceCollectionServiceExtensions.AddSingleton<ISkill, EchoSkill>(builder.Services);
         ServiceCollectionServiceExtensions.AddSingleton<WorkflowEngine>(builder.Services);
         ServiceCollectionServiceExtensions.AddSingleton<IClientInputParser, TextClientInputParser>(builder.Services);
         ServiceCollectionServiceExtensions.AddSingleton<IGeometryTextParser, GeometryTextParser>(builder.Services);
         ServiceCollectionServiceExtensions.AddSingleton<ClientJobService>(builder.Services);
 
+        CommonSkillServiceRegistration.AddCommonSkills(builder.Services);
+        GaussianSkillServiceRegistration.AddGaussianSkills(builder.Services);
+        OrcaSkillServiceRegistration.AddOrcaSkills(builder.Services);
+        LocalComputeServiceRegistration.AddLocalComputeServices(builder.Services);
         AgentServiceRegistration.AddAgentServices(builder.Services);
 
         // 构建可运行的 Web 应用，此时还未开始监听端口。
         WebApplication app = builder.Build();
 
-        // 手动把演示技能容器登记到注册表中。
+        // 把依赖注入中注册的全部技能统一登记到技能注册表。
         ISkillRegistry skillRegistry = GetRequiredService<ISkillRegistry>(app.Services);
-        EchoSkill echoSkill = GetRequiredService<EchoSkill>(app.Services);
-        await skillRegistry.RegisterAsync(echoSkill);
+        IEnumerable<ISkill> registeredSkills =
+            ServiceProviderServiceExtensions.GetServices<ISkill>(app.Services);
+
+        foreach (ISkill skill in registeredSkills)
+        {
+            await skillRegistry.RegisterAsync(skill);
+        }
 
         // 若示例工作流文件存在，则载入并登记为 Ready 状态（不执行）。
         string samplePath = Path.Combine(Directory.GetCurrentDirectory(), "workflows", "tadf-mechanism.json");

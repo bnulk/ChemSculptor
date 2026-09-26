@@ -1,6 +1,4 @@
 using ChemSculptor.Compute;
-using ChemSculptor.InputProcessor;
-using ChemSculptor.InputProcessor.GeometryIntake;
 
 namespace ChemSculptor.Agent;
 
@@ -38,28 +36,25 @@ public sealed class SinglePointExecutionResult
 /// </summary>
 public sealed class SinglePointCalculationExecutor
 {
-    private readonly IGeometryTextParser _geometryParser;
     private readonly ICalculationWorkspace _workspace;
-    private readonly IQuantumProgramAdapter _programAdapter;
     private readonly IComputeBackend _computeBackend;
     private readonly ICalculationRepository _repository;
     private readonly ICalculationJobMonitor _jobMonitor;
+    private readonly ISkillInvoker _skillInvoker;
 
     /// <summary>创建执行器。</summary>
     public SinglePointCalculationExecutor(
-        IGeometryTextParser geometryParser,
         ICalculationWorkspace workspace,
-        IQuantumProgramAdapter programAdapter,
         IComputeBackend computeBackend,
         ICalculationRepository repository,
-        ICalculationJobMonitor jobMonitor)
+        ICalculationJobMonitor jobMonitor,
+        ISkillInvoker skillInvoker)
     {
-        _geometryParser = geometryParser;
         _workspace = workspace;
-        _programAdapter = programAdapter;
         _computeBackend = computeBackend;
         _repository = repository;
         _jobMonitor = jobMonitor;
+        _skillInvoker = skillInvoker;
     }
 
     /// <summary>执行单点计算流程。</summary>
@@ -78,17 +73,6 @@ public sealed class SinglePointCalculationExecutor
 
         try
         {
-            MolecularGeometry molecularGeometry =
-                await _geometryParser.ParseAsync(coordinateText, cancellationToken);
-
-            if (molecularGeometry.Atoms.Count == 0)
-            {
-                result.Succeeded = false;
-                result.Error = "未能从坐标文本中解析出原子。";
-                result.Diagnostics = new List<string>(molecularGeometry.Diagnostics);
-                return result;
-            }
-
             string jobId = "job-" + Guid.NewGuid().ToString("N");
             await _workspace.EnsureJobWorkspaceAsync(jobId, cancellationToken);
 
@@ -97,45 +81,48 @@ public sealed class SinglePointCalculationExecutor
                 CalculationWorkspacePaths.JobCoordinatesFileName);
             await File.WriteAllTextAsync(coordinatePath, coordinateText, cancellationToken);
 
-            CanonicalGeometry canonicalGeometry =
-                CanonicalGeometryMapper.FromMolecularGeometry(molecularGeometry, jobId);
-
             // 化学参数由服务器端默认方案提供，当前不使用客户端参数。
             CalculationSpec spec = CalculationDefaults.CreateDefaultSinglePoint();
-
-            if (!_programAdapter.CanRun(spec))
-            {
-                result.Succeeded = false;
-                result.Error = "没有可处理 " + spec.Program + " 的计算程序适配器。";
-                return result;
-            }
 
             string inputFileName = jobId + ".gjf";
             string inputPath = Path.Combine(_workspace.GetInputDirectory(jobId), inputFileName);
             string runInputPath = Path.Combine(_workspace.GetRunDirectory(jobId), inputFileName);
             string outputPath = _workspace.GetJobOutputPath(jobId);
 
-            await _programAdapter.WriteInputAsync(
-                spec,
-                canonicalGeometry,
-                inputPath,
-                cancellationToken);
-
-            File.Copy(inputPath, runInputPath, true);
-
             CalculationJob job = new CalculationJob();
             job.JobId = jobId;
-            job.Spec = spec;
             job.State = CalculationJobState.Created;
             job.WorkspaceDirectory = _workspace.GetJobDirectory(jobId);
             job.RunDirectory = _workspace.GetRunDirectory(jobId);
-            job.InputFilePath = runInputPath;
             job.OutputFilePath = outputPath;
 
-            job.State = CalculationJobState.InputGenerated;
+            CalculationInputGenerationRequest inputRequest =
+                new CalculationInputGenerationRequest();
+            inputRequest.Job = job;
+            inputRequest.Spec = spec;
+            inputRequest.CoordinateText = coordinateText;
+            inputRequest.InputFilePath = inputPath;
+            inputRequest.RunInputFilePath = runInputPath;
+            inputRequest.OutputFilePath = outputPath;
 
-            CalculationExecutionContext context =
-                _programAdapter.BuildExecutionContext(job, spec);
+            CalculationInputGenerationResult inputResult =
+                await _skillInvoker.InvokeAsync<
+                    CalculationInputGenerationRequest,
+                    CalculationInputGenerationResult>(
+                        CalculationSkillIds.GaussianInputGeneration,
+                        inputRequest,
+                        cancellationToken);
+
+            if (!inputResult.Succeeded)
+            {
+                result.Succeeded = false;
+                result.Error = inputResult.Error;
+                result.Diagnostics = new List<string>(inputResult.Diagnostics);
+                return result;
+            }
+
+            job = inputResult.Job;
+            CalculationExecutionContext context = inputResult.ExecutionContext;
 
             await _computeBackend.SubmitAsync(job, context, CancellationToken.None);
 

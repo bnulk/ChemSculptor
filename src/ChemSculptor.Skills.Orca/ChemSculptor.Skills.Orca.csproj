@@ -11,9 +11,9 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\ChemSculptor.Conversation\ChemSculptor.Conversation.csproj" />
     <ProjectReference Include="..\ChemSculptor.Compute\ChemSculptor.Compute.csproj" />
     <ProjectReference Include="..\ChemSculptor.Domain\ChemSculptor.Domain.csproj" />
+    <ProjectReference Include="..\ChemSculptor.Skills.Common\ChemSculptor.Skills.Common.csproj" />
   </ItemGroup>
 
 </Project>

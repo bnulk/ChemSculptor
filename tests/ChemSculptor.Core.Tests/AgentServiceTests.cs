@@ -1,8 +1,10 @@
 using ChemSculptor.Agent;
 using ChemSculptor.Compute;
 using ChemSculptor.Compute.Gaussian;
+using ChemSculptor.Core;
 using ChemSculptor.Conversation;
 using ChemSculptor.InputProcessor;
+using ChemSculptor.Skills.Gaussian.GaussianInputGeneration;
 
 namespace ChemSculptor.Core.Tests;
 
@@ -117,17 +119,23 @@ public class AgentServiceTests
                 processingPlanTranslator,
                 programOptions);
         GeometryTextParser geometryParser = new GeometryTextParser();
+        GaussianInputGenerationSkill inputGenerationSkill =
+            new GaussianInputGenerationSkill(geometryParser, programAdapter);
+        SkillRegistry skillRegistry = new SkillRegistry();
+        skillRegistry.RegisterAsync(inputGenerationSkill)
+            .GetAwaiter()
+            .GetResult();
+        SkillJsonInvoker skillInvoker = new SkillJsonInvoker(skillRegistry);
         backend = new RecordingComputeBackend();
         NoOpCalculationJobMonitor jobMonitor = new NoOpCalculationJobMonitor();
 
         SinglePointCalculationExecutor executor =
             new SinglePointCalculationExecutor(
-                geometryParser,
                 workspace,
-                programAdapter,
                 backend,
                 calculationRepository,
-                jobMonitor);
+                jobMonitor,
+                skillInvoker);
         RuleBasedTaskInterpreter interpreter = new RuleBasedTaskInterpreter();
         InMemoryConversationRepository repository = new InMemoryConversationRepository();
         ConversationService conversationService = new ConversationService(interpreter, repository);

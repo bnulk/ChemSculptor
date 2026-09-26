@@ -5,6 +5,209 @@
 
 ---
 
+## v0.20.2（2026-09-26）：新增 Skill 集合与工作流组织教程
+
+### 版本
+
+- 当前版本：`0.20.2`
+- 日期：2026-09-26
+- 版本类型：文档
+
+### 改动目的
+
+新增一份偏设计思想的教程，说明：
+
+```text
+Skill 集合与工作流的区别
+Skill、Catalog、Workflow、Agent、Gate 的职责
+静态工作流与动态工作流
+DAG、依赖和并行
+数据契约和版本管理
+SCF 异常的修正子工作流
+TADF 多阶段工作流
+父子作业和审计
+当前实现与未来目标的边界
+```
+
+### 改动内容
+
+新增：
+
+```text
+docs/Skill-Collections-and-Workflow-Tutorial.md
+```
+
+并在 `README.md` 中增加教程链接。
+
+本次不修改运行代码。
+
+### 验证
+
+- 文档链接检查
+- 与当前 WorkflowDefinition、WorkflowNode 和 Skill 结构对照
+
+---
+
+## v0.20.1（2026-09-26）：新增 Skill 集合学习教程
+
+### 版本
+
+- 当前版本：`0.20.1`
+- 日期：2026-09-26
+- 版本类型：文档
+
+### 改动目的
+
+新增一份面向项目维护者的教程，集中解释：
+
+```text
+Skill、Adapter、Parser、Translator、Catalog 的区别
+为什么 Agent 不应直接依赖具体程序
+当前 Skill 项目的目录和依赖方向
+一次正常单点计算的 Skill 调用顺序
+JsonSkill 和 SkillJsonInvoker 的工作方式
+怎样新增一个 Skill
+怎样新增 ORCA 程序族
+异常处理框架当前做到什么程度
+```
+
+### 改动内容
+
+新增：
+
+```text
+docs/ChemSculptor-Skill-Collection-Tutorial.md
+```
+
+并在 `README.md` 中增加教程链接。
+
+本次不修改运行代码。
+
+### 验证
+
+- 文档链接检查
+- 与当前 v0.20.0 代码结构对照
+
+---
+
+## v0.20.0（2026-09-26）：按显式 Skill 集合重组正常计算链路
+
+### 版本
+
+- 当前版本：`0.20.0`
+- 日期：2026-09-26
+- 版本类型：架构调整（Skill 目录与调用边界）
+
+### 改动目的
+
+把正常单点计算从“Agent 直接调用 Gaussian 技术类”改为“Agent 只通过
+`ISkillRegistry` 和通用模型调用 Skill”。
+
+阅读代码时先看到能力：
+
+```text
+GaussianInputGenerationSkill
+GaussianSinglePointResultExtractionSkill
+CalculationResultValidationSkill
+```
+
+需要深入时再看实现：
+
+```text
+GaussianInputWriter
+GaussianOutputParser
+GaussianResultTranslator
+Gaussian16ProgramAdapter
+```
+
+### 新增项目
+
+```text
+src/ChemSculptor.Skills.Common
+src/ChemSculptor.Skills.Gaussian
+src/ChemSculptor.Skills.Orca
+```
+
+### 正常计算链路
+
+```text
+SinglePointCalculationExecutor
+  → GaussianInputGenerationSkill
+  → IComputeBackend
+  → CalculationJobMonitor
+  → GaussianSinglePointResultExtractionSkill
+  → CalculationResultValidationSkill
+  → CalculationProcessingPlanner
+```
+
+Agent 不再直接引用 `ChemSculptor.Compute.Gaussian` 或
+`ChemSculptor.Compute.Local`。
+
+### 技能目录
+
+Common：
+
+```text
+calculation.result-validation
+```
+
+Gaussian：
+
+```text
+gaussian.input-generation
+gaussian.single-point-result-extraction
+gaussian.failure-diagnosis
+gaussian.failure-correction-proposal
+```
+
+ORCA：
+
+```text
+目录和注册框架已建立，当前没有已实现技能。
+```
+
+### 异常处理框架
+
+当前不执行异常处理，只保留：
+
+```text
+GaussianFailureDiagnosisSkill
+GaussianFailureCorrectionProposalSkill
+通用 CalculationFailure
+通用 CalculationProcessingPlan
+GaussianProcessingPlan
+```
+
+其中异常诊断技能当前报告“框架尚未实现”，避免在未完成逻辑时被误用。
+
+### 通用技能调用
+
+新增：
+
+```text
+ISkillInvoker
+SkillJsonInvoker
+JsonSkill<TRequest, TResult>
+```
+
+Agent 使用通用请求和结果类型调用技能；Gaussian 技能在内部把它们转换为
+Gaussian 专用请求、解析结果和程序上下文。
+
+### 验证
+
+- Release 全解决方案构建：0 警告 0 错误
+- 测试：23/23 通过
+- 实际计算：状态 `Parsed`
+- 实际能量：`-76.3801013836 Hartree`
+- `/skills/` 能列出：
+  - `gaussian.input-generation`
+  - `gaussian.single-point-result-extraction`
+  - `calculation.result-validation`
+  - `gaussian.failure-diagnosis`
+  - `gaussian.failure-correction-proposal`
+
+---
+
 ## v0.19.0（2026-09-26）：计算结果与处理方案的双向翻译框架
 
 ### 版本

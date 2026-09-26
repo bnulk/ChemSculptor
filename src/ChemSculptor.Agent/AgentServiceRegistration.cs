@@ -1,7 +1,6 @@
 using ChemSculptor.Compute;
-using ChemSculptor.Compute.Gaussian;
-using ChemSculptor.Compute.Local;
 using ChemSculptor.Conversation;
+using ChemSculptor.Domain;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace ChemSculptor.Agent;
@@ -21,18 +20,6 @@ public static class AgentServiceRegistration
             workspaceOptions);
         ServiceCollectionServiceExtensions.AddSingleton<ICalculationWorkspace, WorkspaceManager>(
             services);
-        ServiceCollectionServiceExtensions.AddSingleton<GaussianInputWriter>(services);
-        ServiceCollectionServiceExtensions.AddSingleton<GaussianOutputParser>(services);
-        ServiceCollectionServiceExtensions.AddSingleton<GaussianResultTranslator>(services);
-        ServiceCollectionServiceExtensions.AddSingleton<GaussianProcessingPlanTranslator>(
-            services);
-        Gaussian16ProgramAdapterOptions gaussianOptions =
-            Gaussian16ProgramAdapterOptions.CreateDefault();
-        ServiceCollectionServiceExtensions.AddSingleton<Gaussian16ProgramAdapterOptions>(
-            services,
-            gaussianOptions);
-        ServiceCollectionServiceExtensions.AddSingleton<IQuantumProgramAdapter, Gaussian16ProgramAdapter>(
-            services);
         ServiceCollectionServiceExtensions.AddSingleton<ITaskInterpreter, RuleBasedTaskInterpreter>(
             services);
         ServiceCollectionServiceExtensions.AddSingleton<IConversationRepository, InMemoryConversationRepository>(
@@ -40,6 +27,8 @@ public static class AgentServiceRegistration
         ServiceCollectionServiceExtensions.AddSingleton<IConversationService, ConversationService>(
             services);
         ServiceCollectionServiceExtensions.AddSingleton<ICalculationRepository, FileCalculationRepository>(
+            services);
+        ServiceCollectionServiceExtensions.AddSingleton<ISkillInvoker, SkillJsonInvoker>(
             services);
         CalculationJobMonitorOptions monitorOptions =
             CalculationJobMonitorOptions.CreateDefault();
@@ -54,12 +43,6 @@ public static class AgentServiceRegistration
         ServiceCollectionServiceExtensions.AddSingleton<SinglePointCalculationExecutor>(
             services);
         ServiceCollectionServiceExtensions.AddSingleton<ICalculationQueryService, CalculationQueryService>(
-            services);
-        LocalProcessBackendOptions localProcessOptions = LocalProcessBackendOptions.CreateDefault();
-        ServiceCollectionServiceExtensions.AddSingleton<LocalProcessBackendOptions>(
-            services,
-            localProcessOptions);
-        ServiceCollectionServiceExtensions.AddSingleton<IComputeBackend, LocalProcessBackend>(
             services);
         ServiceCollectionServiceExtensions.AddSingleton<IAgentService, AgentService>(
             services);
