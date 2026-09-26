@@ -23,7 +23,9 @@ public class GaussianOutputParserTests
             await File.WriteAllTextAsync(outputPath, outputText);
 
             GaussianOutputParser parser = new GaussianOutputParser();
-            CalculationResult result = await parser.ParseAsync("job-test", outputPath);
+            GaussianOutput gaussianOutput = await parser.ParseAsync(outputPath);
+            GaussianResultTranslator translator = new GaussianResultTranslator();
+            CalculationResult result = translator.Translate(gaussianOutput);
 
             Assert.True(result.NormalTermination);
             Assert.NotNull(result.Energy);
@@ -31,6 +33,7 @@ public class GaussianOutputParserTests
             Assert.Equal("RCAM-B3LYP", result.Method);
             Assert.Equal("Hartree", result.EnergyUnit);
             Assert.Equal(outputPath, result.OutputFilePath);
+            Assert.Equal(CalculationFailureKind.None, result.FailureKind);
         }
         finally
         {
@@ -54,10 +57,13 @@ public class GaussianOutputParserTests
             await File.WriteAllTextAsync(outputPath, outputText);
 
             GaussianOutputParser parser = new GaussianOutputParser();
-            CalculationResult result = await parser.ParseAsync("job-test", outputPath);
+            GaussianOutput gaussianOutput = await parser.ParseAsync(outputPath);
+            GaussianResultTranslator translator = new GaussianResultTranslator();
+            CalculationResult result = translator.Translate(gaussianOutput);
 
             Assert.False(result.NormalTermination);
             Assert.Null(result.Energy);
+            Assert.Equal(CalculationFailureKind.ProgramError, result.FailureKind);
 
             bool errorTerminationDiagnosticFound = false;
             bool energyNotFoundDiagnosticFound = false;

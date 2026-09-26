@@ -1,7 +1,7 @@
 # ChemSculptor“单点计算”代码全流程说明
 
-> 适用版本：v0.18.0 之后
-> 当前阶段目标：客户端发送原始文本，服务器识别“单点计算”，启动本机 g16，解析输出并保存规范化结果
+> 适用版本：v0.19.0 之后
+> 当前阶段目标：客户端发送原始文本，服务器识别“单点计算”，启动本机 g16，完成程序专用结果与通用结果的双向翻译
 > 当前未实现：科学结果验证、自动查错纠错、远程执行
 
 本文按真实代码顺序讲解一次“单点计算”从客户端到服务器的全过程。建议对照代码阅读。
@@ -23,7 +23,11 @@
    ↓
 后台监控进程并解析 output.log
    ↓
-保存 result.json 并返回作业标识、状态和文件路径
+Gaussian 专用结果翻译为通用结果
+   ↓
+通用处理方案翻译为 Gaussian 专用处理方案
+   ↓
+保存 result.json、processing-plan.json、program-processing-plan.json
    ↓
 客户端显示结果
 ```
@@ -36,10 +40,10 @@
 |---|---|
 | `ChemSculptor.WinForms` | 客户端界面，只发送原始文本和坐标 |
 | `ChemSculptor.Api` | HTTP 路由与适配，不包含业务编排 |
-| `ChemSculptor.Agent` | 智能体编排：意图到计算执行 |
+| `ChemSculptor.Agent` | 智能体编排：只处理通用结果和通用处理方案 |
 | `ChemSculptor.Conversation` | 会话、消息、意图和回复 |
 | `ChemSculptor.Compute` | 计算模型、默认方案、任务解释 |
-| `ChemSculptor.Compute.Gaussian` | Gaussian 输入生成、命令和运行上下文 |
+| `ChemSculptor.Compute.Gaussian` | Gaussian 输入、输出解析及程序专用翻译 |
 | `ChemSculptor.Compute.Local` | 本机进程启动、状态跟踪和日志保存 |
 | `ChemSculptor.InputProcessor` | 坐标解析与规范几何转换 |
 
@@ -649,10 +653,63 @@ Error termination
 SCF Done: E(...) = ...
 ```
 
+解析结果先进入 Gaussian 专用模型：
+
+```text
+GaussianOutput
+  NormalTermination
+  ErrorTermination
+  Energy
+  EnergyMethod
+  ErrorMessages
+```
+
+然后由 `GaussianResultTranslator` 翻译为通用模型：
+
+```text
+CalculationResult
+  Energy
+  NormalTermination
+  FailureKind
+  Diagnostics
+```
+
+`CalculationFailureKind` 使用通用分类，例如：
+
+```text
+ProgramError
+NormalTerminationMissing
+EnergyMissing
+OutputMissing
+```
+
+Agent 的 `RuleBasedCalculationProcessingPlanner` 只读取这些通用分类，生成
+通用处理方案：
+
+```text
+CalculationProcessingPlan
+  Outcome
+  Summary
+  Actions
+```
+
+Gaussian 模块再把通用方案翻译为专用方案：
+
+```text
+GaussianProcessingPlan
+  InspectOutput
+  RerunSameInput
+  ModifyInput
+  RequestUserDecision
+  Abort
+```
+
 解析完成后，结果写入：
 
 ```text
 jobs/<jobId>/results/result.json
+jobs/<jobId>/results/processing-plan.json
+jobs/<jobId>/results/program-processing-plan.json
 ```
 
 作业状态写入：
@@ -746,7 +803,9 @@ AgentMessageResultDto? result =
 │   ├── stdout.log
 │   └── stderr.log
 └── results\
-    └── result.json
+    ├── result.json
+    ├── processing-plan.json
+    └── program-processing-plan.json
 ```
 
 Gaussian 执行时还会在工作目录中产生临时输入和检查点文件。正常结束后可以检查：
@@ -759,6 +818,8 @@ stdout.log    子进程标准输出
 stderr.log    子进程标准错误
 manifest.json 作业状态、路径和诊断
 result.json   能量、程序、方法、基组和规范化诊断
+processing-plan.json          智能体生成的通用处理方案
+program-processing-plan.json  翻译后的计算程序专用处理方案
 ```
 
 如果解析成功，`result.json` 中会包含：
@@ -781,6 +842,8 @@ result.json   能量、程序、方法、基组和规范化诊断
 ```text
 没有科学结果验证门
 没有自动查错和纠错
+没有自动执行通用处理方案
+没有把程序专用处理方案回传客户端
 没有保存计算作业到数据库
 没有 LLM
 没有实时推送
@@ -814,6 +877,9 @@ LocalProcessBackend.SubmitAsync
 LocalProcessBackend.MonitorProcessAsync
 CalculationJobMonitor.MonitorAsync
 GaussianOutputParser.ParseAsync
+GaussianResultTranslator.Translate
+RuleBasedCalculationProcessingPlanner.CreatePlan
+GaussianProcessingPlanTranslator.Translate
 FileCalculationRepository.SaveResultAsync
 ```
 
@@ -889,8 +955,11 @@ Get-Content "<返回的 inputFilePath>"
 13. Compute.Local/LocalProcessBackend.cs
 14. Agent/CalculationJobMonitor.cs
 15. Compute.Gaussian/GaussianOutputParser.cs
-16. Compute/FileCalculationRepository.cs
-17. tests/*Tests.cs
+16. Compute.Gaussian/GaussianResultTranslator.cs
+17. Agent/RuleBasedCalculationProcessingPlanner.cs
+18. Compute.Gaussian/GaussianProcessingPlanTranslator.cs
+19. Compute/FileCalculationRepository.cs
+20. tests/*Tests.cs
 ```
 
 ---
@@ -916,4 +985,4 @@ Get-Content "<返回的 inputFilePath>"
 
 ## 27. 一句话总结
 
-> 当前“单点计算”链路是：客户端原样发送文本和坐标，会话层解释出单点计算意图，执行器解析坐标、创建工作区、按 CAM-B3LYP/6-31G* 默认方案生成 Gaussian 输入文件，通过程序适配器和本机执行后端启动 `g16`，再由后台监控器解析 `output.log`、提取最终能量，并把规范化结果保存到 `results/result.json`。
+> 当前“单点计算”链路是：客户端原样发送文本和坐标，会话层解释出单点计算意图，执行器解析坐标、创建工作区、按 CAM-B3LYP/6-31G* 默认方案生成 Gaussian 输入文件，通过程序适配器和本机执行后端启动 `g16`，再由后台监控器解析 `output.log`，把 Gaussian 专用结果翻译为通用结果，由智能体生成通用处理方案，最后翻译为 Gaussian 专用处理方案并保存。

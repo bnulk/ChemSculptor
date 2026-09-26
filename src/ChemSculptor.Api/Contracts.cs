@@ -199,6 +199,9 @@ public sealed class CalculationResultResponse
     /// <summary>程序是否正常结束。</summary>
     public bool NormalTermination { get; set; }
 
+    /// <summary>通用失败类别。</summary>
+    public string FailureKind { get; set; } = string.Empty;
+
     /// <summary>计算程序。</summary>
     public string Program { get; set; } = string.Empty;
 

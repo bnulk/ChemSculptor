@@ -98,6 +98,34 @@ public enum CalculationDiagnosticSeverity
     Error
 }
 
+/// <summary>通用计算失败类别。</summary>
+public enum CalculationFailureKind
+{
+    /// <summary>没有失败。</summary>
+    None,
+
+    /// <summary>计算进程失败。</summary>
+    ProcessFailed,
+
+    /// <summary>输出文件不存在。</summary>
+    OutputMissing,
+
+    /// <summary>缺少正常结束标志。</summary>
+    NormalTerminationMissing,
+
+    /// <summary>计算程序报告错误结束。</summary>
+    ProgramError,
+
+    /// <summary>缺少最终能量。</summary>
+    EnergyMissing,
+
+    /// <summary>计算已取消。</summary>
+    Canceled,
+
+    /// <summary>无法分类的失败。</summary>
+    Unknown
+}
+
 /// <summary>
 /// 单个计算参数及其元信息。
 /// 用于记录默认值、当前值、来源、风险等级和是否需要审批。
@@ -277,6 +305,10 @@ public sealed class CalculationResult
 
     /// <summary>程序是否正常结束。</summary>
     public bool NormalTermination { get; set; }
+
+    /// <summary>通用失败类别。</summary>
+    public CalculationFailureKind FailureKind { get; set; } =
+        CalculationFailureKind.None;
 
     /// <summary>计算程序名称。</summary>
     public string Program { get; set; } = string.Empty;

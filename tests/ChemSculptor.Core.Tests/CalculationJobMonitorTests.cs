@@ -44,12 +44,17 @@ public class CalculationJobMonitorTests
 
             GaussianInputWriter inputWriter = new GaussianInputWriter();
             GaussianOutputParser outputParser = new GaussianOutputParser();
+            GaussianResultTranslator resultTranslator = new GaussianResultTranslator();
+            GaussianProcessingPlanTranslator processingPlanTranslator =
+                new GaussianProcessingPlanTranslator();
             Gaussian16ProgramAdapterOptions adapterOptions =
                 Gaussian16ProgramAdapterOptions.CreateDefault();
             Gaussian16ProgramAdapter programAdapter =
                 new Gaussian16ProgramAdapter(
                     inputWriter,
                     outputParser,
+                    resultTranslator,
+                    processingPlanTranslator,
                     adapterOptions);
 
             CompletedComputeBackend backend = new CompletedComputeBackend();
@@ -60,6 +65,7 @@ public class CalculationJobMonitorTests
             CalculationJobMonitor monitor = new CalculationJobMonitor(
                 backend,
                 programAdapter,
+                new RuleBasedCalculationProcessingPlanner(),
                 repository,
                 monitorOptions);
 
@@ -90,6 +96,14 @@ public class CalculationJobMonitorTests
 
             Assert.NotNull(savedJob);
             Assert.Equal(CalculationJobState.Parsed, savedJob.State);
+
+            string processingPlanPath =
+                workspace.GetJobProcessingPlanPath(job.JobId);
+            string programProcessingPlanPath =
+                workspace.GetJobProgramProcessingPlanPath(job.JobId);
+
+            Assert.True(File.Exists(processingPlanPath));
+            Assert.True(File.Exists(programProcessingPlanPath));
         }
         finally
         {

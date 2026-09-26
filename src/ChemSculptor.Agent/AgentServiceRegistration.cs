@@ -23,6 +23,9 @@ public static class AgentServiceRegistration
             services);
         ServiceCollectionServiceExtensions.AddSingleton<GaussianInputWriter>(services);
         ServiceCollectionServiceExtensions.AddSingleton<GaussianOutputParser>(services);
+        ServiceCollectionServiceExtensions.AddSingleton<GaussianResultTranslator>(services);
+        ServiceCollectionServiceExtensions.AddSingleton<GaussianProcessingPlanTranslator>(
+            services);
         Gaussian16ProgramAdapterOptions gaussianOptions =
             Gaussian16ProgramAdapterOptions.CreateDefault();
         ServiceCollectionServiceExtensions.AddSingleton<Gaussian16ProgramAdapterOptions>(
@@ -43,6 +46,9 @@ public static class AgentServiceRegistration
         ServiceCollectionServiceExtensions.AddSingleton<CalculationJobMonitorOptions>(
             services,
             monitorOptions);
+        ServiceCollectionServiceExtensions.AddSingleton<
+            ICalculationProcessingPlanner,
+            RuleBasedCalculationProcessingPlanner>(services);
         ServiceCollectionServiceExtensions.AddSingleton<ICalculationJobMonitor, CalculationJobMonitor>(
             services);
         ServiceCollectionServiceExtensions.AddSingleton<SinglePointCalculationExecutor>(

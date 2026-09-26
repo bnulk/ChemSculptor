@@ -104,10 +104,18 @@ public class AgentServiceTests
             new FileCalculationRepository(workspace);
         GaussianInputWriter inputWriter = new GaussianInputWriter();
         GaussianOutputParser outputParser = new GaussianOutputParser();
+        GaussianResultTranslator resultTranslator = new GaussianResultTranslator();
+        GaussianProcessingPlanTranslator processingPlanTranslator =
+            new GaussianProcessingPlanTranslator();
         Gaussian16ProgramAdapterOptions programOptions =
             Gaussian16ProgramAdapterOptions.CreateDefault();
         Gaussian16ProgramAdapter programAdapter =
-            new Gaussian16ProgramAdapter(inputWriter, outputParser, programOptions);
+            new Gaussian16ProgramAdapter(
+                inputWriter,
+                outputParser,
+                resultTranslator,
+                processingPlanTranslator,
+                programOptions);
         GeometryTextParser geometryParser = new GeometryTextParser();
         backend = new RecordingComputeBackend();
         NoOpCalculationJobMonitor jobMonitor = new NoOpCalculationJobMonitor();

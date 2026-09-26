@@ -5,6 +5,154 @@
 
 ---
 
+## v0.19.0（2026-09-26）：计算结果与处理方案的双向翻译框架
+
+### 版本
+
+- 当前版本：`0.19.0`
+- 日期：2026-09-26
+- 版本类型：架构调整（程序专用模型与通用模型解耦）
+
+### 改动目的
+
+避免智能体直接理解 Gaussian 的关键词和输出格式。现在由 Gaussian 模块负责
+两端的翻译：
+
+```text
+Gaussian 文本输出
+  → GaussianOutputParser
+  → GaussianOutput
+  → GaussianResultTranslator
+  → CalculationResult
+  → 通用 CalculationProcessingPlanner
+  → CalculationProcessingPlan
+  → GaussianProcessingPlanTranslator
+  → GaussianProcessingPlan
+  → ProgramProcessingPlan
+```
+
+Agent 只处理 `CalculationResult`、`CalculationProcessingPlan` 和
+`ProgramProcessingPlan`，不包含 Gaussian 路线、Link 名称或输出格式规则。
+
+### 改动内容
+
+新增 Gaussian 专用数据结构：
+
+```text
+src/ChemSculptor.Compute.Gaussian/GaussianOutput.cs
+src/ChemSculptor.Compute.Gaussian/GaussianProcessingPlan.cs
+```
+
+新增翻译器：
+
+```text
+src/ChemSculptor.Compute.Gaussian/GaussianResultTranslator.cs
+src/ChemSculptor.Compute.Gaussian/GaussianProcessingPlanTranslator.cs
+```
+
+新增通用处理方案：
+
+```text
+src/ChemSculptor.Compute/CalculationProcessingModels.cs
+src/ChemSculptor.Agent/ICalculationProcessingPlanner.cs
+src/ChemSculptor.Agent/RuleBasedCalculationProcessingPlanner.cs
+```
+
+通用模型包括：
+
+```text
+CalculationProcessingOutcome
+CalculationProcessingActionType
+CalculationProcessingAction
+CalculationProcessingPlan
+ProgramProcessingAction
+ProgramProcessingPlan
+CalculationFailureKind
+```
+
+处理结果保存为三个文件：
+
+```text
+results/result.json
+results/processing-plan.json
+results/program-processing-plan.json
+```
+
+### 教程式说明
+
+#### 一、为什么要分成两层
+
+如果 Agent 直接读取：
+
+```text
+Normal termination of Gaussian 16
+SCF Done: E(RCAM-B3LYP) = ...
+```
+
+那么以后增加 ORCA 时，Agent 就必须继续增加 ORCA 专用判断，逐渐变成“所有
+计算程序的大杂烩”。
+
+现在职责变成：
+
+```text
+Agent
+  只知道“正常完成、缺少能量、需要重试、需要用户决定”
+
+Gaussian 模块
+  知道这些通用状态怎样对应 Gaussian 的输入和关键词
+```
+
+#### 二、正常结果的流程
+
+```text
+Gaussian 输出正常结束并含有能量
+  → GaussianOutput.NormalTermination = true
+  → CalculationResult.FailureKind = None
+  → CalculationProcessingPlan.Outcome = Completed
+  → 没有处理动作
+```
+
+#### 三、异常结果的流程
+
+例如输出没有最终能量：
+
+```text
+GaussianOutput.Energy = null
+  → CalculationResult.FailureKind = EnergyMissing
+  → 通用方案产生 RetryAsIs
+  → Gaussian 模块翻译为 RerunSameInput
+```
+
+例如 Gaussian 报错结束：
+
+```text
+GaussianOutput.ErrorTermination = true
+  → CalculationResult.FailureKind = ProgramError
+  → 通用方案产生 ReviewOutput
+  → Gaussian 模块翻译为 InspectOutput
+```
+
+当前阶段只生成方案并保存，不自动执行重试或输入修改。
+
+#### 四、文件含义
+
+```text
+result.json                    通用计算结果
+processing-plan.json           智能体可以理解的通用处理方案
+program-processing-plan.json   翻译后的程序专用处理方案
+```
+
+### 验证
+
+- Release 全解决方案构建：0 警告 0 错误
+- 测试：23/23 通过
+- 实际 Gaussian 计算：状态 `Parsed`
+- 实际能量：`-76.3801013836 Hartree`
+- 通用处理方案：`outcome = Completed`
+- Gaussian 专用处理方案生成成功
+
+---
+
 ## v0.18.0（2026-09-26）：Gaussian 输出解析与规范化结果
 
 ### 版本

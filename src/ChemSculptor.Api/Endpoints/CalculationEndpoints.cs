@@ -113,6 +113,7 @@ public static class CalculationEndpoints
         response.Energy = result.Energy;
         response.EnergyUnit = result.EnergyUnit;
         response.NormalTermination = result.NormalTermination;
+        response.FailureKind = result.FailureKind.ToString();
         response.Program = result.Program;
         response.Method = result.Method;
         response.Basis = result.Basis;

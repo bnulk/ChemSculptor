@@ -30,6 +30,15 @@ public interface IQuantumProgramAdapter
     Task<CalculationResult> ParseOutputAsync(
         string outputPath,
         CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// 把通用处理方案翻译为当前计算程序可以执行的方案。
+    /// Agent 只生成通用方案，程序模块负责解释为自身的关键词和动作。
+    /// </summary>
+    Task<ProgramProcessingPlan> TranslateProcessingPlanAsync(
+        CalculationJob job,
+        CalculationProcessingPlan processingPlan,
+        CancellationToken cancellationToken = default);
 }
 
 /// <summary>
@@ -145,6 +154,12 @@ public interface ICalculationWorkspace
 
     /// <summary>获取规范化结果文件路径。</summary>
     string GetJobResultPath(string jobId);
+
+    /// <summary>获取通用处理方案文件路径。</summary>
+    string GetJobProcessingPlanPath(string jobId);
+
+    /// <summary>获取程序专用处理方案文件路径。</summary>
+    string GetJobProgramProcessingPlanPath(string jobId);
 }
 
 /// <summary>
@@ -170,6 +185,16 @@ public interface ICalculationRepository
     /// <summary>读取结果。</summary>
     Task<CalculationResult?> GetResultAsync(
         string jobId,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>保存通用处理方案。</summary>
+    Task SaveProcessingPlanAsync(
+        CalculationProcessingPlan plan,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>保存程序专用处理方案。</summary>
+    Task SaveProgramProcessingPlanAsync(
+        ProgramProcessingPlan plan,
         CancellationToken cancellationToken = default);
 }
 

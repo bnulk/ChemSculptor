@@ -17,12 +17,16 @@ public sealed class Gaussian16ProgramAdapter : IQuantumProgramAdapter
 
     private readonly GaussianInputWriter _inputWriter;
     private readonly GaussianOutputParser _outputParser;
+    private readonly GaussianResultTranslator _resultTranslator;
+    private readonly GaussianProcessingPlanTranslator _processingPlanTranslator;
     private readonly Gaussian16ProgramAdapterOptions _options;
 
     /// <summary>创建 Gaussian 16 适配器。</summary>
     public Gaussian16ProgramAdapter(
         GaussianInputWriter inputWriter,
         GaussianOutputParser outputParser,
+        GaussianResultTranslator resultTranslator,
+        GaussianProcessingPlanTranslator processingPlanTranslator,
         Gaussian16ProgramAdapterOptions options)
     {
         if (inputWriter == null)
@@ -35,6 +39,16 @@ public sealed class Gaussian16ProgramAdapter : IQuantumProgramAdapter
             throw new ArgumentNullException(nameof(outputParser));
         }
 
+        if (resultTranslator == null)
+        {
+            throw new ArgumentNullException(nameof(resultTranslator));
+        }
+
+        if (processingPlanTranslator == null)
+        {
+            throw new ArgumentNullException(nameof(processingPlanTranslator));
+        }
+
         if (options == null)
         {
             throw new ArgumentNullException(nameof(options));
@@ -42,6 +56,8 @@ public sealed class Gaussian16ProgramAdapter : IQuantumProgramAdapter
 
         _inputWriter = inputWriter;
         _outputParser = outputParser;
+        _resultTranslator = resultTranslator;
+        _processingPlanTranslator = processingPlanTranslator;
         _options = options;
     }
 
@@ -146,10 +162,34 @@ public sealed class Gaussian16ProgramAdapter : IQuantumProgramAdapter
     }
 
     /// <summary>解析 Gaussian 输出文件。</summary>
-    public Task<CalculationResult> ParseOutputAsync(
+    public async Task<CalculationResult> ParseOutputAsync(
         string outputPath,
         CancellationToken cancellationToken = default)
     {
-        return _outputParser.ParseAsync(string.Empty, outputPath, cancellationToken);
+        GaussianOutput gaussianOutput =
+            await _outputParser.ParseAsync(outputPath, cancellationToken);
+
+        return _resultTranslator.Translate(gaussianOutput);
+    }
+
+    /// <summary>把通用处理方案翻译为 Gaussian 专用方案。</summary>
+    public Task<ProgramProcessingPlan> TranslateProcessingPlanAsync(
+        CalculationJob job,
+        CalculationProcessingPlan processingPlan,
+        CancellationToken cancellationToken = default)
+    {
+        if (job == null)
+        {
+            throw new ArgumentNullException(nameof(job));
+        }
+
+        GaussianProcessingPlan gaussianPlan =
+            _processingPlanTranslator.Translate(processingPlan);
+
+        gaussianPlan.JobId = job.JobId;
+        ProgramProcessingPlan programPlan =
+            _processingPlanTranslator.ToProgramPlan(gaussianPlan);
+
+        return Task.FromResult(programPlan);
     }
 }

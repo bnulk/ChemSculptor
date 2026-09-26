@@ -11,6 +11,7 @@ public sealed class CalculationJobMonitor : ICalculationJobMonitor
 {
     private readonly IComputeBackend _computeBackend;
     private readonly IQuantumProgramAdapter _programAdapter;
+    private readonly ICalculationProcessingPlanner _processingPlanner;
     private readonly ICalculationRepository _repository;
     private readonly CalculationJobMonitorOptions _options;
     private readonly ConcurrentDictionary<string, Task> _monitorTasks =
@@ -20,6 +21,7 @@ public sealed class CalculationJobMonitor : ICalculationJobMonitor
     public CalculationJobMonitor(
         IComputeBackend computeBackend,
         IQuantumProgramAdapter programAdapter,
+        ICalculationProcessingPlanner processingPlanner,
         ICalculationRepository repository,
         CalculationJobMonitorOptions options)
     {
@@ -31,6 +33,11 @@ public sealed class CalculationJobMonitor : ICalculationJobMonitor
         if (programAdapter == null)
         {
             throw new ArgumentNullException(nameof(programAdapter));
+        }
+
+        if (processingPlanner == null)
+        {
+            throw new ArgumentNullException(nameof(processingPlanner));
         }
 
         if (repository == null)
@@ -52,6 +59,7 @@ public sealed class CalculationJobMonitor : ICalculationJobMonitor
 
         _computeBackend = computeBackend;
         _programAdapter = programAdapter;
+        _processingPlanner = processingPlanner;
         _repository = repository;
         _options = options;
     }
@@ -83,21 +91,31 @@ public sealed class CalculationJobMonitor : ICalculationJobMonitor
                 return;
             }
 
+            CalculationResult result;
+
             if (!File.Exists(job.OutputFilePath))
             {
                 job.State = CalculationJobState.Failed;
+                result = new CalculationResult();
+                result.FailureKind = CalculationFailureKind.OutputMissing;
                 AddJobDiagnostic(
                     job,
                     CalculationDiagnosticSeverity.Error,
                     "calculation.output_not_found",
                     "计算结束后没有找到输出文件：" + job.OutputFilePath);
-                await _repository.SaveJobAsync(job, CancellationToken.None);
-                return;
             }
+            else
+            {
+                result = await _programAdapter.ParseOutputAsync(
+                    job.OutputFilePath,
+                    CancellationToken.None);
 
-            CalculationResult result = await _programAdapter.ParseOutputAsync(
-                job.OutputFilePath,
-                CancellationToken.None);
+                if (finalState == CalculationJobState.Failed
+                    && result.FailureKind == CalculationFailureKind.None)
+                {
+                    result.FailureKind = CalculationFailureKind.ProcessFailed;
+                }
+            }
 
             result.JobId = job.JobId;
             result.Program = job.Spec.Program;
@@ -107,7 +125,22 @@ public sealed class CalculationJobMonitor : ICalculationJobMonitor
             result.Multiplicity = job.Spec.Multiplicity;
             result.OutputFilePath = job.OutputFilePath;
 
+            CalculationProcessingPlan processingPlan =
+                _processingPlanner.CreatePlan(job, result);
+
+            ProgramProcessingPlan programPlan =
+                await _programAdapter.TranslateProcessingPlanAsync(
+                    job,
+                    processingPlan,
+                    CancellationToken.None);
+
             await _repository.SaveResultAsync(result, CancellationToken.None);
+            await _repository.SaveProcessingPlanAsync(
+                processingPlan,
+                CancellationToken.None);
+            await _repository.SaveProgramProcessingPlanAsync(
+                programPlan,
+                CancellationToken.None);
 
             if (finalState == CalculationJobState.Completed
                 && result.NormalTermination

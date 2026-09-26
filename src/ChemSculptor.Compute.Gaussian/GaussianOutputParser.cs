@@ -1,12 +1,11 @@
 using System.Globalization;
 using System.Text.RegularExpressions;
-using ChemSculptor.Compute;
 
 namespace ChemSculptor.Compute.Gaussian;
 
 /// <summary>
 /// Gaussian 输出文件解析器。
-/// 当前阶段只提取正常结束标志、最终 SCF 能量和基本诊断信息。
+/// 只负责把文本解析为 Gaussian 专用数据结构，不生成通用计算结果。
 /// </summary>
 public sealed class GaussianOutputParser
 {
@@ -18,33 +17,20 @@ public sealed class GaussianOutputParser
     /// 解析 Gaussian 输出文件。
     /// 读取全部文本后逐行查找结束标志和最后一次 SCF Done。
     /// </summary>
-    public async Task<CalculationResult> ParseAsync(
-        string jobId,
+    public async Task<GaussianOutput> ParseAsync(
         string outputPath,
         CancellationToken cancellationToken = default)
     {
-        CalculationResult result = new CalculationResult();
-        result.JobId = jobId;
-        result.Program = Gaussian16ProgramAdapter.ProgramNameValue;
+        GaussianOutput result = new GaussianOutput();
         result.OutputFilePath = outputPath;
 
         if (string.IsNullOrWhiteSpace(outputPath))
         {
-            AddDiagnostic(
-                result,
-                CalculationDiagnosticSeverity.Error,
-                "gaussian.output_path_missing",
-                "Gaussian 输出文件路径为空。");
             return result;
         }
 
         if (!File.Exists(outputPath))
         {
-            AddDiagnostic(
-                result,
-                CalculationDiagnosticSeverity.Error,
-                "gaussian.output_not_found",
-                "没有找到 Gaussian 输出文件：" + outputPath);
             return result;
         }
 
@@ -52,10 +38,6 @@ public sealed class GaussianOutputParser
         string[] lines = outputText.Split(
             new string[] { "\r\n", "\n", "\r" },
             StringSplitOptions.None);
-
-        bool normalTerminationFound = false;
-        bool errorTerminationFound = false;
-        bool energyFound = false;
 
         for (int index = 0; index < lines.Length; index++)
         {
@@ -65,7 +47,6 @@ public sealed class GaussianOutputParser
                 "Normal termination of Gaussian",
                 StringComparison.OrdinalIgnoreCase) >= 0)
             {
-                normalTerminationFound = true;
                 result.NormalTermination = true;
                 continue;
             }
@@ -74,12 +55,8 @@ public sealed class GaussianOutputParser
                 "Error termination",
                 StringComparison.OrdinalIgnoreCase) >= 0)
             {
-                errorTerminationFound = true;
-                AddDiagnostic(
-                    result,
-                    CalculationDiagnosticSeverity.Error,
-                    "gaussian.error_termination",
-                    line.Trim());
+                result.ErrorTermination = true;
+                result.ErrorMessages.Add(line.Trim());
                 continue;
             }
 
@@ -95,51 +72,8 @@ public sealed class GaussianOutputParser
             if (TryParseGaussianNumber(energyText, out energy))
             {
                 result.Energy = energy;
-                result.Method = match.Groups[1].Value;
-                energyFound = true;
+                result.EnergyMethod = match.Groups[1].Value;
             }
-            else
-            {
-                AddDiagnostic(
-                    result,
-                    CalculationDiagnosticSeverity.Warning,
-                    "gaussian.energy_parse_failed",
-                    "无法解析 SCF 能量：" + energyText);
-            }
-        }
-
-        if (normalTerminationFound)
-        {
-            AddDiagnostic(
-                result,
-                CalculationDiagnosticSeverity.Info,
-                "gaussian.normal_termination",
-                "Gaussian 正常结束。");
-        }
-        else if (!errorTerminationFound)
-        {
-            AddDiagnostic(
-                result,
-                CalculationDiagnosticSeverity.Error,
-                "gaussian.normal_termination_missing",
-                "输出中没有找到 Gaussian 正常结束标志。");
-        }
-
-        if (energyFound)
-        {
-            AddDiagnostic(
-                result,
-                CalculationDiagnosticSeverity.Info,
-                "gaussian.energy_found",
-                "已提取最终 SCF 能量。");
-        }
-        else
-        {
-            AddDiagnostic(
-                result,
-                CalculationDiagnosticSeverity.Error,
-                "gaussian.energy_not_found",
-                "输出中没有找到可解析的 SCF Done 能量。");
         }
 
         return result;
@@ -160,16 +94,4 @@ public sealed class GaussianOutputParser
             out value);
     }
 
-    private static void AddDiagnostic(
-        CalculationResult result,
-        CalculationDiagnosticSeverity severity,
-        string code,
-        string message)
-    {
-        CalculationDiagnostic diagnostic = new CalculationDiagnostic();
-        diagnostic.Severity = severity;
-        diagnostic.Code = code;
-        diagnostic.Message = message;
-        result.Diagnostics.Add(diagnostic);
-    }
 }

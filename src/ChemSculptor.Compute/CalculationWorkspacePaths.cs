@@ -30,6 +30,12 @@ public static class CalculationWorkspacePaths
     /// <summary>规范结果文件名称。</summary>
     public const string JobResultFileName = "result.json";
 
+    /// <summary>通用处理方案文件名称。</summary>
+    public const string JobProcessingPlanFileName = "processing-plan.json";
+
+    /// <summary>程序专用处理方案文件名称。</summary>
+    public const string JobProgramProcessingPlanFileName = "program-processing-plan.json";
+
     /// <summary>结果验证报告文件名称。</summary>
     public const string JobValidationFileName = "validation.json";
 }

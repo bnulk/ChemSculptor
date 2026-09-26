@@ -105,6 +105,22 @@ public sealed class WorkspaceManager : ICalculationWorkspace
             CalculationWorkspacePaths.JobResultFileName);
     }
 
+    /// <summary>获取通用处理方案文件路径。</summary>
+    public string GetJobProcessingPlanPath(string jobId)
+    {
+        return Path.Combine(
+            GetResultDirectory(jobId),
+            CalculationWorkspacePaths.JobProcessingPlanFileName);
+    }
+
+    /// <summary>获取程序专用处理方案文件路径。</summary>
+    public string GetJobProgramProcessingPlanPath(string jobId)
+    {
+        return Path.Combine(
+            GetResultDirectory(jobId),
+            CalculationWorkspacePaths.JobProgramProcessingPlanFileName);
+    }
+
     /// <summary>获取作业输出文件路径。</summary>
     public string GetJobOutputPath(string jobId)
     {
