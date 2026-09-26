@@ -5,6 +5,74 @@
 
 ---
 
+## v0.17.1（2026-09-26）：输入文件复制到运行目录后执行
+
+### 版本
+
+- 当前版本：`0.17.1`
+- 日期：2026-09-26
+- 版本类型：问题修复 / 工作区布局调整
+
+### 改动目的
+
+让计算程序始终在自己的 `run` 目录中执行，使 Gaussian 生成的检查点文件、
+临时文件和输出文件自然落在同一个目录，避免结果分散到 `input` 目录。
+
+### 改动内容
+
+- `SinglePointCalculationExecutor` 生成原始输入后，把 `.gjf` 复制到 `run` 目录。
+- `CalculationJob.InputFilePath` 指向 `run` 目录中的实际执行输入。
+- `Gaussian16ProgramAdapter` 构建上下文时使用 `run` 目录中的输入文件。
+- Gaussian `%chk` 改为相对文件名，例如 `job-xxxx.chk`。
+- API 返回的 `InputFilePath` 仍指向 `input` 目录中的原始输入文件。
+
+目录变化：
+
+```text
+jobs/<jobId>/input/
+  molecule.xyz
+  <jobId>.gjf
+
+jobs/<jobId>/run/
+  <jobId>.gjf
+  <jobId>.chk
+  output.log
+  stdout.log
+  stderr.log
+```
+
+### 教程式说明
+
+原来的 `g16` 参数直接指向：
+
+```text
+<作业目录>\input\<jobId>.gjf
+```
+
+这样 `%chk` 的绝对路径也会指向 `input` 目录。现在执行器先把输入复制到：
+
+```text
+<作业目录>\run\<jobId>.gjf
+```
+
+然后 `g16` 以 `run` 作为工作目录，并接收 `run` 中的输入文件。Gaussian 输入
+中的检查点设置为：
+
+```text
+%chk=<jobId>.chk
+```
+
+相对路径以工作目录为基准，因此检查点自然写入 `run`。
+
+### 验证
+
+- `dotnet build ChemSculptor.slnx --no-restore --nologo`：0 警告 0 错误
+- `dotnet test ChemSculptor.slnx --no-build --nologo`：16/16 通过
+- 端到端实测：`run` 中生成 `.gjf`、`.chk`、`output.log`、`stdout.log` 和 `stderr.log`
+- 端到端实测：`input` 中只保留原始 `.gjf` 和 `molecule.xyz`
+
+---
+
 ## v0.17.0（2026-09-26）：本机执行后端与 Gaussian 单点计算启动
 
 ### 版本

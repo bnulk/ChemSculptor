@@ -72,7 +72,7 @@ public sealed class Gaussian16ProgramAdapter : IQuantumProgramAdapter
         GaussianInputOptions options = new GaussianInputOptions();
         options.Memory = _options.Memory;
         options.ProcessorCount = _options.ProcessorCount;
-        options.CheckpointFilePath = Path.ChangeExtension(outputPath, ".chk");
+        options.CheckpointFilePath = Path.GetFileName(Path.ChangeExtension(outputPath, ".chk"));
         options.Title = "ChemSculptor single point calculation";
 
         return _inputWriter.WriteAsync(

@@ -106,7 +106,16 @@ public sealed class SinglePointCalculationExecutor
 
             string inputFileName = jobId + ".gjf";
             string inputPath = Path.Combine(_workspace.GetInputDirectory(jobId), inputFileName);
+            string runInputPath = Path.Combine(_workspace.GetRunDirectory(jobId), inputFileName);
             string outputPath = _workspace.GetJobOutputPath(jobId);
+
+            await _programAdapter.WriteInputAsync(
+                spec,
+                canonicalGeometry,
+                inputPath,
+                cancellationToken);
+
+            File.Copy(inputPath, runInputPath, true);
 
             CalculationJob job = new CalculationJob();
             job.JobId = jobId;
@@ -114,14 +123,8 @@ public sealed class SinglePointCalculationExecutor
             job.State = CalculationJobState.Created;
             job.WorkspaceDirectory = _workspace.GetJobDirectory(jobId);
             job.RunDirectory = _workspace.GetRunDirectory(jobId);
-            job.InputFilePath = inputPath;
+            job.InputFilePath = runInputPath;
             job.OutputFilePath = outputPath;
-
-            await _programAdapter.WriteInputAsync(
-                spec,
-                canonicalGeometry,
-                inputPath,
-                cancellationToken);
 
             job.State = CalculationJobState.InputGenerated;
 
@@ -137,7 +140,7 @@ public sealed class SinglePointCalculationExecutor
             result.Status = CalculationJobState.Running.ToString();
             result.InputFilePath = inputPath;
             result.OutputFilePath = outputPath;
-            result.Message = spec.Program + " 输入文件已生成，计算已在后台启动。";
+            result.Message = spec.Program + " 输入文件已复制到运行目录，计算已在后台启动。";
 
             return result;
         }

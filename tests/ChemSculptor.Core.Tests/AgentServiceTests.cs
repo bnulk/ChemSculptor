@@ -66,8 +66,25 @@ public class AgentServiceTests
             Assert.Equal("g16", backend.LastContext.ExecutablePath);
             Assert.Equal(2, backend.LastContext.Arguments.Count);
 
+            string? runDirectory = Path.GetDirectoryName(result.OutputFilePath);
+            if (string.IsNullOrWhiteSpace(runDirectory))
+            {
+                throw new InvalidOperationException("测试输出文件没有运行目录。");
+            }
+
+            string runInputPath = Path.Combine(
+                runDirectory,
+                Path.GetFileName(result.InputFilePath));
+            Assert.True(File.Exists(runInputPath));
+            Assert.Equal(runInputPath, backend.LastContext.InputFilePath);
+            Assert.Equal(runInputPath, backend.LastContext.Arguments[0]);
+            Assert.Equal(result.OutputFilePath, backend.LastContext.Arguments[1]);
+
             string text = await File.ReadAllTextAsync(result.InputFilePath);
             Assert.Contains("#p CAM-B3LYP/6-31G* SP", text);
+            Assert.Contains(
+                "%chk=" + Path.GetFileNameWithoutExtension(result.InputFilePath) + ".chk",
+                text);
         }
         finally
         {

@@ -583,10 +583,14 @@ src/ChemSculptor.Compute.Local/LocalProcessBackend.cs
 
 ```text
 ExecutablePath = g16
-Arguments      = <jobId>.gjf <output.log>
+Arguments      = <run目录>\<jobId>.gjf <run目录>\output.log
 RunDirectory   = <作业目录>\run
 OutputFilePath = <作业目录>\run\output.log
 ```
+
+执行器会先把 `input\<jobId>.gjf` 复制为 `run\<jobId>.gjf`。实际计算使用
+`run` 中的副本，原始输入仍保留在 `input` 中。Gaussian 输入中的检查点使用
+相对文件名 `%chk=<jobId>.chk`，因此 `.chk` 会写入当前工作目录 `run`。
 
 如果系统没有配置 `GAUSS_EXEDIR`，适配器会从 `PATH` 中找到 `g16.exe`
 所在目录，并把它传给子进程。否则 Gaussian 可能找不到 `l1.exe`。
@@ -672,6 +676,8 @@ AgentMessageResultDto? result =
 │   ├── molecule.xyz
 │   └── <jobId>.gjf
 ├── run\
+│   ├── <jobId>.gjf
+│   ├── <jobId>.chk
 │   ├── output.log
 │   ├── stdout.log
 │   └── stderr.log
@@ -682,6 +688,8 @@ Gaussian 执行时还会在工作目录中产生临时输入和检查点文件�
 
 ```text
 output.log    Gaussian 主输出
+<jobId>.gjf   实际执行使用的输入副本
+<jobId>.chk   Gaussian 检查点文件
 stdout.log    子进程标准输出
 stderr.log    子进程标准错误
 ```
