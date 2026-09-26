@@ -25,6 +25,7 @@
     <ProjectReference Include="..\..\src\ChemSculptor.Compute.Gaussian\ChemSculptor.Compute.Gaussian.csproj" />
     <ProjectReference Include="..\..\src\ChemSculptor.Conversation\ChemSculptor.Conversation.csproj" />
     <ProjectReference Include="..\..\src\ChemSculptor.Agent\ChemSculptor.Agent.csproj" />
+    <ProjectReference Include="..\..\src\ChemSculptor.Compute.Local\ChemSculptor.Compute.Local.csproj" />
   </ItemGroup>
 
 </Project>

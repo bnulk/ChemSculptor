@@ -46,6 +46,7 @@ public static class CalculationEndpoints
         response.JobId = result.JobId;
         response.Status = result.Status;
         response.InputFilePath = result.InputFilePath;
+        response.OutputFilePath = result.OutputFilePath;
         response.Message = result.Message;
 
         return Results.Ok(response);

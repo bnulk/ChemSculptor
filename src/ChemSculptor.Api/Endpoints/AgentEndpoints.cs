@@ -49,6 +49,7 @@ public static class AgentEndpoints
         response.JobId = result.JobId;
         response.Status = result.Status;
         response.InputFilePath = result.InputFilePath;
+        response.OutputFilePath = result.OutputFilePath;
         response.Message = result.Message;
         response.Diagnostics = new List<string>(result.Diagnostics);
 

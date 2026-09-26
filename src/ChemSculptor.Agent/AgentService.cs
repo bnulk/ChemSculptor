@@ -81,6 +81,7 @@ public sealed class AgentService : IAgentService
         result.JobId = executionResult.JobId;
         result.Status = executionResult.Status;
         result.InputFilePath = executionResult.InputFilePath;
+        result.OutputFilePath = executionResult.OutputFilePath;
         result.Message = executionResult.Message;
         return result;
     }
@@ -104,6 +105,7 @@ public sealed class AgentService : IAgentService
         result.JobId = executionResult.JobId;
         result.Status = executionResult.Status;
         result.InputFilePath = executionResult.InputFilePath;
+        result.OutputFilePath = executionResult.OutputFilePath;
         result.Message = conversationReply.ReplyMessage + " " + executionResult.Message;
         result.Diagnostics = new List<string>(conversationReply.Diagnostics);
 

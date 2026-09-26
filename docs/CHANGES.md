@@ -5,6 +5,228 @@
 
 ---
 
+## v0.17.0（2026-09-26）：本机执行后端与 Gaussian 单点计算启动
+
+### 版本
+
+- 当前版本：`0.17.0`
+- 日期：2026-09-26
+- 版本类型：新增功能（第四阶段，本机执行后端）
+
+### 改动目的
+
+让单点计算不再停留在“生成 Gaussian 输入文件”，而是可以继续调用本机
+`g16`，在后台启动计算，并保存标准输出、标准错误和程序输出文件。
+
+本阶段仍然不实现作业队列。用户提交后立即启动本机进程，后续再替换为远程
+HPC 或集群后端。
+
+### 改动内容
+
+新增项目：
+
+```text
+src/ChemSculptor.Compute.Local
+```
+
+新增类型：
+
+```text
+LocalProcessBackendOptions
+LocalProcessState
+LocalProcessBackend
+```
+
+`LocalProcessBackend` 实现 `IComputeBackend`：
+
+- 使用 `ProcessStartInfo` 和 `ArgumentList` 启动本机程序。
+- 使用 `UseShellExecute = false`，不依赖命令行字符串拼接。
+- 同时捕获标准输出和标准错误。
+- 进程退出后写入 `stdout.log` 和 `stderr.log`。
+- 退出码为 0 时标记 `Completed`，否则标记 `Failed`。
+- 支持取消并终止进程树。
+
+新增 Gaussian 16 适配器：
+
+```text
+src/ChemSculptor.Compute.Gaussian/Gaussian16ProgramAdapter.cs
+src/ChemSculptor.Compute.Gaussian/Gaussian16ProgramAdapterOptions.cs
+```
+
+适配器负责：
+
+- 判断计算方案是否为 Gaussian 16。
+- 根据通用计算方案生成 `.gjf`。
+- 构建 `g16 输入文件 输出文件` 的命令行参数。
+- 从 `PATH` 或现有 `GAUSS_EXEDIR` 解析 Gaussian 可执行文件目录。
+- 把 `GAUSS_EXEDIR` 显式传给子进程。
+
+计算公式模型调整：
+
+- `CalculationExecutionContext.Arguments`：程序启动参数。
+- `CalculationExecutionContext.EnvironmentVariables`：子进程环境变量。
+- `CalculationJob.RunDirectory`：本次作业的运行目录。
+- `ICalculationWorkspace.GetJobOutputPath`：取得程序输出文件路径。
+
+单点执行链路调整：
+
+```text
+SinglePointCalculationExecutor
+  → 解析坐标
+  → 创建作业工作区
+  → Gaussian16ProgramAdapter 生成输入文件
+  → Gaussian16ProgramAdapter 构建执行上下文
+  → IComputeBackend.SubmitAsync
+  → LocalProcessBackend 启动 g16
+```
+
+接口调整：
+
+- `SinglePointExecutionResult`、`AgentResult` 和 API 响应新增输出文件路径。
+- WinForms 在收到服务器响应后显示输出文件路径。
+
+### 教程式说明
+
+#### 一、为什么不能把 g16 直接写进 Agent
+
+Agent 负责编排，不应该知道 Gaussian 的输入格式、命令行参数和环境变量。
+因此本次把具体程序细节放在 `ChemSculptor.Compute.Gaussian`：
+
+```text
+Agent
+  只知道 IQuantumProgramAdapter 和 IComputeBackend
+
+Gaussian16ProgramAdapter
+  知道 Gaussian 16 要怎样生成输入、怎样启动
+
+LocalProcessBackend
+  知道怎样在本机启动一个进程并跟踪它
+```
+
+以后增加 ORCA 时，可以新增 ORCA 适配器；以后连接远程 HPC 时，可以新增远程
+执行后端。Agent 的主流程不需要复制一份。
+
+#### 二、一次完整调用发生了什么
+
+客户端发送“单点计算”和坐标后：
+
+1. `AgentService` 从会话层得到单点计算意图。
+2. `SinglePointCalculationExecutor` 解析坐标，并创建 `job-...` 作业目录。
+3. `CalculationDefaults` 提供 CAM-B3LYP、6-31G*、电荷 0、多重度 1、4 核等默认值。
+4. `Gaussian16ProgramAdapter` 生成：
+
+```text
+<作业目录>\input\<jobId>.gjf
+```
+
+5. 适配器构建执行上下文：
+
+```text
+可执行文件：g16
+参数：<jobId>.gjf <output.log>
+运行目录：<作业目录>\run
+环境变量：GAUSS_EXEDIR=<Gaussian 可执行文件目录>
+```
+
+6. `LocalProcessBackend` 启动进程并立即返回作业编号。
+7. 后台监控任务等待 Gaussian 结束，然后保存：
+
+```text
+stdout.log
+stderr.log
+output.log
+```
+
+#### 三、为什么要传递 GAUSS_EXEDIR
+
+只把 `g16.exe` 放进 `PATH` 并不一定足够。第一次端到端实测时，Gaussian
+启动了，但报告：
+
+```text
+No executable for file l1.exe.
+Search path GAUSS_EXEDIR is ""
+```
+
+原因是当前进程没有继承 Gaussian 启动脚本中的 `GAUSS_EXEDIR`。现在适配器会：
+
+1. 如果系统已有 `GAUSS_EXEDIR`，直接沿用。
+2. 如果没有，就从 `PATH` 找到 `g16.exe` 并取得它所在目录。
+3. 把这个目录作为 `GAUSS_EXEDIR` 传给本机子进程。
+
+这一步只属于 Gaussian 适配器，不污染通用本机后端。
+
+#### 四、如何运行和检查
+
+启动 API：
+
+```powershell
+dotnet run --project src/ChemSculptor.Api --urls http://127.0.0.1:5091
+```
+
+提交一个水的单点计算：
+
+```powershell
+$body = @{
+    coordinateText = "O 0.000000 0.000000 0.117300`nH 0.000000 0.757200 -0.469200`nH 0.000000 -0.757200 -0.469200"
+} | ConvertTo-Json
+
+Invoke-RestMethod `
+    -Uri "http://127.0.0.1:5091/calculations/single-point" `
+    -Method Post `
+    -ContentType "application/json" `
+    -Body $body
+```
+
+响应会包含：
+
+```text
+jobId
+status = Running
+inputFilePath
+outputFilePath
+```
+
+Gaussian 结束后，在输出文件中搜索：
+
+```text
+Normal termination of Gaussian 16
+```
+
+#### 五、当前阶段的能力边界
+
+已经具备：
+
+```text
+本机后台启动 g16
+保存输入、输出和错误日志
+记录运行状态
+返回输入和输出文件位置
+```
+
+尚未具备：
+
+```text
+作业队列
+并行数量控制
+计算任务状态 API
+取消计算 API
+Gaussian 输出自动解析
+远程 HPC 执行后端
+```
+
+这些能力保留在后续阶段，不改变当前接口方向。
+
+### 验证
+
+- `dotnet build ChemSculptor.slnx --no-restore --nologo`：0 警告 0 错误
+- `dotnet test ChemSculptor.slnx --no-build --nologo`：16/16 通过
+- 本机端到端实测：水的 CAM-B3LYP/6-31G* 单点计算正常结束
+- 实测关键结果：`HF=-76.3801014`
+- 实测输出：`Normal termination of Gaussian 16`
+- 实测 `stderr.log` 为空
+
+---
+
 ## v0.16.0（2026-09-25）：客户端不再生成化学参数
 
 ### 版本

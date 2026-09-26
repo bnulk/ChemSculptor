@@ -103,6 +103,9 @@ public sealed class SinglePointCalculationResultDto
     /// <summary>生成的输入文件路径。</summary>
     public string InputFilePath { get; set; } = string.Empty;
 
+    /// <summary>计算输出文件路径。</summary>
+    public string OutputFilePath { get; set; } = string.Empty;
+
     /// <summary>面向用户的说明。</summary>
     public string Message { get; set; } = string.Empty;
 }
@@ -134,6 +137,9 @@ public sealed class AgentMessageResultDto
 
     /// <summary>生成的输入文件路径。</summary>
     public string InputFilePath { get; set; } = string.Empty;
+
+    /// <summary>计算输出文件路径。</summary>
+    public string OutputFilePath { get; set; } = string.Empty;
 
     /// <summary>面向用户的说明。</summary>
     public string Message { get; set; } = string.Empty;

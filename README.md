@@ -1,7 +1,8 @@
 # ChemSculptor 极简内核框架（C#）
 
-这是《ChemSculptor × CC-WOS 针对性架构设计》的 C# 落地骨架。当前只提供框架：
-领域契约、极简内核、Minimal API 宿主和一个可跑的示例工作流，不含任何化学逻辑。
+这是《ChemSculptor × CC-WOS 针对性架构设计》的 C# 落地骨架。当前已经具备
+领域契约、极简内核、智能体编排、会话层、输入解析、计算模型、Gaussian 输入
+生成、本机计算进程后端、Minimal API 宿主和独立 WinForms 客户端。
 
 > 面向初学者的完整讲解教程见 [docs/ChemSculptor-Tutorial.md](docs/ChemSculptor-Tutorial.md)。
 > 单点计算完整调用链说明见 [docs/SinglePoint-Calculation-Walkthrough.md](docs/SinglePoint-Calculation-Walkthrough.md)。
@@ -16,7 +17,8 @@ src/
   ChemSculptor.Core/            极简内核：事件总线、技能注册、DAG 引擎、状态机、仓储
   ChemSculptor.InputProcessor/  客户输入与几何解析框架
   ChemSculptor.Compute/         计算模型、默认方案与计算扩展接口
-  ChemSculptor.Compute.Gaussian/ Gaussian 输入文件生成
+  ChemSculptor.Compute.Gaussian/ Gaussian 输入生成、命令与运行上下文
+  ChemSculptor.Compute.Local/    本机进程执行后端
   ChemSculptor.Conversation/    会话、消息、意图与回复
   ChemSculptor.Agent/           智能体编排：意图到计算执行
   ChemSculptor.Api/             Minimal API 宿主：工作流、技能、日志、审批端点
@@ -45,7 +47,7 @@ tests/
 dotnet run --project src/ChemSculptor.Api
 ```
 
-启动时会自动注册 `echo` 示例容器，并载入
+启动时会自动注册 `echo` 示例技能，并载入
 `src/ChemSculptor.Api/workflows/tadf-mechanism.json` 示例工作流。
 
 ```bash

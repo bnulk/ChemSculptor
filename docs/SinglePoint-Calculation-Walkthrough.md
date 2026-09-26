@@ -1,8 +1,8 @@
 # ChemSculptor“单点计算”代码全流程说明
 
-> 适用版本：v0.14.0 之后
-> 当前阶段目标：客户端发送原始文本，服务器识别“单点计算”，生成 Gaussian 输入文件
-> 当前未实现：启动 g16、解析输出、读取能量、远程执行
+> 适用版本：v0.17.0 之后
+> 当前阶段目标：客户端发送原始文本，服务器识别“单点计算”，生成 Gaussian 输入并启动本机 g16
+> 当前未实现：解析输出、读取能量、查询计算状态、远程执行
 
 本文按真实代码顺序讲解一次“单点计算”从客户端到服务器的全过程。建议对照代码阅读。
 
@@ -18,6 +18,8 @@
 服务器根据意图调用单点计算执行器
    ↓
 解析坐标、创建工作区、生成 Gaussian 输入文件
+   ↓
+构建 g16 命令并提交本机执行后端
    ↓
 返回作业标识、状态和文件路径
    ↓
@@ -35,7 +37,8 @@
 | `ChemSculptor.Agent` | 智能体编排：意图到计算执行 |
 | `ChemSculptor.Conversation` | 会话、消息、意图和回复 |
 | `ChemSculptor.Compute` | 计算模型、默认方案、任务解释 |
-| `ChemSculptor.Compute.Gaussian` | Gaussian 输入文件生成 |
+| `ChemSculptor.Compute.Gaussian` | Gaussian 输入生成、命令和运行上下文 |
+| `ChemSculptor.Compute.Local` | 本机进程启动、状态跟踪和日志保存 |
 | `ChemSculptor.InputProcessor` | 坐标解析与规范几何转换 |
 
 依赖方向：
@@ -45,6 +48,7 @@ WinForms → HTTP → Api
 Api → Agent
 Agent → Conversation → Compute → InputProcessor
 Agent → Compute.Gaussian
+Agent → Compute.Local
 ```
 
 客户端不引用任何 ChemSculptor 服务器端项目。
@@ -566,16 +570,50 @@ H 0.000000 -0.757200 -0.469200
 
 ---
 
-## 16. 第 13 步：服务器返回响应
+## 16. 第 13 步：启动本机 g16
+
+位置：
+
+```text
+src/ChemSculptor.Compute.Gaussian/Gaussian16ProgramAdapter.cs
+src/ChemSculptor.Compute.Local/LocalProcessBackend.cs
+```
+
+输入文件生成后，`Gaussian16ProgramAdapter` 构建执行上下文：
+
+```text
+ExecutablePath = g16
+Arguments      = <jobId>.gjf <output.log>
+RunDirectory   = <作业目录>\run
+OutputFilePath = <作业目录>\run\output.log
+```
+
+如果系统没有配置 `GAUSS_EXEDIR`，适配器会从 `PATH` 中找到 `g16.exe`
+所在目录，并把它传给子进程。否则 Gaussian 可能找不到 `l1.exe`。
+
+`SinglePointCalculationExecutor` 把上下文交给 `IComputeBackend`。
+当前注册的是 `LocalProcessBackend`，它使用 `ProcessStartInfo` 启动 `g16`，
+并异步等待进程结束。
+
+等价命令是：
+
+```text
+g16 <jobId>.gjf <output.log>
+```
+
+---
+
+## 17. 第 14 步：服务器返回响应
 
 执行器返回：
 
 ```text
 Succeeded   = true
 JobId       = job-...
-Status      = InputGenerated
+Status      = Running
 InputFilePath = .../job-....gjf
-Message     = Gaussian 输入文件已生成，尚未启动计算程序。
+OutputFilePath = .../output.log
+Message     = Gaussian 16 输入文件已生成，计算已在后台启动。
 ```
 
 Agent 组合会话回复与执行结果：
@@ -586,6 +624,7 @@ response.TaskType = CalculationTaskType.SinglePoint.ToString();
 response.JobId = executionResult.JobId;
 response.Status = executionResult.Status;
 response.InputFilePath = executionResult.InputFilePath;
+response.OutputFilePath = executionResult.OutputFilePath;
 response.Message = conversationReply.ReplyMessage + " " + executionResult.Message;
 ```
 
@@ -593,7 +632,7 @@ Api 再把 AgentResult 转换为 HTTP 200 + JSON。
 
 ---
 
-## 17. 第 14 步：客户端显示结果
+## 18. 第 15 步：客户端显示结果
 
 位置：`src/ChemSculptor.WinForms/MainForm.cs`
 
@@ -607,14 +646,15 @@ AgentMessageResultDto? result =
 然后追加对话消息：
 
 ```text
-任务类型：SinglePoint，作业：job-...，状态：InputGenerated。
+任务类型：SinglePoint，作业：job-...，状态：Running。
 输入文件：C:\...\job-....gjf
-已识别任务类型：单点计算。 Gaussian 输入文件已生成，尚未启动计算程序。
+输出文件：C:\...\output.log
+已识别任务类型：单点计算。 Gaussian 16 输入文件已生成，计算已在后台启动。
 ```
 
 ---
 
-## 18. 磁盘上的实际结果
+## 19. 磁盘上的实际结果
 
 工作区根目录选择顺序：
 
@@ -632,41 +672,43 @@ AgentMessageResultDto? result =
 │   ├── molecule.xyz
 │   └── <jobId>.gjf
 ├── run\
+│   ├── output.log
+│   ├── stdout.log
+│   └── stderr.log
 └── results\
 ```
 
-当前只有：
+Gaussian 执行时还会在工作目录中产生临时输入和检查点文件。正常结束后可以检查：
 
 ```text
-molecule.xyz
-<jobId>.gjf
+output.log    Gaussian 主输出
+stdout.log    子进程标准输出
+stderr.log    子进程标准错误
 ```
 
-`run` 和 `results` 为空目录。
-
-`.chk` 路径已写入 `.gjf`，但文件尚未生成，因为还没有启动 g16。
+当前 `results` 仍为空，因为还没有实现输出解析和规范化结果保存。
 
 ---
 
-## 19. 当前没有做的事情
+## 20. 当前没有做的事情
 
 ```text
-没有启动 g16
-没有生成 .log
-没有生成 .chk
 没有解析能量
+没有生成规范化结果
 没有保存计算作业到数据库
 没有 LLM
 没有实时推送
 没有风险审批
 没有并行调度
+没有计算状态查询 API
+没有取消计算 API
 ```
 
 当前会话仓储也是内存实现，服务重启后消息会丢失。
 
 ---
 
-## 20. 调试方法
+## 21. 调试方法
 
 ### 建议断点
 
@@ -681,6 +723,10 @@ RuleBasedTaskInterpreter.InterpretAsync
 SinglePointCalculationExecutor.ExecuteAsync
 GeometryTextParser.ParseAsync
 GaussianInputWriter.WriteAsync
+Gaussian16ProgramAdapter.WriteInputAsync
+Gaussian16ProgramAdapter.BuildExecutionContext
+LocalProcessBackend.SubmitAsync
+LocalProcessBackend.MonitorProcessAsync
 ```
 
 ### 直接测试服务器
@@ -709,7 +755,7 @@ Get-Content "<返回的 inputFilePath>"
 
 ---
 
-## 21. 常见问题
+## 22. 常见问题
 
 | 现象 | 原因 |
 |---|---|
@@ -717,11 +763,12 @@ Get-Content "<返回的 inputFilePath>"
 | 400 坐标文本不能为空 | 客户端没有选择坐标文件 |
 | 响应中断 | 工作区或输入生成异常 |
 | 找不到文件 | 工作区根目录被回退到其他位置 |
-| 有 `.gjf` 没有 `.log` | 当前阶段还没有启动 Gaussian |
+| 有 `.gjf` 没有 `output.log` | 检查 `stderr.log`、`g16` 路径和 `GAUSS_EXEDIR` |
+| `GAUSS_EXEDIR is ""` | Gaussian 适配器没有从 `PATH` 找到 `g16.exe` |
 
 ---
 
-## 22. 设计原则
+## 23. 设计原则
 
 ```text
 客户端只发送原文和附件
@@ -734,7 +781,7 @@ Get-Content "<返回的 inputFilePath>"
 
 ---
 
-## 23. 推荐阅读顺序
+## 24. 推荐阅读顺序
 
 ```text
 1. WinForms/MainForm.cs
@@ -748,31 +795,33 @@ Get-Content "<返回的 inputFilePath>"
 9. Compute/WorkspaceManager.cs
 10. Compute/CalculationDefaults.cs
 11. Compute.Gaussian/GaussianInputWriter.cs
-12. tests/*Tests.cs
+12. Compute.Gaussian/Gaussian16ProgramAdapter.cs
+13. Compute.Local/LocalProcessBackend.cs
+14. tests/*Tests.cs
 ```
 
 ---
 
-## 24. 下一步
+## 25. 下一步
 
-当前链路的终点是生成 Gaussian 输入文件。下一步是：
+当前链路已经能启动本机 Gaussian。下一步是：
 
 ```text
-第四阶段：本机执行后端
-  调用 g16
-  捕获 stdout/stderr
-  处理超时与取消
-  保存输出文件
+第五阶段：Gaussian 输出解析与结果验证
+  读取 output.log
+  判断 Normal termination
+  提取最终能量
+  保存规范化结果
 ```
 
 之后是：
 
 ```text
-第五阶段：Gaussian 输出解析与结果验证
+计算状态查询、取消计算、远程 HPC 后端和作业队列
 ```
 
 ---
 
-## 25. 一句话总结
+## 26. 一句话总结
 
-> 当前“单点计算”链路是：客户端原样发送文本和坐标，会话层解释出单点计算意图，执行器解析坐标、创建 `%ProgramData%`（或回退目录）下的工作区，并按 CAM-B3LYP/6-31G* 默认方案生成 Gaussian 输入文件；整个流程到 `.gjf` 为止，不启动 g16。
+> 当前“单点计算”链路是：客户端原样发送文本和坐标，会话层解释出单点计算意图，执行器解析坐标、创建工作区、按 CAM-B3LYP/6-31G* 默认方案生成 Gaussian 输入文件，再通过程序适配器和本机执行后端启动 `g16`；输出文件路径会返回客户端，但输出解析和能量提取尚未实现。

@@ -239,6 +239,9 @@ public sealed class CalculationJob
     /// <summary>工作区目录。</summary>
     public string WorkspaceDirectory { get; set; } = string.Empty;
 
+    /// <summary>本次作业的运行目录。</summary>
+    public string RunDirectory { get; set; } = string.Empty;
+
     /// <summary>输入文件路径。</summary>
     public string InputFilePath { get; set; } = string.Empty;
 
@@ -326,6 +329,13 @@ public sealed class CalculationExecutionContext
 
     /// <summary>输入文件路径。</summary>
     public string InputFilePath { get; set; } = string.Empty;
+
+    /// <summary>程序启动参数。</summary>
+    public List<string> Arguments { get; set; } = new List<string>();
+
+    /// <summary>启动子进程时追加或覆盖的环境变量。</summary>
+    public Dictionary<string, string> EnvironmentVariables { get; set; } =
+        new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 
     /// <summary>输出文件路径。</summary>
     public string OutputFilePath { get; set; } = string.Empty;

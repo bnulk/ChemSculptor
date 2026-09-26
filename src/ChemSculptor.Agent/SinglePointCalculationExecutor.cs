@@ -1,11 +1,10 @@
 using ChemSculptor.Compute;
-using ChemSculptor.Compute.Gaussian;
 using ChemSculptor.InputProcessor;
 using ChemSculptor.InputProcessor.GeometryIntake;
 
 namespace ChemSculptor.Agent;
 
-/// <summary>单点计算调试执行结果。</summary>
+/// <summary>单点计算执行结果。</summary>
 public sealed class SinglePointExecutionResult
 {
     /// <summary>是否成功。</summary>
@@ -26,29 +25,35 @@ public sealed class SinglePointExecutionResult
     /// <summary>生成的输入文件路径。</summary>
     public string InputFilePath { get; set; } = string.Empty;
 
+    /// <summary>计算输出文件路径。</summary>
+    public string OutputFilePath { get; set; } = string.Empty;
+
     /// <summary>面向用户的说明。</summary>
     public string Message { get; set; } = string.Empty;
 }
 
 /// <summary>
 /// 单点计算执行器。
-/// 负责解析坐标、创建工作区和生成输入文件，不启动计算程序。
+/// 负责解析坐标、创建工作区、生成输入文件，并把作业提交给计算后端。
 /// </summary>
 public sealed class SinglePointCalculationExecutor
 {
     private readonly IGeometryTextParser _geometryParser;
     private readonly ICalculationWorkspace _workspace;
-    private readonly GaussianInputWriter _inputWriter;
+    private readonly IQuantumProgramAdapter _programAdapter;
+    private readonly IComputeBackend _computeBackend;
 
     /// <summary>创建执行器。</summary>
     public SinglePointCalculationExecutor(
         IGeometryTextParser geometryParser,
         ICalculationWorkspace workspace,
-        GaussianInputWriter inputWriter)
+        IQuantumProgramAdapter programAdapter,
+        IComputeBackend computeBackend)
     {
         _geometryParser = geometryParser;
         _workspace = workspace;
-        _inputWriter = inputWriter;
+        _programAdapter = programAdapter;
+        _computeBackend = computeBackend;
     }
 
     /// <summary>执行单点计算流程。</summary>
@@ -92,27 +97,47 @@ public sealed class SinglePointCalculationExecutor
             // 化学参数由服务器端默认方案提供，当前不使用客户端参数。
             CalculationSpec spec = CalculationDefaults.CreateDefaultSinglePoint();
 
+            if (!_programAdapter.CanRun(spec))
+            {
+                result.Succeeded = false;
+                result.Error = "没有可处理 " + spec.Program + " 的计算程序适配器。";
+                return result;
+            }
+
             string inputFileName = jobId + ".gjf";
             string inputPath = Path.Combine(_workspace.GetInputDirectory(jobId), inputFileName);
+            string outputPath = _workspace.GetJobOutputPath(jobId);
 
-            GaussianInputOptions inputOptions = new GaussianInputOptions();
-            inputOptions.Memory = "4GB";
-            inputOptions.ProcessorCount = CalculationDefaults.DefaultProcessorCount;
-            inputOptions.CheckpointFilePath = Path.ChangeExtension(inputPath, ".chk");
-            inputOptions.Title = "ChemSculptor single point calculation";
+            CalculationJob job = new CalculationJob();
+            job.JobId = jobId;
+            job.Spec = spec;
+            job.State = CalculationJobState.Created;
+            job.WorkspaceDirectory = _workspace.GetJobDirectory(jobId);
+            job.RunDirectory = _workspace.GetRunDirectory(jobId);
+            job.InputFilePath = inputPath;
+            job.OutputFilePath = outputPath;
 
-            await _inputWriter.WriteAsync(
+            await _programAdapter.WriteInputAsync(
                 spec,
                 canonicalGeometry,
-                inputOptions,
                 inputPath,
                 cancellationToken);
 
+            job.State = CalculationJobState.InputGenerated;
+
+            CalculationExecutionContext context =
+                _programAdapter.BuildExecutionContext(job, spec);
+
+            await _computeBackend.SubmitAsync(job, context, cancellationToken);
+
+            job.State = CalculationJobState.Running;
+
             result.Succeeded = true;
             result.JobId = jobId;
-            result.Status = CalculationJobState.InputGenerated.ToString();
+            result.Status = CalculationJobState.Running.ToString();
             result.InputFilePath = inputPath;
-            result.Message = "Gaussian 输入文件已生成，尚未启动计算程序。";
+            result.OutputFilePath = outputPath;
+            result.Message = spec.Program + " 输入文件已生成，计算已在后台启动。";
 
             return result;
         }

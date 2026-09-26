@@ -507,6 +507,7 @@ public sealed class MainForm : Form
                 "，作业：" + result.JobId +
                 "，状态：" + result.Status + "。");
             AppendMessage("hint", "输入文件：" + result.InputFilePath);
+            AppendMessage("hint", "输出文件：" + result.OutputFilePath);
             AppendMessage("hint", result.Message);
 
             for (int index = 0; index < result.Diagnostics.Count; index++)

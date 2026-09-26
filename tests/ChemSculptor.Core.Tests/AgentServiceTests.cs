@@ -19,7 +19,8 @@ public class AgentServiceTests
 
         try
         {
-            AgentService service = CreateAgentService(root);
+            RecordingComputeBackend backend;
+            AgentService service = CreateAgentService(root, out backend);
 
             AgentRequest request = new AgentRequest();
             request.SessionId = "session-1";
@@ -45,7 +46,8 @@ public class AgentServiceTests
 
         try
         {
-            AgentService service = CreateAgentService(root);
+            RecordingComputeBackend backend;
+            AgentService service = CreateAgentService(root, out backend);
 
             AgentRequest request = new AgentRequest();
             request.SessionId = "session-2";
@@ -58,8 +60,11 @@ public class AgentServiceTests
             AgentResult result = await service.HandleMessageAsync(request);
 
             Assert.True(result.IsSupported);
-            Assert.Equal("InputGenerated", result.Status);
+            Assert.Equal("Running", result.Status);
             Assert.True(File.Exists(result.InputFilePath));
+            Assert.Contains("output.log", result.OutputFilePath);
+            Assert.Equal("g16", backend.LastContext.ExecutablePath);
+            Assert.Equal(2, backend.LastContext.Arguments.Count);
 
             string text = await File.ReadAllTextAsync(result.InputFilePath);
             Assert.Contains("#p CAM-B3LYP/6-31G* SP", text);
@@ -70,17 +75,28 @@ public class AgentServiceTests
         }
     }
 
-    private static AgentService CreateAgentService(string root)
+    private static AgentService CreateAgentService(
+        string root,
+        out RecordingComputeBackend backend)
     {
         CalculationWorkspaceOptions options = new CalculationWorkspaceOptions();
         options.RootDirectory = root;
 
         WorkspaceManager workspace = new WorkspaceManager(options);
         GaussianInputWriter inputWriter = new GaussianInputWriter();
+        Gaussian16ProgramAdapterOptions programOptions =
+            Gaussian16ProgramAdapterOptions.CreateDefault();
+        Gaussian16ProgramAdapter programAdapter =
+            new Gaussian16ProgramAdapter(inputWriter, programOptions);
         GeometryTextParser geometryParser = new GeometryTextParser();
+        backend = new RecordingComputeBackend();
 
         SinglePointCalculationExecutor executor =
-            new SinglePointCalculationExecutor(geometryParser, workspace, inputWriter);
+            new SinglePointCalculationExecutor(
+                geometryParser,
+                workspace,
+                programAdapter,
+                backend);
         RuleBasedTaskInterpreter interpreter = new RuleBasedTaskInterpreter();
         InMemoryConversationRepository repository = new InMemoryConversationRepository();
         ConversationService conversationService = new ConversationService(interpreter, repository);
@@ -104,6 +120,51 @@ public class AgentServiceTests
         if (Directory.Exists(root))
         {
             Directory.Delete(root, true);
+        }
+    }
+
+    private sealed class RecordingComputeBackend : IComputeBackend
+    {
+        public string Name
+        {
+            get { return "recording"; }
+        }
+
+        public CalculationJob LastJob { get; private set; } = new CalculationJob();
+
+        public CalculationExecutionContext LastContext { get; private set; } =
+            new CalculationExecutionContext();
+
+        public Task<string> SubmitAsync(
+            CalculationJob job,
+            CalculationExecutionContext context,
+            CancellationToken cancellationToken = default)
+        {
+            LastJob = job;
+            LastContext = context;
+            return Task.FromResult(job.JobId);
+        }
+
+        public Task<CalculationJobState> GetStatusAsync(
+            CalculationJob job,
+            CancellationToken cancellationToken = default)
+        {
+            return Task.FromResult(CalculationJobState.Running);
+        }
+
+        public Task FetchArtifactsAsync(
+            CalculationJob job,
+            string localDirectory,
+            CancellationToken cancellationToken = default)
+        {
+            return Task.CompletedTask;
+        }
+
+        public Task CancelAsync(
+            CalculationJob job,
+            CancellationToken cancellationToken = default)
+        {
+            return Task.CompletedTask;
         }
     }
 }
