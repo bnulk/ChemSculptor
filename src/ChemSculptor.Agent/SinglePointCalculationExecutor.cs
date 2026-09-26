@@ -42,18 +42,24 @@ public sealed class SinglePointCalculationExecutor
     private readonly ICalculationWorkspace _workspace;
     private readonly IQuantumProgramAdapter _programAdapter;
     private readonly IComputeBackend _computeBackend;
+    private readonly ICalculationRepository _repository;
+    private readonly ICalculationJobMonitor _jobMonitor;
 
     /// <summary>创建执行器。</summary>
     public SinglePointCalculationExecutor(
         IGeometryTextParser geometryParser,
         ICalculationWorkspace workspace,
         IQuantumProgramAdapter programAdapter,
-        IComputeBackend computeBackend)
+        IComputeBackend computeBackend,
+        ICalculationRepository repository,
+        ICalculationJobMonitor jobMonitor)
     {
         _geometryParser = geometryParser;
         _workspace = workspace;
         _programAdapter = programAdapter;
         _computeBackend = computeBackend;
+        _repository = repository;
+        _jobMonitor = jobMonitor;
     }
 
     /// <summary>执行单点计算流程。</summary>
@@ -131,16 +137,22 @@ public sealed class SinglePointCalculationExecutor
             CalculationExecutionContext context =
                 _programAdapter.BuildExecutionContext(job, spec);
 
-            await _computeBackend.SubmitAsync(job, context, cancellationToken);
+            await _computeBackend.SubmitAsync(job, context, CancellationToken.None);
 
             job.State = CalculationJobState.Running;
+            job.StartedAt = DateTimeOffset.UtcNow;
+
+            await _repository.SaveJobAsync(job, CancellationToken.None);
+            _jobMonitor.Start(job);
 
             result.Succeeded = true;
             result.JobId = jobId;
             result.Status = CalculationJobState.Running.ToString();
             result.InputFilePath = inputPath;
             result.OutputFilePath = outputPath;
-            result.Message = spec.Program + " 输入文件已复制到运行目录，计算已在后台启动。";
+            result.Message =
+                spec.Program +
+                " 输入文件已复制到运行目录，计算和输出解析已在后台启动。";
 
             return result;
         }

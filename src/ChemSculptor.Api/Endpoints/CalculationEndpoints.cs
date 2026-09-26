@@ -1,4 +1,5 @@
 using ChemSculptor.Agent;
+using ChemSculptor.Compute;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
@@ -17,6 +18,8 @@ public static class CalculationEndpoints
         RouteGroupBuilder calculations = EndpointRouteBuilderExtensions.MapGroup(app, "/calculations");
 
         EndpointRouteBuilderExtensions.MapPost(calculations, "/single-point", SubmitSinglePointAsync);
+        EndpointRouteBuilderExtensions.MapGet(calculations, "/{jobId}/status", GetCalculationStatusAsync);
+        EndpointRouteBuilderExtensions.MapGet(calculations, "/{jobId}/result", GetCalculationResultAsync);
 
         return app;
     }
@@ -50,5 +53,93 @@ public static class CalculationEndpoints
         response.Message = result.Message;
 
         return Results.Ok(response);
+    }
+
+    /// <summary>查询计算作业状态。</summary>
+    private static async Task<IResult> GetCalculationStatusAsync(
+        string jobId,
+        ICalculationQueryService queryService,
+        CancellationToken cancellationToken)
+    {
+        CalculationJob? job = await queryService.GetJobAsync(jobId, cancellationToken);
+
+        if (job == null)
+        {
+            ApiError error = new ApiError();
+            error.Error = "计算作业 " + jobId + " 不存在。";
+            return Results.NotFound(error);
+        }
+
+        CalculationStatusResponse response = new CalculationStatusResponse();
+        response.JobId = job.JobId;
+        response.State = job.State.ToString();
+        response.StartedAt = job.StartedAt;
+        response.CompletedAt = job.CompletedAt;
+        response.InputFilePath = job.InputFilePath;
+        response.OutputFilePath = job.OutputFilePath;
+        response.Diagnostics = ConvertDiagnostics(job.Diagnostics);
+
+        return Results.Ok(response);
+    }
+
+    /// <summary>查询规范化计算结果。</summary>
+    private static async Task<IResult> GetCalculationResultAsync(
+        string jobId,
+        ICalculationQueryService queryService,
+        CancellationToken cancellationToken)
+    {
+        CalculationJob? job = await queryService.GetJobAsync(jobId, cancellationToken);
+
+        if (job == null)
+        {
+            ApiError error = new ApiError();
+            error.Error = "计算作业 " + jobId + " 不存在。";
+            return Results.NotFound(error);
+        }
+
+        CalculationResult? result = await queryService.GetResultAsync(
+            jobId,
+            cancellationToken);
+
+        if (result == null)
+        {
+            ApiError error = new ApiError();
+            error.Error = "计算结果尚未就绪。";
+            return Results.Conflict(error);
+        }
+
+        CalculationResultResponse response = new CalculationResultResponse();
+        response.JobId = result.JobId;
+        response.Energy = result.Energy;
+        response.EnergyUnit = result.EnergyUnit;
+        response.NormalTermination = result.NormalTermination;
+        response.Program = result.Program;
+        response.Method = result.Method;
+        response.Basis = result.Basis;
+        response.Charge = result.Charge;
+        response.Multiplicity = result.Multiplicity;
+        response.OutputFilePath = result.OutputFilePath;
+        response.Diagnostics = ConvertDiagnostics(result.Diagnostics);
+
+        return Results.Ok(response);
+    }
+
+    private static List<CalculationDiagnosticResponse> ConvertDiagnostics(
+        List<CalculationDiagnostic> diagnostics)
+    {
+        List<CalculationDiagnosticResponse> responses =
+            new List<CalculationDiagnosticResponse>();
+
+        for (int index = 0; index < diagnostics.Count; index++)
+        {
+            CalculationDiagnostic diagnostic = diagnostics[index];
+            CalculationDiagnosticResponse response = new CalculationDiagnosticResponse();
+            response.Severity = diagnostic.Severity.ToString();
+            response.Code = diagnostic.Code;
+            response.Message = diagnostic.Message;
+            responses.Add(response);
+        }
+
+        return responses;
     }
 }

@@ -5,6 +5,191 @@
 
 ---
 
+## v0.18.0（2026-09-26）：Gaussian 输出解析与规范化结果
+
+### 版本
+
+- 当前版本：`0.18.0`
+- 日期：2026-09-26
+- 版本类型：新增功能（第五阶段，Gaussian 输出解析）
+
+### 改动目的
+
+让单点计算不再只停留在“启动 g16”和取得输出文件，而是继续完成：
+
+```text
+等待计算进程结束
+读取 output.log
+判断 Normal termination
+提取最终 SCF 能量
+保存 result.json
+提供状态和结果查询接口
+```
+
+### 改动内容
+
+新增 Gaussian 输出解析器：
+
+```text
+src/ChemSculptor.Compute.Gaussian/GaussianOutputParser.cs
+```
+
+解析内容：
+
+- 识别 `Normal termination of Gaussian 16`
+- 识别 `Error termination`
+- 提取最后一次 `SCF Done: E(...) = ...`
+- 支持 Gaussian 的 `D` 指数格式
+- 生成结构化诊断信息
+
+新增文件仓储：
+
+```text
+src/ChemSculptor.Compute/FileCalculationRepository.cs
+```
+
+保存位置：
+
+```text
+jobs/<jobId>/manifest.json
+jobs/<jobId>/results/result.json
+```
+
+新增后台作业监控器：
+
+```text
+src/ChemSculptor.Agent/CalculationJobMonitor.cs
+```
+
+工作方式：
+
+```text
+轮询 IComputeBackend.GetStatusAsync
+  → 状态进入 Completed / Failed / Canceled
+  → 读取 output.log
+  → 调用 IQuantumProgramAdapter.ParseOutputAsync
+  → 保存 result.json
+  → 更新 manifest.json 中的作业状态
+```
+
+新增查询服务：
+
+```text
+ICalculationQueryService
+CalculationQueryService
+```
+
+新增 API：
+
+```text
+GET /calculations/{jobId}/status
+GET /calculations/{jobId}/result
+```
+
+### 教程式说明
+
+#### 一、为什么解析要放在后台
+
+Gaussian 可能运行数秒、数分钟甚至数小时。提交 API 不能一直等待进程结束，
+否则 HTTP 请求会长时间占用连接。
+
+现在的流程是：
+
+```text
+提交 API 立即返回 Running
+后台监控器继续等待
+Gaussian 结束后自动解析并保存结果
+客户端稍后查询状态或结果
+```
+
+#### 二、怎样判断计算成功
+
+不能只依赖进程退出码。解析器还会检查：
+
+```text
+Normal termination of Gaussian 16
+```
+
+并提取：
+
+```text
+SCF Done: E(RCAM-B3LYP) = -76.3801014 A.U.
+```
+
+只有同时满足以下条件，作业才进入 `Parsed`：
+
+```text
+进程状态为 Completed
+输出中存在 Normal termination
+成功提取到最终能量
+```
+
+#### 三、如何查询结果
+
+查询状态：
+
+```powershell
+Invoke-RestMethod `
+    -Uri "http://127.0.0.1:5093/calculations/<jobId>/status" `
+    -Method Get
+```
+
+查询规范化结果：
+
+```powershell
+Invoke-RestMethod `
+    -Uri "http://127.0.0.1:5093/calculations/<jobId>/result" `
+    -Method Get
+```
+
+结果示例：
+
+```json
+{
+  "energy": -76.3801013836,
+  "energyUnit": "Hartree",
+  "normalTermination": true,
+  "program": "Gaussian 16",
+  "method": "CAM-B3LYP",
+  "basis": "6-31G*",
+  "charge": 0,
+  "multiplicity": 1
+}
+```
+
+#### 四、当前边界
+
+已经具备：
+
+```text
+输出解析
+能量提取
+作业状态保存
+规范化结果保存
+状态查询 API
+结果查询 API
+```
+
+尚未具备：
+
+```text
+科学结果验证门
+自动查错与纠错
+WinForms 自动轮询最终能量
+远程 HPC 后端
+作业队列
+```
+
+### 验证
+
+- Release 全解决方案构建：0 警告 0 错误
+- 测试：19/19 通过
+- 端到端实测：水的 CAM-B3LYP/6-31G* 单点计算状态进入 `Parsed`
+- 实测能量：`-76.3801013836 Hartree`
+- 实测结果文件：`jobs/<jobId>/results/result.json`
+
+---
+
 ## v0.17.1（2026-09-26）：输入文件复制到运行目录后执行
 
 ### 版本

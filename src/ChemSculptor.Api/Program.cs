@@ -103,6 +103,8 @@ public static class Program
         response.Endpoints.Add("GET /client/jobs/{id}/result");
         response.Endpoints.Add("POST /geometries");
         response.Endpoints.Add("POST /calculations/single-point");
+        response.Endpoints.Add("GET /calculations/{jobId}/status");
+        response.Endpoints.Add("GET /calculations/{jobId}/result");
         response.Endpoints.Add("POST /agent/messages");
 
         return Results.Ok(response);

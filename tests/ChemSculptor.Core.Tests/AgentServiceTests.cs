@@ -100,20 +100,26 @@ public class AgentServiceTests
         options.RootDirectory = root;
 
         WorkspaceManager workspace = new WorkspaceManager(options);
+        FileCalculationRepository calculationRepository =
+            new FileCalculationRepository(workspace);
         GaussianInputWriter inputWriter = new GaussianInputWriter();
+        GaussianOutputParser outputParser = new GaussianOutputParser();
         Gaussian16ProgramAdapterOptions programOptions =
             Gaussian16ProgramAdapterOptions.CreateDefault();
         Gaussian16ProgramAdapter programAdapter =
-            new Gaussian16ProgramAdapter(inputWriter, programOptions);
+            new Gaussian16ProgramAdapter(inputWriter, outputParser, programOptions);
         GeometryTextParser geometryParser = new GeometryTextParser();
         backend = new RecordingComputeBackend();
+        NoOpCalculationJobMonitor jobMonitor = new NoOpCalculationJobMonitor();
 
         SinglePointCalculationExecutor executor =
             new SinglePointCalculationExecutor(
                 geometryParser,
                 workspace,
                 programAdapter,
-                backend);
+                backend,
+                calculationRepository,
+                jobMonitor);
         RuleBasedTaskInterpreter interpreter = new RuleBasedTaskInterpreter();
         InMemoryConversationRepository repository = new InMemoryConversationRepository();
         ConversationService conversationService = new ConversationService(interpreter, repository);
@@ -182,6 +188,13 @@ public class AgentServiceTests
             CancellationToken cancellationToken = default)
         {
             return Task.CompletedTask;
+        }
+    }
+
+    private sealed class NoOpCalculationJobMonitor : ICalculationJobMonitor
+    {
+        public void Start(CalculationJob job)
+        {
         }
     }
 }

@@ -16,16 +16,23 @@ public sealed class Gaussian16ProgramAdapter : IQuantumProgramAdapter
     public const string DefaultMemory = "4GB";
 
     private readonly GaussianInputWriter _inputWriter;
+    private readonly GaussianOutputParser _outputParser;
     private readonly Gaussian16ProgramAdapterOptions _options;
 
     /// <summary>创建 Gaussian 16 适配器。</summary>
     public Gaussian16ProgramAdapter(
         GaussianInputWriter inputWriter,
+        GaussianOutputParser outputParser,
         Gaussian16ProgramAdapterOptions options)
     {
         if (inputWriter == null)
         {
             throw new ArgumentNullException(nameof(inputWriter));
+        }
+
+        if (outputParser == null)
+        {
+            throw new ArgumentNullException(nameof(outputParser));
         }
 
         if (options == null)
@@ -34,6 +41,7 @@ public sealed class Gaussian16ProgramAdapter : IQuantumProgramAdapter
         }
 
         _inputWriter = inputWriter;
+        _outputParser = outputParser;
         _options = options;
     }
 
@@ -137,11 +145,11 @@ public sealed class Gaussian16ProgramAdapter : IQuantumProgramAdapter
         return context;
     }
 
-    /// <summary>解析 Gaussian 输出文件；当前阶段尚未实现。</summary>
+    /// <summary>解析 Gaussian 输出文件。</summary>
     public Task<CalculationResult> ParseOutputAsync(
         string outputPath,
         CancellationToken cancellationToken = default)
     {
-        throw new NotSupportedException("Gaussian 输出解析将在后续阶段实现。");
+        return _outputParser.ParseAsync(string.Empty, outputPath, cancellationToken);
     }
 }

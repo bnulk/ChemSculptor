@@ -272,6 +272,9 @@ public sealed class CalculationResult
     /// <summary>最终能量；解析失败时为空。</summary>
     public double? Energy { get; set; }
 
+    /// <summary>能量单位。</summary>
+    public string EnergyUnit { get; set; } = "Hartree";
+
     /// <summary>程序是否正常结束。</summary>
     public bool NormalTermination { get; set; }
 

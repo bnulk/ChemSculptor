@@ -158,6 +158,83 @@ public sealed class SinglePointCalculationResponse
     public string Message { get; set; } = string.Empty;
 }
 
+/// <summary>计算作业状态响应。</summary>
+public sealed class CalculationStatusResponse
+{
+    /// <summary>计算作业标识。</summary>
+    public string JobId { get; set; } = string.Empty;
+
+    /// <summary>当前作业状态。</summary>
+    public string State { get; set; } = string.Empty;
+
+    /// <summary>开始时间。</summary>
+    public DateTimeOffset? StartedAt { get; set; }
+
+    /// <summary>完成时间。</summary>
+    public DateTimeOffset? CompletedAt { get; set; }
+
+    /// <summary>原始输入文件路径。</summary>
+    public string InputFilePath { get; set; } = string.Empty;
+
+    /// <summary>程序输出文件路径。</summary>
+    public string OutputFilePath { get; set; } = string.Empty;
+
+    /// <summary>诊断信息。</summary>
+    public List<CalculationDiagnosticResponse> Diagnostics { get; set; } =
+        new List<CalculationDiagnosticResponse>();
+}
+
+/// <summary>规范化计算结果响应。</summary>
+public sealed class CalculationResultResponse
+{
+    /// <summary>计算作业标识。</summary>
+    public string JobId { get; set; } = string.Empty;
+
+    /// <summary>最终能量。</summary>
+    public double? Energy { get; set; }
+
+    /// <summary>能量单位。</summary>
+    public string EnergyUnit { get; set; } = string.Empty;
+
+    /// <summary>程序是否正常结束。</summary>
+    public bool NormalTermination { get; set; }
+
+    /// <summary>计算程序。</summary>
+    public string Program { get; set; } = string.Empty;
+
+    /// <summary>方法或泛函。</summary>
+    public string Method { get; set; } = string.Empty;
+
+    /// <summary>基组。</summary>
+    public string Basis { get; set; } = string.Empty;
+
+    /// <summary>总电荷。</summary>
+    public int Charge { get; set; }
+
+    /// <summary>自旋多重度。</summary>
+    public int Multiplicity { get; set; }
+
+    /// <summary>程序输出文件路径。</summary>
+    public string OutputFilePath { get; set; } = string.Empty;
+
+    /// <summary>诊断信息。</summary>
+    public List<CalculationDiagnosticResponse> Diagnostics { get; set; } =
+        new List<CalculationDiagnosticResponse>();
+}
+
+/// <summary>计算诊断信息响应。</summary>
+public sealed class CalculationDiagnosticResponse
+{
+    /// <summary>严重程度。</summary>
+    public string Severity { get; set; } = string.Empty;
+
+    /// <summary>诊断代码。</summary>
+    public string Code { get; set; } = string.Empty;
+
+    /// <summary>面向人的说明。</summary>
+    public string Message { get; set; } = string.Empty;
+}
+
 /// <summary>计算触发失败时的响应。</summary>
 public sealed class CalculationErrorResponse
 {

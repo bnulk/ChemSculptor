@@ -22,6 +22,7 @@ public static class AgentServiceRegistration
         ServiceCollectionServiceExtensions.AddSingleton<ICalculationWorkspace, WorkspaceManager>(
             services);
         ServiceCollectionServiceExtensions.AddSingleton<GaussianInputWriter>(services);
+        ServiceCollectionServiceExtensions.AddSingleton<GaussianOutputParser>(services);
         Gaussian16ProgramAdapterOptions gaussianOptions =
             Gaussian16ProgramAdapterOptions.CreateDefault();
         ServiceCollectionServiceExtensions.AddSingleton<Gaussian16ProgramAdapterOptions>(
@@ -35,7 +36,18 @@ public static class AgentServiceRegistration
             services);
         ServiceCollectionServiceExtensions.AddSingleton<IConversationService, ConversationService>(
             services);
+        ServiceCollectionServiceExtensions.AddSingleton<ICalculationRepository, FileCalculationRepository>(
+            services);
+        CalculationJobMonitorOptions monitorOptions =
+            CalculationJobMonitorOptions.CreateDefault();
+        ServiceCollectionServiceExtensions.AddSingleton<CalculationJobMonitorOptions>(
+            services,
+            monitorOptions);
+        ServiceCollectionServiceExtensions.AddSingleton<ICalculationJobMonitor, CalculationJobMonitor>(
+            services);
         ServiceCollectionServiceExtensions.AddSingleton<SinglePointCalculationExecutor>(
+            services);
+        ServiceCollectionServiceExtensions.AddSingleton<ICalculationQueryService, CalculationQueryService>(
             services);
         LocalProcessBackendOptions localProcessOptions = LocalProcessBackendOptions.CreateDefault();
         ServiceCollectionServiceExtensions.AddSingleton<LocalProcessBackendOptions>(

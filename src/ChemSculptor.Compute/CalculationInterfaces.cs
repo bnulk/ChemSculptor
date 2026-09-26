@@ -139,6 +139,12 @@ public interface ICalculationWorkspace
 
     /// <summary>获取程序输出文件路径。</summary>
     string GetJobOutputPath(string jobId);
+
+    /// <summary>获取作业清单文件路径。</summary>
+    string GetJobManifestPath(string jobId);
+
+    /// <summary>获取规范化结果文件路径。</summary>
+    string GetJobResultPath(string jobId);
 }
 
 /// <summary>
