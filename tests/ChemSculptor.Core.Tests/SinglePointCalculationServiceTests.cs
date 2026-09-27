@@ -116,6 +116,57 @@ public class SinglePointCalculationServiceTests
         }
     }
 
+    /// <summary>验证运行中的作业可以取消。</summary>
+    [Fact]
+    public async Task CancelsRunningCalculation()
+    {
+        string root = CreateTemporaryRoot();
+
+        try
+        {
+            CalculationWorkspaceOptions workspaceOptions =
+                new CalculationWorkspaceOptions();
+            workspaceOptions.RootDirectory = root;
+
+            WorkspaceManager workspace = new WorkspaceManager(workspaceOptions);
+            FileCalculationRepository repository =
+                new FileCalculationRepository(workspace);
+            RecordingSkillInvoker skillInvoker = new RecordingSkillInvoker();
+            RecordingComputeBackend backend = new RecordingComputeBackend();
+            RecordingJobMonitor monitor = new RecordingJobMonitor();
+
+            SinglePointCalculationService service =
+                new SinglePointCalculationService(
+                    workspace,
+                    backend,
+                    repository,
+                    monitor,
+                    skillInvoker);
+
+            CalculationRequest request = new CalculationRequest();
+            request.CoordinateText = "O 0.0 0.0 0.0";
+
+            SinglePointCalculationSubmissionResult submission =
+                await service.SubmitAsync(request);
+
+            Assert.True(submission.Succeeded);
+            Assert.NotNull(submission.Job);
+
+            bool canceled = await service.CancelAsync(submission.Job.JobId);
+            CalculationJob? savedJob =
+                await service.GetJobAsync(submission.Job.JobId);
+
+            Assert.True(canceled);
+            Assert.Equal(submission.Job.JobId, backend.CanceledJobId);
+            Assert.NotNull(savedJob);
+            Assert.Equal(CalculationJobState.Canceled, savedJob.State);
+        }
+        finally
+        {
+            DeleteTemporaryRoot(root);
+        }
+    }
+
     private static void AddOverride(
         CalculationRequest request,
         string name,
@@ -185,6 +236,8 @@ public class SinglePointCalculationServiceTests
 
     private sealed class RecordingComputeBackend : IComputeBackend
     {
+        public string CanceledJobId { get; private set; } = string.Empty;
+
         public string Name
         {
             get { return "recording"; }
@@ -217,6 +270,7 @@ public class SinglePointCalculationServiceTests
             CalculationJob job,
             CancellationToken cancellationToken = default)
         {
+            CanceledJobId = job.JobId;
             return Task.CompletedTask;
         }
     }

@@ -746,8 +746,10 @@ jobs/<jobId>/manifest.json
 
 ```text
 GET /calculations/{jobId}/status
+GET /calculations/{jobId}
 GET /calculations/{jobId}/result
 GET /calculations/{jobId}/validation
+POST /calculations/{jobId}/cancel
 ```
 
 ---

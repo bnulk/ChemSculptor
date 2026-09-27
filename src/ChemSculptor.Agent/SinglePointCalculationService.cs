@@ -197,6 +197,34 @@ public sealed class SinglePointCalculationService : ISinglePointCalculationServi
         return _repository.GetValidationAsync(jobId, cancellationToken);
     }
 
+    /// <summary>取消计算作业。</summary>
+    public async Task<bool> CancelAsync(
+        string jobId,
+        CancellationToken cancellationToken = default)
+    {
+        CalculationJob? job = await _repository.GetJobAsync(
+            jobId,
+            cancellationToken);
+
+        if (job == null)
+        {
+            return false;
+        }
+
+        if (job.State != CalculationJobState.Running
+            && job.State != CalculationJobState.Queued)
+        {
+            return false;
+        }
+
+        await _computeBackend.CancelAsync(job, cancellationToken);
+
+        job.State = CalculationJobState.Canceled;
+        job.CompletedAt = DateTimeOffset.UtcNow;
+        await _repository.SaveJobAsync(job, cancellationToken);
+        return true;
+    }
+
     private static string ApplyOverrides(
         CalculationSpec spec,
         List<CalculationParameter> overrides)

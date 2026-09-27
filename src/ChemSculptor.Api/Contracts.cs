@@ -135,13 +135,36 @@ public sealed class GeometryErrorResponse
 /// <summary>触发单点计算的请求。</summary>
 public sealed class SinglePointCalculationRequest
 {
+    /// <summary>客户端会话标识。</summary>
+    public string SessionId { get; set; } = string.Empty;
+
+    /// <summary>用户自然语言目标。</summary>
+    public string Goal { get; set; } = string.Empty;
+
     /// <summary>分子坐标文本。</summary>
     public string CoordinateText { get; set; } = string.Empty;
+
+    /// <summary>请求覆盖的计算参数。</summary>
+    public List<CalculationParameterRequest> Overrides { get; set; } =
+        new List<CalculationParameterRequest>();
+}
+
+/// <summary>计算参数覆盖请求。</summary>
+public sealed class CalculationParameterRequest
+{
+    /// <summary>参数名称。</summary>
+    public string Name { get; set; } = string.Empty;
+
+    /// <summary>参数值。</summary>
+    public string Value { get; set; } = string.Empty;
 }
 
 /// <summary>单点计算触发结果。</summary>
 public sealed class SinglePointCalculationResponse
 {
+    /// <summary>是否成功提交。</summary>
+    public bool Succeeded { get; set; }
+
     /// <summary>计算作业标识。</summary>
     public string JobId { get; set; } = string.Empty;
 
@@ -153,6 +176,22 @@ public sealed class SinglePointCalculationResponse
 
     /// <summary>计算输出文件路径。</summary>
     public string OutputFilePath { get; set; } = string.Empty;
+
+    /// <summary>面向用户的说明。</summary>
+    public string Message { get; set; } = string.Empty;
+
+    /// <summary>诊断信息。</summary>
+    public List<string> Diagnostics { get; set; } = new List<string>();
+}
+
+/// <summary>取消计算作业响应。</summary>
+public sealed class CalculationCancelResponse
+{
+    /// <summary>计算作业标识。</summary>
+    public string JobId { get; set; } = string.Empty;
+
+    /// <summary>是否接受取消。</summary>
+    public bool Canceled { get; set; }
 
     /// <summary>面向用户的说明。</summary>
     public string Message { get; set; } = string.Empty;

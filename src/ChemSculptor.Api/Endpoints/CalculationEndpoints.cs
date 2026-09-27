@@ -1,4 +1,3 @@
-using ChemSculptor.Agent;
 using ChemSculptor.Compute;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
@@ -18,9 +17,11 @@ public static class CalculationEndpoints
         RouteGroupBuilder calculations = EndpointRouteBuilderExtensions.MapGroup(app, "/calculations");
 
         EndpointRouteBuilderExtensions.MapPost(calculations, "/single-point", SubmitSinglePointAsync);
+        EndpointRouteBuilderExtensions.MapGet(calculations, "/{jobId}", GetCalculationStatusAsync);
         EndpointRouteBuilderExtensions.MapGet(calculations, "/{jobId}/status", GetCalculationStatusAsync);
         EndpointRouteBuilderExtensions.MapGet(calculations, "/{jobId}/result", GetCalculationResultAsync);
         EndpointRouteBuilderExtensions.MapGet(calculations, "/{jobId}/validation", GetCalculationValidationAsync);
+        EndpointRouteBuilderExtensions.MapPost(calculations, "/{jobId}/cancel", CancelCalculationAsync);
 
         return app;
     }
@@ -28,41 +29,50 @@ public static class CalculationEndpoints
     /// <summary>直接触发的单点计算调试端点。</summary>
     private static async Task<IResult> SubmitSinglePointAsync(
         SinglePointCalculationRequest request,
-        IAgentService agentService,
+        ISinglePointCalculationService calculationService,
         CancellationToken cancellationToken)
     {
-        AgentSinglePointRequest agentRequest = new AgentSinglePointRequest();
-        agentRequest.CoordinateText = request.CoordinateText;
+        CalculationRequest calculationRequest = new CalculationRequest();
+        calculationRequest.SessionId = request.SessionId;
+        calculationRequest.Goal = request.Goal;
+        calculationRequest.CoordinateText = request.CoordinateText;
+        calculationRequest.Overrides = ConvertParameters(request.Overrides);
 
-        AgentResult result = await agentService.ExecuteSinglePointAsync(
-            agentRequest,
+        SinglePointCalculationSubmissionResult submission =
+            await calculationService.SubmitAsync(
+            calculationRequest,
             cancellationToken);
 
-        if (!result.IsSupported)
+        if (!submission.Succeeded || submission.Job == null)
         {
             CalculationErrorResponse error = new CalculationErrorResponse();
-            error.Error = result.Error;
-            error.Diagnostics = new List<string>(result.Diagnostics);
+            error.Error = submission.Error;
+            error.Diagnostics = new List<string>(submission.Diagnostics);
             return Results.BadRequest(error);
         }
 
         SinglePointCalculationResponse response = new SinglePointCalculationResponse();
-        response.JobId = result.JobId;
-        response.Status = result.Status;
-        response.InputFilePath = result.InputFilePath;
-        response.OutputFilePath = result.OutputFilePath;
-        response.Message = result.Message;
+        response.Succeeded = true;
+        response.JobId = submission.Job.JobId;
+        response.Status = submission.Job.State.ToString();
+        response.InputFilePath = submission.Job.SourceInputFilePath;
+        response.OutputFilePath = submission.Job.OutputFilePath;
+        response.Message = submission.Message;
+        response.Diagnostics = new List<string>(submission.Diagnostics);
 
-        return Results.Ok(response);
+        string location = "/calculations/" + submission.Job.JobId;
+        return Results.Accepted(location, response);
     }
 
     /// <summary>查询计算作业状态。</summary>
     private static async Task<IResult> GetCalculationStatusAsync(
         string jobId,
-        ICalculationQueryService queryService,
+        ISinglePointCalculationService calculationService,
         CancellationToken cancellationToken)
     {
-        CalculationJob? job = await queryService.GetJobAsync(jobId, cancellationToken);
+        CalculationJob? job = await calculationService.GetJobAsync(
+            jobId,
+            cancellationToken);
 
         if (job == null)
         {
@@ -76,7 +86,7 @@ public static class CalculationEndpoints
         response.State = job.State.ToString();
         response.StartedAt = job.StartedAt;
         response.CompletedAt = job.CompletedAt;
-        response.InputFilePath = job.InputFilePath;
+        response.InputFilePath = job.SourceInputFilePath;
         response.OutputFilePath = job.OutputFilePath;
         response.Diagnostics = ConvertDiagnostics(job.Diagnostics);
 
@@ -86,10 +96,12 @@ public static class CalculationEndpoints
     /// <summary>查询规范化计算结果。</summary>
     private static async Task<IResult> GetCalculationResultAsync(
         string jobId,
-        ICalculationQueryService queryService,
+        ISinglePointCalculationService calculationService,
         CancellationToken cancellationToken)
     {
-        CalculationJob? job = await queryService.GetJobAsync(jobId, cancellationToken);
+        CalculationJob? job = await calculationService.GetJobAsync(
+            jobId,
+            cancellationToken);
 
         if (job == null)
         {
@@ -98,7 +110,7 @@ public static class CalculationEndpoints
             return Results.NotFound(error);
         }
 
-        CalculationResult? result = await queryService.GetResultAsync(
+        CalculationResult? result = await calculationService.GetResultAsync(
             jobId,
             cancellationToken);
 
@@ -129,10 +141,12 @@ public static class CalculationEndpoints
     /// <summary>查询计算结果验证报告。</summary>
     private static async Task<IResult> GetCalculationValidationAsync(
         string jobId,
-        ICalculationQueryService queryService,
+        ISinglePointCalculationService calculationService,
         CancellationToken cancellationToken)
     {
-        CalculationJob? job = await queryService.GetJobAsync(jobId, cancellationToken);
+        CalculationJob? job = await calculationService.GetJobAsync(
+            jobId,
+            cancellationToken);
 
         if (job == null)
         {
@@ -142,7 +156,9 @@ public static class CalculationEndpoints
         }
 
         CalculationValidationReport? validation =
-            await queryService.GetValidationAsync(jobId, cancellationToken);
+            await calculationService.GetValidationAsync(
+                jobId,
+                cancellationToken);
 
         if (validation == null)
         {
@@ -161,6 +177,64 @@ public static class CalculationEndpoints
         response.Checks = ConvertValidationChecks(validation.Checks);
         response.Issues = ConvertValidationIssues(validation.Issues);
         return Results.Ok(response);
+    }
+
+    /// <summary>取消计算作业。</summary>
+    private static async Task<IResult> CancelCalculationAsync(
+        string jobId,
+        ISinglePointCalculationService calculationService,
+        CancellationToken cancellationToken)
+    {
+        CalculationJob? job = await calculationService.GetJobAsync(
+            jobId,
+            cancellationToken);
+
+        if (job == null)
+        {
+            ApiError error = new ApiError();
+            error.Error = "计算作业 " + jobId + " 不存在。";
+            return Results.NotFound(error);
+        }
+
+        bool canceled = await calculationService.CancelAsync(
+            jobId,
+            cancellationToken);
+
+        if (!canceled)
+        {
+            ApiError error = new ApiError();
+            error.Error = "当前作业状态不能取消：" + job.State.ToString();
+            return Results.Conflict(error);
+        }
+
+        CalculationCancelResponse response = new CalculationCancelResponse();
+        response.JobId = jobId;
+        response.Canceled = true;
+        response.Message = "计算作业已取消。";
+        return Results.Ok(response);
+    }
+
+    private static List<CalculationParameter> ConvertParameters(
+        List<CalculationParameterRequest> parameters)
+    {
+        List<CalculationParameter> converted =
+            new List<CalculationParameter>();
+
+        for (int index = 0; index < parameters.Count; index++)
+        {
+            CalculationParameterRequest source = parameters[index];
+            CalculationParameter target = new CalculationParameter();
+            target.Name = source.Name;
+            target.DisplayName = source.Name;
+            target.CurrentValue = source.Value;
+            target.DefaultValue = string.Empty;
+            target.Source = ParameterSource.User;
+            target.RiskLevel = CalculationRiskLevel.Info;
+            target.RequiresApproval = false;
+            converted.Add(target);
+        }
+
+        return converted;
     }
 
     private static List<CalculationValidationCheckResponse> ConvertValidationChecks(

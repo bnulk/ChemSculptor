@@ -5,6 +5,143 @@
 
 ---
 
+## v0.23.0（2026-09-27）：单点计算 API 端点
+
+### 版本
+
+- 当前版本：`0.23.0`
+- 日期：2026-09-27
+- 版本类型：新增功能（第八阶段，API 端点）
+
+### 改动目的
+
+把 `/calculations` 变成单点计算服务的统一 HTTP 门面。
+
+Api 端点不再分别直接调用 Agent 或查询服务，而是统一调用：
+
+```text
+ISinglePointCalculationService
+```
+
+### 完整端点
+
+```text
+POST /calculations/single-point
+GET  /calculations/{jobId}
+GET  /calculations/{jobId}/status
+GET  /calculations/{jobId}/result
+GET  /calculations/{jobId}/validation
+POST /calculations/{jobId}/cancel
+```
+
+### 提交请求
+
+`POST /calculations/single-point` 现在支持：
+
+```text
+SessionId
+Goal
+CoordinateText
+Overrides
+```
+
+覆盖参数格式：
+
+```json
+[
+  {
+    "name": "charge",
+    "value": "0"
+  },
+  {
+    "name": "multiplicity",
+    "value": "1"
+  }
+]
+```
+
+### 提交响应
+
+成功时返回 HTTP 202：
+
+```text
+Succeeded
+JobId
+Status
+InputFilePath
+OutputFilePath
+Message
+Diagnostics
+```
+
+失败时返回 HTTP 400。
+
+### 查询和取消
+
+状态：
+
+```text
+GET /calculations/{jobId}
+GET /calculations/{jobId}/status
+```
+
+结果：
+
+```text
+GET /calculations/{jobId}/result
+```
+
+验证：
+
+```text
+GET /calculations/{jobId}/validation
+```
+
+取消：
+
+```text
+POST /calculations/{jobId}/cancel
+```
+
+取消规则：
+
+```text
+Running 或 Queued
+  → 可以取消
+
+Validated、Failed、Canceled
+  → 返回 HTTP 409
+```
+
+### 服务能力
+
+`ISinglePointCalculationService` 新增：
+
+```text
+CancelAsync
+```
+
+### API 文档
+
+新增：
+
+```text
+docs/Calculation-Api-Reference.md
+```
+
+### 验证
+
+- Release 全解决方案构建：0 警告 0 错误
+- 测试：32/32 通过
+- 实际 HTTP 提交：成功
+- 实际状态：`Validated`
+- 实际能量：`-76.3801013836 Hartree`
+- 实际验证：`Passed`
+- 实际检查数量：14
+- 已完成作业再次取消：HTTP 409
+
+---
+
 ## v0.22.0（2026-09-27）：单点计算服务
 
 ### 版本

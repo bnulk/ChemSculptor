@@ -210,6 +210,7 @@ public interface ICalculationRepository
     Task<CalculationValidationReport?> GetValidationAsync(
         string jobId,
         CancellationToken cancellationToken = default);
+
 }
 
 /// <summary>
@@ -287,6 +288,11 @@ public interface ISinglePointCalculationService
 
     /// <summary>查询结果验证报告。</summary>
     Task<CalculationValidationReport?> GetValidationAsync(
+        string jobId,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>取消计算作业。</summary>
+    Task<bool> CancelAsync(
         string jobId,
         CancellationToken cancellationToken = default);
 }
