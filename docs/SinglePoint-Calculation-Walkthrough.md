@@ -15,7 +15,7 @@
    ↓
 服务器会话层保存消息并识别意图
    ↓
-服务器根据意图调用单点计算执行器
+服务器根据意图调用单点计算服务
    ↓
 解析坐标、创建工作区、生成 Gaussian 输入文件
    ↓
@@ -434,9 +434,9 @@ Api 只负责 HTTP
 
 ---
 
-## 11. 第 8 步：单点计算执行器
+## 11. 第 8 步：单点计算服务
 
-位置：`src/ChemSculptor.Agent/SinglePointCalculationExecutor.cs`
+位置：`src/ChemSculptor.Agent/SinglePointCalculationService.cs`
 
 执行顺序：
 
@@ -503,7 +503,7 @@ MolecularGeometry
   Diagnostics = 空
 ```
 
-如果解析不到原子，执行器返回失败，不会生成输入文件。
+如果解析不到原子，服务返回失败，不会生成输入文件。
 
 ---
 
@@ -541,7 +541,7 @@ Multiplicity = 1
 ProcessorCount = 4
 ```
 
-执行器直接使用默认方案中的电荷和多重度。当前阶段客户端不传这两个值，
+服务直接使用默认方案中的电荷和多重度。当前阶段客户端不传这两个值，
 后续要修改时由服务器端参数交互和审批完成。
 
 ---
@@ -599,16 +599,16 @@ RunDirectory   = <作业目录>\run
 OutputFilePath = <作业目录>\run\output.log
 ```
 
-执行器会先把 `input\<jobId>.gjf` 复制为 `run\<jobId>.gjf`。实际计算使用
+服务会先把 `input\<jobId>.gjf` 复制为 `run\<jobId>.gjf`。实际计算使用
 `run` 中的副本，原始输入仍保留在 `input` 中。Gaussian 输入中的检查点使用
 相对文件名 `%chk=<jobId>.chk`，因此 `.chk` 会写入当前工作目录 `run`。
 
 如果系统没有配置 `GAUSS_EXEDIR`，适配器会从 `PATH` 中找到 `g16.exe`
 所在目录，并把它传给子进程。否则 Gaussian 可能找不到 `l1.exe`。
 
-`SinglePointCalculationExecutor` 把上下文交给 `IComputeBackend`。
+`SinglePointCalculationService` 把上下文交给 `IComputeBackend`。
 当前注册的是 `LocalProcessBackend`，它使用 `ProcessStartInfo` 启动 `g16`，
-并异步等待进程结束。执行器随后启动 `CalculationJobMonitor`，由它在后台等待
+并异步等待进程结束。服务随后启动 `CalculationJobMonitor`，由它在后台等待
 最终状态、解析输出并保存结果。
 
 等价命令是：
@@ -754,7 +754,7 @@ GET /calculations/{jobId}/validation
 
 ## 18. 第 15 步：服务器返回响应
 
-执行器返回：
+服务返回：
 
 ```text
 Succeeded   = true
@@ -894,7 +894,7 @@ AgentService.HandleMessageAsync
 AgentService.ExecuteSinglePointAsync
 ConversationService.HandleMessageAsync
 RuleBasedTaskInterpreter.InterpretAsync
-SinglePointCalculationExecutor.ExecuteAsync
+SinglePointCalculationService.SubmitAsync
 GeometryTextParser.ParseAsync
 GaussianInputWriter.WriteAsync
 Gaussian16ProgramAdapter.WriteInputAsync
@@ -971,7 +971,7 @@ Get-Content "<返回的 inputFilePath>"
 1. WinForms/MainForm.cs
 2. Api/Endpoints/AgentEndpoints.cs
 3. Agent/AgentService.cs
-4. Agent/SinglePointCalculationExecutor.cs
+4. Agent/SinglePointCalculationService.cs
 5. Conversation/ConversationService.cs
 6. Compute/TaskInterpretation.cs
 7. InputProcessor/GeometryTextParser.cs
@@ -1016,4 +1016,4 @@ Get-Content "<返回的 inputFilePath>"
 
 ## 27. 一句话总结
 
-> 当前“单点计算”链路是：客户端原样发送文本和坐标，会话层解释出单点计算意图，执行器创建作业并通过 `GaussianInputGenerationSkill` 生成输入，通过本机执行后端启动 `g16`，再由后台监控器调用 `GaussianSinglePointResultExtractionSkill` 和 `CalculationResultValidationSkill`，保存通用结果和处理方案。异常处理只保留技能框架，尚未执行。
+> 当前“单点计算”链路是：客户端原样发送文本和坐标，会话层解释出单点计算意图，`SinglePointCalculationService` 创建作业并通过 `GaussianInputGenerationSkill` 生成输入，通过本机执行后端启动 `g16`，再由后台监控器调用 `GaussianSinglePointResultExtractionSkill` 和 `CalculationResultValidationSkill`，保存通用结果、验证报告和处理方案。异常处理只保留技能框架，尚未执行。

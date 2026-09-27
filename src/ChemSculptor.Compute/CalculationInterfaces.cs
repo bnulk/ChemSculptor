@@ -271,7 +271,7 @@ public interface ICalculationPlanner
 public interface ISinglePointCalculationService
 {
     /// <summary>提交单点计算。</summary>
-    Task<CalculationJob> SubmitAsync(
+    Task<SinglePointCalculationSubmissionResult> SubmitAsync(
         CalculationRequest request,
         CancellationToken cancellationToken = default);
 
@@ -282,6 +282,11 @@ public interface ISinglePointCalculationService
 
     /// <summary>查询计算结果。</summary>
     Task<CalculationResult?> GetResultAsync(
+        string jobId,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>查询结果验证报告。</summary>
+    Task<CalculationValidationReport?> GetValidationAsync(
         string jobId,
         CancellationToken cancellationToken = default);
 }

@@ -363,9 +363,9 @@ ConversationService
   → SinglePoint
 ```
 
-### 第三步：Agent 创建作业
+### 第三步：Agent 调用单点计算服务
 
-`SinglePointCalculationExecutor` 创建：
+`SinglePointCalculationService` 创建：
 
 ```text
 JobId
@@ -376,7 +376,7 @@ CalculationSpec
 输出文件路径
 ```
 
-### 第四步：调用输入生成 Skill
+### 第四步：服务调用输入生成 Skill
 
 ```text
 SkillId:
@@ -403,7 +403,7 @@ SkillId:
 ### 第五步：提交本机进程
 
 ```text
-SinglePointCalculationExecutor
+SinglePointCalculationService
   → IComputeBackend.SubmitAsync
   → LocalProcessBackend
   → g16
@@ -805,7 +805,7 @@ Agent 的通用流程保持不变。
 5. GaussianSinglePointResultExtractionSkill.cs
 6. CalculationResultValidationSkill.cs
 7. SkillJsonInvoker.cs
-8. SinglePointCalculationExecutor.cs
+8. SinglePointCalculationService.cs
 9. CalculationJobMonitor.cs
 10. Gaussian16ProgramAdapter.cs
 11. GaussianOutputParser.cs

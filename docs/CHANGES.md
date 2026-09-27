@@ -5,6 +5,141 @@
 
 ---
 
+## v0.22.0（2026-09-27）：单点计算服务
+
+### 版本
+
+- 当前版本：`0.22.0`
+- 日期：2026-09-27
+- 版本类型：新增功能（第七阶段，单点计算服务）
+
+### 改动目的
+
+把原先位于 `SinglePointCalculationExecutor` 中的编排逻辑提升为正式服务：
+
+```text
+ISinglePointCalculationService
+  → SinglePointCalculationService
+```
+
+Agent 不再直接编排输入生成、进程提交和作业监控，而是调用单点计算服务。
+
+新增边界：
+
+```text
+Agent
+  负责会话意图到服务调用
+
+SinglePointCalculationService
+  负责作业创建、Skill 调用、后端提交、监控启动和查询
+```
+
+### 计算请求
+
+`CalculationRequest` 新增：
+
+```text
+CoordinateText
+```
+
+当前服务会：
+
+```text
+创建默认 CalculationSpec
+应用允许的 Overrides
+创建 CalculationJob 和工作区
+调用 gaussian.input-generation
+提交 IComputeBackend
+启动 CalculationJobMonitor
+保存 Running 状态
+```
+
+当前支持的覆盖参数：
+
+```text
+program
+method
+basis
+charge
+multiplicity
+```
+
+### 作业模型
+
+`CalculationJob` 新增：
+
+```text
+Goal
+SourceInputFilePath
+```
+
+含义：
+
+```text
+Goal
+  本次计算的科研目标
+
+SourceInputFilePath
+  input 目录中的原始输入文件
+
+InputFilePath
+  run 目录中的实际执行输入文件
+```
+
+### 服务接口
+
+`ISinglePointCalculationService` 现在提供：
+
+```text
+SubmitAsync
+GetJobAsync
+GetResultAsync
+GetValidationAsync
+```
+
+`SubmitAsync` 返回：
+
+```text
+SinglePointCalculationSubmissionResult
+  Succeeded
+  Error
+  Message
+  Job
+  Diagnostics
+```
+
+### 代码调整
+
+删除：
+
+```text
+SinglePointCalculationExecutor
+```
+
+新增：
+
+```text
+SinglePointCalculationService
+```
+
+AgentService 现在只依赖：
+
+```text
+IConversationService
+ISinglePointCalculationService
+```
+
+### 验证
+
+- Release 全解决方案构建：0 警告 0 错误
+- 测试：31/31 通过
+- 实际水分子计算状态：`Validated`
+- 实际能量：`-76.3801013836 Hartree`
+- 实际验证：`Passed`
+- 实际检查数量：14
+
+---
+
 ## v0.21.2（2026-09-27）：把验证项区分为必要、建议和信息检查
 
 ### 版本

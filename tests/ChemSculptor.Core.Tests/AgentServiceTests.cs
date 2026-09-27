@@ -129,8 +129,8 @@ public class AgentServiceTests
         backend = new RecordingComputeBackend();
         NoOpCalculationJobMonitor jobMonitor = new NoOpCalculationJobMonitor();
 
-        SinglePointCalculationExecutor executor =
-            new SinglePointCalculationExecutor(
+        SinglePointCalculationService singlePointService =
+            new SinglePointCalculationService(
                 workspace,
                 backend,
                 calculationRepository,
@@ -140,7 +140,7 @@ public class AgentServiceTests
         InMemoryConversationRepository repository = new InMemoryConversationRepository();
         ConversationService conversationService = new ConversationService(interpreter, repository);
 
-        return new AgentService(conversationService, executor);
+        return new AgentService(conversationService, singlePointService);
     }
 
     private static string CreateTemporaryRoot()

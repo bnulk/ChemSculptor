@@ -40,8 +40,9 @@ public static class AgentServiceRegistration
             RuleBasedCalculationProcessingPlanner>(services);
         ServiceCollectionServiceExtensions.AddSingleton<ICalculationJobMonitor, CalculationJobMonitor>(
             services);
-        ServiceCollectionServiceExtensions.AddSingleton<SinglePointCalculationExecutor>(
-            services);
+        ServiceCollectionServiceExtensions.AddSingleton<
+            ISinglePointCalculationService,
+            SinglePointCalculationService>(services);
         ServiceCollectionServiceExtensions.AddSingleton<ICalculationQueryService, CalculationQueryService>(
             services);
         ServiceCollectionServiceExtensions.AddSingleton<IAgentService, AgentService>(

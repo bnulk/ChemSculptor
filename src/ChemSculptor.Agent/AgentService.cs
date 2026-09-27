@@ -5,20 +5,20 @@ namespace ChemSculptor.Agent;
 
 /// <summary>
 /// 智能体编排服务。
-/// 先调用会话层解释意图，再根据意图调用计算执行器。
+/// 先调用会话层解释意图，再根据意图调用单点计算服务。
 /// </summary>
 public sealed class AgentService : IAgentService
 {
     private readonly IConversationService _conversationService;
-    private readonly SinglePointCalculationExecutor _executor;
+    private readonly ISinglePointCalculationService _singlePointService;
 
     /// <summary>创建智能体服务。</summary>
     public AgentService(
         IConversationService conversationService,
-        SinglePointCalculationExecutor executor)
+        ISinglePointCalculationService singlePointService)
     {
         _conversationService = conversationService;
-        _executor = executor;
+        _singlePointService = singlePointService;
     }
 
     /// <summary>处理客户端原始消息。</summary>
@@ -50,11 +50,17 @@ public sealed class AgentService : IAgentService
             return notImplemented;
         }
 
-        SinglePointExecutionResult executionResult = await _executor.ExecuteAsync(
-            request.CoordinateText,
-            cancellationToken);
+        CalculationRequest calculationRequest = new CalculationRequest();
+        calculationRequest.SessionId = request.SessionId;
+        calculationRequest.Goal = request.Text;
+        calculationRequest.CoordinateText = request.CoordinateText;
 
-        return BuildSinglePointResult(conversationReply, executionResult);
+        SinglePointCalculationSubmissionResult submission =
+            await _singlePointService.SubmitAsync(
+                calculationRequest,
+                cancellationToken);
+
+        return BuildSinglePointResult(conversationReply, submission);
     }
 
     /// <summary>直接执行单点计算。</summary>
@@ -62,51 +68,57 @@ public sealed class AgentService : IAgentService
         AgentSinglePointRequest request,
         CancellationToken cancellationToken = default)
     {
-        SinglePointExecutionResult executionResult = await _executor.ExecuteAsync(
-            request.CoordinateText,
-            cancellationToken);
+        CalculationRequest calculationRequest = new CalculationRequest();
+        calculationRequest.Goal = "单点计算";
+        calculationRequest.CoordinateText = request.CoordinateText;
+
+        SinglePointCalculationSubmissionResult submission =
+            await _singlePointService.SubmitAsync(
+                calculationRequest,
+                cancellationToken);
 
         AgentResult result = new AgentResult();
         result.TaskType = CalculationTaskType.SinglePoint;
 
-        if (!executionResult.Succeeded)
+        if (!submission.Succeeded || submission.Job == null)
         {
             result.IsSupported = false;
-            result.Error = executionResult.Error;
-            result.Diagnostics = new List<string>(executionResult.Diagnostics);
+            result.Error = submission.Error;
+            result.Diagnostics = new List<string>(submission.Diagnostics);
             return result;
         }
 
         result.IsSupported = true;
-        result.JobId = executionResult.JobId;
-        result.Status = executionResult.Status;
-        result.InputFilePath = executionResult.InputFilePath;
-        result.OutputFilePath = executionResult.OutputFilePath;
-        result.Message = executionResult.Message;
+        result.JobId = submission.Job.JobId;
+        result.Status = submission.Job.State.ToString();
+        result.InputFilePath = submission.Job.SourceInputFilePath;
+        result.OutputFilePath = submission.Job.OutputFilePath;
+        result.Message = submission.Message;
         return result;
     }
 
     private static AgentResult BuildSinglePointResult(
         ConversationReply conversationReply,
-        SinglePointExecutionResult executionResult)
+        SinglePointCalculationSubmissionResult submission)
     {
         AgentResult result = new AgentResult();
         result.TaskType = CalculationTaskType.SinglePoint;
 
-        if (!executionResult.Succeeded)
+        if (!submission.Succeeded || submission.Job == null)
         {
             result.IsSupported = false;
-            result.Error = executionResult.Error;
-            result.Diagnostics = new List<string>(executionResult.Diagnostics);
+            result.Error = submission.Error;
+            result.Diagnostics = new List<string>(submission.Diagnostics);
             return result;
         }
 
+        CalculationJob job = submission.Job;
         result.IsSupported = true;
-        result.JobId = executionResult.JobId;
-        result.Status = executionResult.Status;
-        result.InputFilePath = executionResult.InputFilePath;
-        result.OutputFilePath = executionResult.OutputFilePath;
-        result.Message = conversationReply.ReplyMessage + " " + executionResult.Message;
+        result.JobId = job.JobId;
+        result.Status = job.State.ToString();
+        result.InputFilePath = job.SourceInputFilePath;
+        result.OutputFilePath = job.OutputFilePath;
+        result.Message = conversationReply.ReplyMessage + " " + submission.Message;
         result.Diagnostics = new List<string>(conversationReply.Diagnostics);
 
         return result;

@@ -257,6 +257,9 @@ public sealed class CalculationRequest
     /// <summary>用户自然语言目标。</summary>
     public string Goal { get; set; } = string.Empty;
 
+    /// <summary>本次计算使用的分子坐标文本。</summary>
+    public string CoordinateText { get; set; } = string.Empty;
+
     /// <summary>用户覆盖的参数。</summary>
     public List<CalculationParameter> Overrides { get; set; } = new List<CalculationParameter>();
 }
@@ -278,6 +281,9 @@ public sealed class CalculationTask
 
     /// <summary>使用的几何资产标识。</summary>
     public string GeometryId { get; set; } = string.Empty;
+
+    /// <summary>本次计算的科研目标。</summary>
+    public string Goal { get; set; } = string.Empty;
 
     /// <summary>计算方案。</summary>
     public CalculationSpec Spec { get; set; } = new CalculationSpec();
@@ -309,6 +315,9 @@ public sealed class CalculationJob
     /// <summary>使用的几何资产标识。</summary>
     public string GeometryId { get; set; } = string.Empty;
 
+    /// <summary>本次计算的科研目标。</summary>
+    public string Goal { get; set; } = string.Empty;
+
     /// <summary>计算方案。</summary>
     public CalculationSpec Spec { get; set; } = new CalculationSpec();
 
@@ -320,6 +329,9 @@ public sealed class CalculationJob
 
     /// <summary>本次作业的运行目录。</summary>
     public string RunDirectory { get; set; } = string.Empty;
+
+    /// <summary>input 目录中的原始输入文件路径。</summary>
+    public string SourceInputFilePath { get; set; } = string.Empty;
 
     /// <summary>输入文件路径。</summary>
     public string InputFilePath { get; set; } = string.Empty;
@@ -381,6 +393,25 @@ public sealed class CalculationResult
 
     /// <summary>诊断信息。</summary>
     public List<CalculationDiagnostic> Diagnostics { get; set; } = new List<CalculationDiagnostic>();
+}
+
+/// <summary>单点计算服务提交结果。</summary>
+public sealed class SinglePointCalculationSubmissionResult
+{
+    /// <summary>是否成功提交。</summary>
+    public bool Succeeded { get; set; }
+
+    /// <summary>失败说明。</summary>
+    public string Error { get; set; } = string.Empty;
+
+    /// <summary>面向用户的说明。</summary>
+    public string Message { get; set; } = string.Empty;
+
+    /// <summary>已创建的作业。</summary>
+    public CalculationJob? Job { get; set; }
+
+    /// <summary>诊断信息。</summary>
+    public List<string> Diagnostics { get; set; } = new List<string>();
 }
 
 /// <summary>
