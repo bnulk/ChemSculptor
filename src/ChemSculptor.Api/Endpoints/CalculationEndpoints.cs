@@ -20,6 +20,7 @@ public static class CalculationEndpoints
         EndpointRouteBuilderExtensions.MapPost(calculations, "/single-point", SubmitSinglePointAsync);
         EndpointRouteBuilderExtensions.MapGet(calculations, "/{jobId}/status", GetCalculationStatusAsync);
         EndpointRouteBuilderExtensions.MapGet(calculations, "/{jobId}/result", GetCalculationResultAsync);
+        EndpointRouteBuilderExtensions.MapGet(calculations, "/{jobId}/validation", GetCalculationValidationAsync);
 
         return app;
     }
@@ -123,6 +124,89 @@ public static class CalculationEndpoints
         response.Diagnostics = ConvertDiagnostics(result.Diagnostics);
 
         return Results.Ok(response);
+    }
+
+    /// <summary>查询计算结果验证报告。</summary>
+    private static async Task<IResult> GetCalculationValidationAsync(
+        string jobId,
+        ICalculationQueryService queryService,
+        CancellationToken cancellationToken)
+    {
+        CalculationJob? job = await queryService.GetJobAsync(jobId, cancellationToken);
+
+        if (job == null)
+        {
+            ApiError error = new ApiError();
+            error.Error = "计算作业 " + jobId + " 不存在。";
+            return Results.NotFound(error);
+        }
+
+        CalculationValidationReport? validation =
+            await queryService.GetValidationAsync(jobId, cancellationToken);
+
+        if (validation == null)
+        {
+            ApiError error = new ApiError();
+            error.Error = "计算结果验证报告尚未就绪。";
+            return Results.Conflict(error);
+        }
+
+        CalculationValidationResponse response = new CalculationValidationResponse();
+        response.JobId = jobId;
+        response.Passed = validation.Passed;
+        response.Status = validation.Status.ToString();
+        response.Summary = validation.Summary;
+        response.ValidatorName = validation.ValidatorName;
+        response.ValidatedAt = validation.ValidatedAt;
+        response.Checks = ConvertValidationChecks(validation.Checks);
+        response.Issues = ConvertValidationIssues(validation.Issues);
+        return Results.Ok(response);
+    }
+
+    private static List<CalculationValidationCheckResponse> ConvertValidationChecks(
+        List<CalculationValidationCheck> checks)
+    {
+        List<CalculationValidationCheckResponse> responses =
+            new List<CalculationValidationCheckResponse>();
+
+        for (int index = 0; index < checks.Count; index++)
+        {
+            CalculationValidationCheck check = checks[index];
+            CalculationValidationCheckResponse response =
+                new CalculationValidationCheckResponse();
+            response.Code = check.Code;
+            response.Description = check.Description;
+            response.Passed = check.Passed;
+            response.Severity = check.Severity.ToString();
+            response.Requirement = check.Requirement.ToString();
+            response.Scope = check.Scope.ToString();
+            response.ExpectedValue = check.ExpectedValue;
+            response.ActualValue = check.ActualValue;
+            response.Message = check.Message;
+            responses.Add(response);
+        }
+
+        return responses;
+    }
+
+    private static List<CalculationDiagnosticResponse> ConvertValidationIssues(
+        List<CalculationValidationIssue> issues)
+    {
+        List<CalculationDiagnosticResponse> responses =
+            new List<CalculationDiagnosticResponse>();
+
+        for (int index = 0; index < issues.Count; index++)
+        {
+            CalculationValidationIssue issue = issues[index];
+            CalculationDiagnosticResponse response =
+                new CalculationDiagnosticResponse();
+            response.Severity = issue.Severity.ToString();
+            response.Code = issue.Code;
+            response.Message = issue.Message;
+            responses.Add(response);
+        }
+
+        return responses;
     }
 
     private static List<CalculationDiagnosticResponse> ConvertDiagnostics(

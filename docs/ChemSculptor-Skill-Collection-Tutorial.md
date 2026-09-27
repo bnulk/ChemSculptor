@@ -1,6 +1,6 @@
 # ChemSculptor Skill 集合教程
 
-> 适用版本：`v0.20.0` 之后
+> 适用版本：`v0.21.0` 之后
 > 面向对象：刚接触该架构、希望边阅读代码边理解设计思想的开发者
 > 当前重点：正常单点计算已经按 Skill 集合组织；异常处理只保留框架
 
@@ -446,12 +446,58 @@ SkillId:
   CalculationResultValidationSkill
 ```
 
-当前验证：
+当前验证 Skill 会合并以下验证器：
 
 ```text
+SinglePointCalculationResultValidator
+GaussianSinglePointOutputValidator
+```
+
+执行 14 项检查：
+
+```text
+作业标识、程序、方法、基组是否一致
+电荷和多重度是否一致
 是否正常结束
-是否有最终能量
 FailureKind 是否为 None
+是否有有限能量
+能量单位是否为 Hartree
+输出文件是否存在
+通用结果是否声明正常终结
+Gaussian 输出最后一个非空行是否包含 Normal termination
+```
+
+每条检查还记录：
+
+```text
+Requirement
+  Required / Recommended / Informational
+
+Scope
+  Structure / ProgramOutput / Numerical
+  ScientificPlausibility / CrossResultConsistency / Other
+```
+
+正常终结只属于：
+
+```text
+Required + ProgramOutput
+```
+
+它是正常完成的必要条件，不是充分条件。
+
+整体判定规则：
+
+```text
+任一 Required 失败             → Failed
+只有 Recommended 失败          → PassedWithWarnings
+Required 全部通过且无失败项    → Passed
+```
+
+结构化报告保存为：
+
+```text
+jobs/<jobId>/results/validation.json
 ```
 
 ### 第九步：生成通用处理方案

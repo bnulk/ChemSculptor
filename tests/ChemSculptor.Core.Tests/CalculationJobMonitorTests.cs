@@ -4,6 +4,7 @@ using ChemSculptor.Compute.Gaussian;
 using ChemSculptor.Core;
 using ChemSculptor.Skills.Common.CalculationResultValidation;
 using ChemSculptor.Skills.Gaussian.GaussianSinglePointResultExtraction;
+using ChemSculptor.Skills.Gaussian.GaussianSinglePointResultValidation;
 
 namespace ChemSculptor.Core.Tests;
 
@@ -62,8 +63,12 @@ public class CalculationJobMonitorTests
 
             GaussianSinglePointResultExtractionSkill extractionSkill =
                 new GaussianSinglePointResultExtractionSkill(programAdapter);
+            List<ICalculationResultValidator> validators =
+                new List<ICalculationResultValidator>();
+            validators.Add(new SinglePointCalculationResultValidator());
+            validators.Add(new GaussianSinglePointOutputValidator());
             CalculationResultValidationSkill validationSkill =
-                new CalculationResultValidationSkill();
+                new CalculationResultValidationSkill(validators);
 
             SkillRegistry skillRegistry = new SkillRegistry();
             await skillRegistry.RegisterAsync(extractionSkill);
@@ -94,7 +99,7 @@ public class CalculationJobMonitorTests
 
                 if (savedResult != null
                     && savedJob != null
-                    && savedJob.State == CalculationJobState.Parsed)
+                    && savedJob.State == CalculationJobState.Validated)
                 {
                     break;
                 }
@@ -108,12 +113,15 @@ public class CalculationJobMonitorTests
             Assert.True(savedResult.NormalTermination);
 
             Assert.NotNull(savedJob);
-            Assert.Equal(CalculationJobState.Parsed, savedJob.State);
+            Assert.Equal(CalculationJobState.Validated, savedJob.State);
 
             string processingPlanPath =
                 workspace.GetJobProcessingPlanPath(job.JobId);
+            string validationPath =
+                workspace.GetJobValidationPath(job.JobId);
 
             Assert.True(File.Exists(processingPlanPath));
+            Assert.True(File.Exists(validationPath));
         }
         finally
         {

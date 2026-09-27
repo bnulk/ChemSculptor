@@ -16,4 +16,9 @@ public interface ICalculationQueryService
     Task<CalculationResult?> GetResultAsync(
         string jobId,
         CancellationToken cancellationToken = default);
+
+    /// <summary>查询结果验证报告。</summary>
+    Task<CalculationValidationReport?> GetValidationAsync(
+        string jobId,
+        CancellationToken cancellationToken = default);
 }

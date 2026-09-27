@@ -2,7 +2,7 @@
 
 > 适用版本：v0.20.0 之后
 > 当前阶段目标：客户端发送原始文本，服务器通过显式 Skill 集合完成单点计算、结果提取和结果验证
-> 当前未实现：科学结果验证、自动查错纠错、远程执行
+> 当前未实现：科学合理性判断、自动查错纠错、远程执行
 
 本文按真实代码顺序讲解一次“单点计算”从客户端到服务器的全过程。建议对照代码阅读。
 
@@ -29,7 +29,7 @@ GaussianSinglePointResultExtractionSkill
    ↓
 CalculationResultValidationSkill
    ↓
-保存 result.json 和 processing-plan.json
+保存 result.json、validation.json 和 processing-plan.json
    ↓
 客户端显示结果
 ```
@@ -696,6 +696,17 @@ OutputMissing
 CalculationResultValidationSkill
 ```
 
+当前会同时执行：
+
+```text
+SinglePointCalculationResultValidator
+  检查通用结果和计算方案
+
+GaussianSinglePointOutputValidator
+  读取 output.log 的最后一个非空行
+  检查是否包含 Normal termination
+```
+
 Agent 的 `RuleBasedCalculationProcessingPlanner` 只读取这些通用分类，生成
 通用处理方案：
 
@@ -722,6 +733,7 @@ GaussianProcessingPlan
 ```text
 jobs/<jobId>/results/result.json
 jobs/<jobId>/results/processing-plan.json
+jobs/<jobId>/results/validation.json
 ```
 
 作业状态写入：
@@ -735,6 +747,7 @@ jobs/<jobId>/manifest.json
 ```text
 GET /calculations/{jobId}/status
 GET /calculations/{jobId}/result
+GET /calculations/{jobId}/validation
 ```
 
 ---
@@ -816,7 +829,8 @@ AgentMessageResultDto? result =
 │   └── stderr.log
 └── results\
     ├── result.json
-    └── processing-plan.json
+    ├── processing-plan.json
+    └── validation.json
 ```
 
 Gaussian 执行时还会在工作目录中产生临时输入和检查点文件。正常结束后可以检查：
@@ -830,6 +844,7 @@ stderr.log    子进程标准错误
 manifest.json 作业状态、路径和诊断
 result.json   能量、程序、方法、基组和规范化诊断
 processing-plan.json          智能体生成的通用处理方案
+validation.json               结构化结果验证报告
 ```
 
 如果解析成功，`result.json` 中会包含：
@@ -850,7 +865,8 @@ processing-plan.json          智能体生成的通用处理方案
 ## 21. 当前没有做的事情
 
 ```text
-没有科学结果验证门
+尚未把结果验证 Skill 接入 Workflow Gate
+没有科学合理性评分
 没有自动查错和纠错
 没有自动执行通用处理方案
 没有把程序专用处理方案回传客户端
@@ -981,13 +997,13 @@ Get-Content "<返回的 inputFilePath>"
 
 ## 26. 下一步
 
-当前链路已经能启动 Gaussian、解析输出并保存结果。下一步是：
+当前链路已经能启动 Gaussian、解析输出、验证结果并保存报告。下一步是：
 
 ```text
-第六阶段：结果验证与客户端反馈
-  科学结果验证门
-  异常结果分类
+第七阶段：客户端反馈与异常处理
   WinForms 自动轮询状态和能量
+  显示验证报告
+  接入异常诊断和修正子工作流
 ```
 
 之后是：

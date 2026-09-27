@@ -1,6 +1,6 @@
 # Skill 集合与工作流组织教程
 
-> 适用版本：`v0.20.0` 之后
+> 适用版本：`v0.21.0` 之后
 > 本文重点：从设计思想理解 Skill 集合、工作流、Agent、验证门和异常恢复
 > 当前状态：正常单点计算已按 Skill 集合组织；复杂工作流和异常执行仍是后续目标
 
@@ -567,6 +567,23 @@ SCF 是否收敛
 频率是否存在虚频
 结果是否超过合理范围
 ```
+
+检查项应带有要求等级：
+
+```text
+Required
+  必须通过
+
+Recommended
+  失败时产生警告
+
+Informational
+  只记录信息
+```
+
+`Normal termination` 属于 `Required + ProgramOutput`，它只能证明程序正常结束，
+不能证明科学结果一定合理。能量合理性、自旋污染和结构合理性应作为后续
+`ScientificPlausibility` 检查加入。
 
 Gate 的职责是“允许或阻止继续”。
 

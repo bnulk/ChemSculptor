@@ -160,6 +160,9 @@ public interface ICalculationWorkspace
 
     /// <summary>获取程序专用处理方案文件路径。</summary>
     string GetJobProgramProcessingPlanPath(string jobId);
+
+    /// <summary>获取结果验证报告文件路径。</summary>
+    string GetJobValidationPath(string jobId);
 }
 
 /// <summary>
@@ -195,6 +198,17 @@ public interface ICalculationRepository
     /// <summary>保存程序专用处理方案。</summary>
     Task SaveProgramProcessingPlanAsync(
         ProgramProcessingPlan plan,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>保存结果验证报告。</summary>
+    Task SaveValidationAsync(
+        CalculationValidationReport report,
+        string jobId,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>读取结果验证报告。</summary>
+    Task<CalculationValidationReport?> GetValidationAsync(
+        string jobId,
         CancellationToken cancellationToken = default);
 }
 

@@ -98,6 +98,57 @@ public enum CalculationDiagnosticSeverity
     Error
 }
 
+/// <summary>计算结果验证状态。</summary>
+public enum CalculationValidationStatus
+{
+    /// <summary>尚未验证。</summary>
+    NotEvaluated,
+
+    /// <summary>验证通过。</summary>
+    Passed,
+
+    /// <summary>验证通过，但存在警告。</summary>
+    PassedWithWarnings,
+
+    /// <summary>验证失败。</summary>
+    Failed
+}
+
+/// <summary>验证项目在整体判定中的要求等级。</summary>
+public enum CalculationValidationRequirement
+{
+    /// <summary>必须通过；失败会阻止结果通过。</summary>
+    Required,
+
+    /// <summary>建议通过；失败会产生警告。</summary>
+    Recommended,
+
+    /// <summary>信息性检查；不直接改变通过状态。</summary>
+    Informational
+}
+
+/// <summary>验证项目所属范围。</summary>
+public enum CalculationValidationScope
+{
+    /// <summary>结果和作业的一般结构一致性。</summary>
+    Structure,
+
+    /// <summary>计算程序是否正常终结。</summary>
+    ProgramOutput,
+
+    /// <summary>能量、梯度或其他数值是否有效。</summary>
+    Numerical,
+
+    /// <summary>科学合理性判断。</summary>
+    ScientificPlausibility,
+
+    /// <summary>多个结果之间的一致性。</summary>
+    CrossResultConsistency,
+
+    /// <summary>其他范围。</summary>
+    Other
+}
+
 /// <summary>通用计算失败类别。</summary>
 public enum CalculationFailureKind
 {
@@ -401,11 +452,62 @@ public sealed class CalculationValidationIssue
     public string Message { get; set; } = string.Empty;
 }
 
+/// <summary>一条结构化验证检查。</summary>
+public sealed class CalculationValidationCheck
+{
+    /// <summary>检查代码。</summary>
+    public string Code { get; set; } = string.Empty;
+
+    /// <summary>检查说明。</summary>
+    public string Description { get; set; } = string.Empty;
+
+    /// <summary>是否通过。</summary>
+    public bool Passed { get; set; }
+
+    /// <summary>检查级别。</summary>
+    public CalculationDiagnosticSeverity Severity { get; set; } =
+        CalculationDiagnosticSeverity.Info;
+
+    /// <summary>要求等级。</summary>
+    public CalculationValidationRequirement Requirement { get; set; } =
+        CalculationValidationRequirement.Required;
+
+    /// <summary>验证范围。</summary>
+    public CalculationValidationScope Scope { get; set; } =
+        CalculationValidationScope.Other;
+
+    /// <summary>期望值。</summary>
+    public string ExpectedValue { get; set; } = string.Empty;
+
+    /// <summary>实际值。</summary>
+    public string ActualValue { get; set; } = string.Empty;
+
+    /// <summary>检查说明或失败原因。</summary>
+    public string Message { get; set; } = string.Empty;
+}
+
 /// <summary>参数校验报告。</summary>
 public sealed class CalculationValidationReport
 {
     /// <summary>是否通过。</summary>
     public bool Passed { get; set; }
+
+    /// <summary>验证状态。</summary>
+    public CalculationValidationStatus Status { get; set; } =
+        CalculationValidationStatus.NotEvaluated;
+
+    /// <summary>验证摘要。</summary>
+    public string Summary { get; set; } = string.Empty;
+
+    /// <summary>验证器名称。</summary>
+    public string ValidatorName { get; set; } = string.Empty;
+
+    /// <summary>验证时间。</summary>
+    public DateTimeOffset ValidatedAt { get; set; } = DateTimeOffset.UtcNow;
+
+    /// <summary>结构化检查列表。</summary>
+    public List<CalculationValidationCheck> Checks { get; set; } =
+        new List<CalculationValidationCheck>();
 
     /// <summary>问题列表。</summary>
     public List<CalculationValidationIssue> Issues { get; set; } = new List<CalculationValidationIssue>();

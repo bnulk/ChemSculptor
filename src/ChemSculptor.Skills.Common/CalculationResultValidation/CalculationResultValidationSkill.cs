@@ -11,14 +11,31 @@ public sealed class CalculationResultValidationSkill
         CalculationResultValidationSkillRequest,
         CalculationResultValidationSkillResult>
 {
+    private readonly List<ICalculationResultValidator> _validators;
     private readonly List<string> _capabilities;
 
     /// <summary>创建验证技能。</summary>
-    public CalculationResultValidationSkill()
+    public CalculationResultValidationSkill(
+        IEnumerable<ICalculationResultValidator> validators)
     {
+        if (validators == null)
+        {
+            throw new ArgumentNullException(nameof(validators));
+        }
+
+        _validators = new List<ICalculationResultValidator>(validators);
+
+        if (_validators.Count == 0)
+        {
+            throw new ArgumentException(
+                "至少需要注册一个计算结果验证器。",
+                nameof(validators));
+        }
+
         _capabilities = new List<string>();
         _capabilities.Add("calculation.validation");
         _capabilities.Add("calculation.result");
+        _capabilities.Add("calculation.single-point-validation");
     }
 
     /// <summary>技能标识。</summary>
@@ -44,37 +61,42 @@ public sealed class CalculationResultValidationSkill
         CalculationResultValidationSkillRequest request,
         CancellationToken cancellationToken)
     {
-        CalculationValidationReport report = new CalculationValidationReport();
-        report.Passed = true;
+        CalculationValidationReport combinedReport =
+            new CalculationValidationReport();
+        combinedReport.ValidatedAt = DateTimeOffset.UtcNow;
 
-        if (!request.Result.NormalTermination)
+        bool validatorFound = false;
+
+        for (int index = 0; index < _validators.Count; index++)
         {
-            AddIssue(
-                report,
-                "calculation.normal_termination_missing",
-                "计算没有正常结束。");
+            ICalculationResultValidator validator = _validators[index];
+
+            if (!validator.CanValidate(request))
+            {
+                continue;
+            }
+
+            validatorFound = true;
+            CalculationValidationReport validatorReport =
+                validator.Validate(request);
+            MergeReport(combinedReport, validatorReport);
         }
 
-        if (!request.Result.Energy.HasValue)
+        if (!validatorFound)
         {
-            AddIssue(
-                report,
-                "calculation.energy_missing",
-                "计算结果中没有最终能量。");
+            CalculationValidationIssue issue = new CalculationValidationIssue();
+            issue.Severity = CalculationDiagnosticSeverity.Error;
+            issue.Code = "calculation.validator_not_found";
+            issue.Message = "没有可处理该任务类型的计算结果验证器。";
+            combinedReport.Issues.Add(issue);
         }
 
-        if (request.Result.FailureKind != CalculationFailureKind.None)
-        {
-            AddIssue(
-                report,
-                "calculation.failure_kind",
-                "计算结果标记为失败：" + request.Result.FailureKind.ToString());
-        }
+        SetCombinedReportStatus(combinedReport);
 
         CalculationResultValidationSkillResult result =
             new CalculationResultValidationSkillResult();
-        result.Passed = report.Passed;
-        result.Report = report;
+        result.Passed = combinedReport.Passed;
+        result.Report = combinedReport;
         return Task.FromResult(result);
     }
 
@@ -85,16 +107,111 @@ public sealed class CalculationResultValidationSkill
         return Task.FromResult(true);
     }
 
-    private static void AddIssue(
-        CalculationValidationReport report,
-        string code,
-        string message)
+    private static void MergeReport(
+        CalculationValidationReport combinedReport,
+        CalculationValidationReport validatorReport)
     {
-        CalculationValidationIssue issue = new CalculationValidationIssue();
-        issue.Severity = CalculationDiagnosticSeverity.Error;
-        issue.Code = code;
-        issue.Message = message;
-        report.Issues.Add(issue);
-        report.Passed = false;
+        for (int index = 0; index < validatorReport.Checks.Count; index++)
+        {
+            combinedReport.Checks.Add(validatorReport.Checks[index]);
+        }
+
+        for (int index = 0; index < validatorReport.Issues.Count; index++)
+        {
+            combinedReport.Issues.Add(validatorReport.Issues[index]);
+        }
+
+        if (combinedReport.ValidatorName.Length == 0)
+        {
+            combinedReport.ValidatorName = validatorReport.ValidatorName;
+        }
+        else if (validatorReport.ValidatorName.Length > 0)
+        {
+            combinedReport.ValidatorName =
+                combinedReport.ValidatorName + ", " + validatorReport.ValidatorName;
+        }
+    }
+
+    private static void SetCombinedReportStatus(CalculationValidationReport report)
+    {
+        bool hasRequiredFailure = false;
+        bool hasRecommendedFailure = false;
+        bool hasInformationalFailure = false;
+        int requiredCheckCount = 0;
+        int passedRequiredCheckCount = 0;
+
+        for (int index = 0; index < report.Checks.Count; index++)
+        {
+            CalculationValidationCheck check = report.Checks[index];
+
+            if (check.Requirement == CalculationValidationRequirement.Required)
+            {
+                requiredCheckCount++;
+
+                if (check.Passed)
+                {
+                    passedRequiredCheckCount++;
+                }
+                else
+                {
+                    hasRequiredFailure = true;
+                }
+            }
+            else if (check.Requirement == CalculationValidationRequirement.Recommended
+                && !check.Passed)
+            {
+                hasRecommendedFailure = true;
+            }
+            else if (check.Requirement == CalculationValidationRequirement.Informational
+                && !check.Passed)
+            {
+                hasInformationalFailure = true;
+            }
+        }
+
+        for (int index = 0; index < report.Issues.Count; index++)
+        {
+            CalculationDiagnosticSeverity severity = report.Issues[index].Severity;
+
+            if (severity == CalculationDiagnosticSeverity.Error)
+            {
+                hasRequiredFailure = true;
+            }
+            else if (severity == CalculationDiagnosticSeverity.Warning)
+            {
+                hasRecommendedFailure = true;
+            }
+        }
+
+        if (hasRequiredFailure)
+        {
+            report.Passed = false;
+            report.Status = CalculationValidationStatus.Failed;
+            report.Summary =
+                "必要验证存在失败项。正常终结是必要条件，但不是充分条件。";
+            return;
+        }
+
+        report.Passed = true;
+
+        if (hasRecommendedFailure || hasInformationalFailure)
+        {
+            report.Status = CalculationValidationStatus.PassedWithWarnings;
+            report.Summary =
+                "全部必要验证通过，但存在建议项或信息项的失败结果。";
+        }
+        else
+        {
+            report.Status = CalculationValidationStatus.Passed;
+            report.Summary =
+                "全部必要验证通过。正常终结是必要条件，但不是充分条件。";
+        }
+
+        report.Summary = report.Summary +
+            " 必要检查 " +
+            passedRequiredCheckCount.ToString() +
+            "/" +
+            requiredCheckCount.ToString() +
+            " 项通过。";
     }
 }

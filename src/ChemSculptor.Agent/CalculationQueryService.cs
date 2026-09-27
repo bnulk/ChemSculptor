@@ -35,4 +35,12 @@ public sealed class CalculationQueryService : ICalculationQueryService
     {
         return _repository.GetResultAsync(jobId, cancellationToken);
     }
+
+    /// <summary>查询结果验证报告。</summary>
+    public Task<CalculationValidationReport?> GetValidationAsync(
+        string jobId,
+        CancellationToken cancellationToken = default)
+    {
+        return _repository.GetValidationAsync(jobId, cancellationToken);
+    }
 }

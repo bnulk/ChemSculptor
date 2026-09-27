@@ -225,6 +225,67 @@ public sealed class CalculationResultResponse
         new List<CalculationDiagnosticResponse>();
 }
 
+/// <summary>计算结果验证响应。</summary>
+public sealed class CalculationValidationResponse
+{
+    /// <summary>计算作业标识。</summary>
+    public string JobId { get; set; } = string.Empty;
+
+    /// <summary>是否通过验证。</summary>
+    public bool Passed { get; set; }
+
+    /// <summary>验证状态。</summary>
+    public string Status { get; set; } = string.Empty;
+
+    /// <summary>验证摘要。</summary>
+    public string Summary { get; set; } = string.Empty;
+
+    /// <summary>验证器名称。</summary>
+    public string ValidatorName { get; set; } = string.Empty;
+
+    /// <summary>验证时间。</summary>
+    public DateTimeOffset ValidatedAt { get; set; }
+
+    /// <summary>结构化检查结果。</summary>
+    public List<CalculationValidationCheckResponse> Checks { get; set; } =
+        new List<CalculationValidationCheckResponse>();
+
+    /// <summary>验证问题。</summary>
+    public List<CalculationDiagnosticResponse> Issues { get; set; } =
+        new List<CalculationDiagnosticResponse>();
+}
+
+/// <summary>单条计算结果验证检查响应。</summary>
+public sealed class CalculationValidationCheckResponse
+{
+    /// <summary>检查代码。</summary>
+    public string Code { get; set; } = string.Empty;
+
+    /// <summary>检查说明。</summary>
+    public string Description { get; set; } = string.Empty;
+
+    /// <summary>是否通过。</summary>
+    public bool Passed { get; set; }
+
+    /// <summary>检查级别。</summary>
+    public string Severity { get; set; } = string.Empty;
+
+    /// <summary>要求等级。</summary>
+    public string Requirement { get; set; } = string.Empty;
+
+    /// <summary>验证范围。</summary>
+    public string Scope { get; set; } = string.Empty;
+
+    /// <summary>期望值。</summary>
+    public string ExpectedValue { get; set; } = string.Empty;
+
+    /// <summary>实际值。</summary>
+    public string ActualValue { get; set; } = string.Empty;
+
+    /// <summary>检查说明。</summary>
+    public string Message { get; set; } = string.Empty;
+}
+
 /// <summary>计算诊断信息响应。</summary>
 public sealed class CalculationDiagnosticResponse
 {

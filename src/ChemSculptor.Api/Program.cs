@@ -119,6 +119,7 @@ public static class Program
         response.Endpoints.Add("POST /calculations/single-point");
         response.Endpoints.Add("GET /calculations/{jobId}/status");
         response.Endpoints.Add("GET /calculations/{jobId}/result");
+        response.Endpoints.Add("GET /calculations/{jobId}/validation");
         response.Endpoints.Add("POST /agent/messages");
 
         return Results.Ok(response);

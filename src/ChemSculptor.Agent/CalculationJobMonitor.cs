@@ -138,9 +138,6 @@ public sealed class CalculationJobMonitor : ICalculationJobMonitor
             result.Multiplicity = job.Spec.Multiplicity;
             result.OutputFilePath = job.OutputFilePath;
 
-            CalculationProcessingPlan processingPlan =
-                _processingPlanner.CreatePlan(job, result);
-
             CalculationResultValidationRequest validationRequest =
                 new CalculationResultValidationRequest();
             validationRequest.Job = job;
@@ -154,20 +151,29 @@ public sealed class CalculationJobMonitor : ICalculationJobMonitor
                         validationRequest,
                         CancellationToken.None);
 
-            await _repository.SaveResultAsync(result, CancellationToken.None);
-            await _repository.SaveProcessingPlanAsync(
-                processingPlan,
+            AppendValidationDiagnostics(result, validationResult.Report);
+            await _repository.SaveValidationAsync(
+                validationResult.Report,
+                job.JobId,
                 CancellationToken.None);
 
             if (finalState == CalculationJobState.Completed
                 && validationResult.Passed)
             {
-                job.State = CalculationJobState.Parsed;
+                job.State = CalculationJobState.Validated;
             }
             else
             {
                 job.State = CalculationJobState.Failed;
             }
+
+            CalculationProcessingPlan processingPlan =
+                _processingPlanner.CreatePlan(job, result);
+
+            await _repository.SaveResultAsync(result, CancellationToken.None);
+            await _repository.SaveProcessingPlanAsync(
+                processingPlan,
+                CancellationToken.None);
 
             await _repository.SaveJobAsync(job, CancellationToken.None);
         }
@@ -227,5 +233,20 @@ public sealed class CalculationJobMonitor : ICalculationJobMonitor
         diagnostic.Code = code;
         diagnostic.Message = message;
         job.Diagnostics.Add(diagnostic);
+    }
+
+    private static void AppendValidationDiagnostics(
+        CalculationResult result,
+        CalculationValidationReport report)
+    {
+        for (int index = 0; index < report.Issues.Count; index++)
+        {
+            CalculationValidationIssue issue = report.Issues[index];
+            CalculationDiagnostic diagnostic = new CalculationDiagnostic();
+            diagnostic.Severity = issue.Severity;
+            diagnostic.Code = issue.Code;
+            diagnostic.Message = issue.Message;
+            result.Diagnostics.Add(diagnostic);
+        }
     }
 }

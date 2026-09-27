@@ -100,6 +100,30 @@ public sealed class FileCalculationRepository : ICalculationRepository
         return WriteJsonAsync(path, plan, cancellationToken);
     }
 
+    /// <summary>保存结果验证报告。</summary>
+    public Task SaveValidationAsync(
+        CalculationValidationReport report,
+        string jobId,
+        CancellationToken cancellationToken = default)
+    {
+        if (report == null)
+        {
+            throw new ArgumentNullException(nameof(report));
+        }
+
+        string path = _workspace.GetJobValidationPath(jobId);
+        return WriteJsonAsync(path, report, cancellationToken);
+    }
+
+    /// <summary>读取结果验证报告。</summary>
+    public Task<CalculationValidationReport?> GetValidationAsync(
+        string jobId,
+        CancellationToken cancellationToken = default)
+    {
+        string path = _workspace.GetJobValidationPath(jobId);
+        return ReadJsonAsync<CalculationValidationReport>(path, cancellationToken);
+    }
+
     private async Task WriteJsonAsync<T>(
         string path,
         T value,

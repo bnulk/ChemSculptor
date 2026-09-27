@@ -5,6 +5,311 @@
 
 ---
 
+## v0.21.2（2026-09-27）：把验证项区分为必要、建议和信息检查
+
+### 版本
+
+- 当前版本：`0.21.2`
+- 日期：2026-09-27
+- 版本类型：验证框架增强
+
+### 改动目的
+
+明确：
+
+```text
+Normal termination 是正常完成的必要条件
+Normal termination 不是验证通过的充分条件
+```
+
+因此验证框架必须允许以后继续加入：
+
+```text
+能量合理性
+自旋污染
+结构合理性
+频率虚频
+多结果一致性
+```
+
+### 改动内容
+
+新增验证要求等级：
+
+```text
+Required
+Recommended
+Informational
+```
+
+新增验证范围：
+
+```text
+Structure
+ProgramOutput
+Numerical
+ScientificPlausibility
+CrossResultConsistency
+Other
+```
+
+每个 `CalculationValidationCheck` 现在记录：
+
+```text
+Requirement
+Scope
+Passed
+Severity
+ExpectedValue
+ActualValue
+Message
+```
+
+整体判定规则：
+
+```text
+任一 Required 检查失败
+  → Failed
+
+Required 全部通过，但存在 Recommended 或 Informational 失败
+  → PassedWithWarnings
+
+全部 Required 通过，且没有建议项或信息项失败
+  → Passed
+```
+
+当前正常终结相关检查属于：
+
+```text
+Required + ProgramOutput
+```
+
+未来科学合理性检查可以注册为：
+
+```text
+Required + ScientificPlausibility
+```
+
+而不需要修改正常终结检查。
+
+### 返回摘要
+
+验证报告新增 `Summary`：
+
+```text
+全部必要验证通过。正常终结是必要条件，但不是充分条件。
+必要检查 14/14 项通过。
+```
+
+### API 字段
+
+`GET /calculations/{jobId}/validation` 现在返回：
+
+```text
+Summary
+Checks[].Requirement
+Checks[].Scope
+```
+
+### 验证
+
+- Release 全解决方案构建：0 警告 0 错误
+- 测试：29/29 通过
+- 新增测试：
+  - Recommended 科学检查失败时得到 `PassedWithWarnings`
+  - Required 科学检查失败时得到 `Failed`
+- 实际 Gaussian 计算：14/14 必要检查通过
+
+---
+
+## v0.21.1（2026-09-27）：增加正常终结的通用与 Gaussian 输出检验
+
+### 版本
+
+- 当前版本：`0.21.1`
+- 日期：2026-09-27
+- 版本类型：功能增强
+
+### 改动目的
+
+在单点结果验证中增加两层正常终结检查：
+
+```text
+通用检查
+  输出结果声明正常终结
+
+Gaussian 专用检查
+  output.log 的最后一个非空行包含 Normal termination
+```
+
+通用检查保证 Agent 收到的通用结果结构正确。
+
+Gaussian 专用检查保证原始输出文件本身具有正常终结证据。
+
+### 改动内容
+
+通用验证器新增：
+
+```text
+calculation.output_normal_termination
+```
+
+新增 Gaussian 输出验证器：
+
+```text
+GaussianSinglePointOutputValidator
+```
+
+新增检查：
+
+```text
+gaussian.output_last_line_normal_termination
+```
+
+检查规则：
+
+```text
+读取 Gaussian output.log
+从末尾向前跳过空行
+检查最后一个非空行是否包含
+Normal termination
+```
+
+`CalculationResultValidationSkill` 从“选择第一个验证器”改为“合并全部适用
+验证器”，因此通用验证和 Gaussian 专用验证会同时执行。
+
+### 验证
+
+- Release 全解决方案构建：0 警告 0 错误
+- 测试：27/27 通过
+- 实际计算状态：`Validated`
+- 实际检查数量：14
+- 实际验证器：
+  - `single-point-result-validator`
+  - `gaussian-single-point-output-validator`
+- 实际最后非空行：
+  - `Normal termination of Gaussian 16 at Sun Sep 27 13:22:07 2026.`
+
+---
+
+## v0.21.0（2026-09-27）：单点计算结果验证
+
+### 版本
+
+- 当前版本：`0.21.0`
+- 日期：2026-09-27
+- 版本类型：新增功能（第六阶段，结果验证）
+
+### 改动目的
+
+把 `CalculationResultValidationSkill` 从“检查正常结束和能量是否存在”的占位逻辑，
+升级为结构化单点结果验证。
+
+验证目标是确认：
+
+```text
+结果确实属于当前作业
+结果与计算方案一致
+程序正常结束
+能量有效
+输出文件存在
+```
+
+本次仍不进行科学合理性判断，也不执行异常纠错。
+
+### 验证模型
+
+新增：
+
+```text
+CalculationValidationStatus
+CalculationValidationCheck
+```
+
+报告现在包含：
+
+```text
+Passed
+Status
+ValidatorName
+ValidatedAt
+Checks
+Issues
+```
+
+### 验证策略
+
+新增：
+
+```text
+ICalculationResultValidator
+SinglePointCalculationResultValidator
+```
+
+`CalculationResultValidationSkill` 根据任务类型选择验证器，而不是把所有验证规则
+堆在 Skill 本身。
+
+当前单点验证包括 12 项检查：
+
+```text
+作业标识一致
+计算程序一致
+计算方法一致
+计算基组一致
+总电荷一致
+自旋多重度一致
+正常结束
+FailureKind 为 None
+存在最终能量
+能量为有限数值
+能量单位为 Hartree
+输出文件存在
+```
+
+### 接入正常链路
+
+`CalculationJobMonitor` 现在按以下顺序处理：
+
+```text
+提取通用结果
+  → 调用 CalculationResultValidationSkill
+  → 保存 validation.json
+  → 验证通过时状态设为 Validated
+  → 生成通用处理方案
+  → 保存 result.json、processing-plan.json、manifest.json
+```
+
+如果验证失败，作业状态进入 `Failed`，验证问题同时进入通用结果诊断。
+
+### 新增 API
+
+```text
+GET /calculations/{jobId}/validation
+```
+
+返回：
+
+```text
+Passed
+Status
+ValidatorName
+ValidatedAt
+Checks
+Issues
+```
+
+### 验证
+
+- Release 全解决方案构建：0 警告 0 错误
+- 测试：25/25 通过
+- 实际水分子计算状态：`Validated`
+- 实际能量：`-76.3801013836 Hartree`
+- 实际验证状态：`Passed`
+- 实际检查数量：12
+- `validation.json` 已生成
+
+---
+
 ## v0.20.2（2026-09-26）：新增 Skill 集合与工作流组织教程
 
 ### 版本

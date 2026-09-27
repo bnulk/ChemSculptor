@@ -26,7 +26,11 @@ public sealed class RuleBasedCalculationProcessingPlanner : ICalculationProcessi
         CalculationProcessingPlan plan = new CalculationProcessingPlan();
         plan.JobId = job.JobId;
 
-        if (job.State == CalculationJobState.Completed
+        bool calculationCompleted =
+            job.State == CalculationJobState.Completed
+            || job.State == CalculationJobState.Validated;
+
+        if (calculationCompleted
             && result.NormalTermination
             && result.Energy.HasValue)
         {

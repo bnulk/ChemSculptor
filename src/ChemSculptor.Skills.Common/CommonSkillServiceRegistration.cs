@@ -11,6 +11,9 @@ public static class CommonSkillServiceRegistration
     public static IServiceCollection AddCommonSkills(IServiceCollection services)
     {
         ServiceCollectionServiceExtensions.AddSingleton<
+            ICalculationResultValidator,
+            SinglePointCalculationResultValidator>(services);
+        ServiceCollectionServiceExtensions.AddSingleton<
             ISkill,
             CalculationResultValidationSkill>(services);
 
