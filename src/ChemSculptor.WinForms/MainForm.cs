@@ -15,7 +15,7 @@ public sealed class MainForm : Form
 
     // 会话与任务运行状态。
     private readonly List<ChatSession> _sessions;
-    private readonly Dictionary<string, ClientJobItem> _jobs;
+    private readonly Dictionary<string, CalculationJobItem> _calculations;
     private readonly System.Windows.Forms.Timer _timer;
 
     // 界面控件。
@@ -29,12 +29,12 @@ public sealed class MainForm : Form
     private readonly FlowLayoutPanel _chatFlow;
     private readonly TextBox _inputBox;
     private readonly Button _sendTextButton;
-    private readonly Button _sendGeometryButton;
-    private readonly Button _sendJobButton;
+    private readonly Button _cancelJobButton;
 
     private ChatSession? _activeSession;
     private string? _selectedFilePath;
     private string? _latestResultText;
+    private string _activeCalculationId = string.Empty;
     private bool _polling;
     private int _sessionCounter;
 
@@ -45,7 +45,8 @@ public sealed class MainForm : Form
         _http.Timeout = TimeSpan.FromSeconds(30);
 
         _sessions = new List<ChatSession>();
-        _jobs = new Dictionary<string, ClientJobItem>(StringComparer.OrdinalIgnoreCase);
+        _calculations = new Dictionary<string, CalculationJobItem>(
+            StringComparer.OrdinalIgnoreCase);
         _timer = new System.Windows.Forms.Timer();
         _timer.Interval = 1500;
 
@@ -98,13 +99,10 @@ public sealed class MainForm : Form
         _sendTextButton.Text = "发送";
         _sendTextButton.AutoSize = true;
 
-        _sendGeometryButton = new Button();
-        _sendGeometryButton.Text = "发送坐标";
-        _sendGeometryButton.AutoSize = true;
-
-        _sendJobButton = new Button();
-        _sendJobButton.Text = "提交任务";
-        _sendJobButton.AutoSize = true;
+        _cancelJobButton = new Button();
+        _cancelJobButton.Text = "取消计算";
+        _cancelJobButton.AutoSize = true;
+        _cancelJobButton.Enabled = false;
 
         Text = "ChemSculptor";
         MinimumSize = new Size(1100, 680);
@@ -117,14 +115,13 @@ public sealed class MainForm : Form
         _selectFileButton.Click += OnSelectFileClick;
         _saveResultButton.Click += OnSaveResultClick;
         _sendTextButton.Click += OnSendTextClick;
-        _sendGeometryButton.Click += OnSendGeometryClick;
-        _sendJobButton.Click += OnSendJobClick;
+        _cancelJobButton.Click += OnCancelJobClick;
         _timer.Tick += OnTimerTick;
         _timer.Start();
 
         CreateSession("新会话");
-        AppendMessage("system", "欢迎使用 ChemSculptor。选择左侧会话，或直接在下方描述你的科研目标。");
-        AppendMessage("hint", "当前为界面骨架：自然语言理解将在后续版本接入；坐标发送与任务提交已可用。");
+        AppendMessage("system", "欢迎使用 ChemSculptor。请选择坐标 txt，并在下方描述你的科研目标。");
+        AppendMessage("hint", "提交后客户端会轮询计算状态，并显示结果和验证报告。");
     }
 
     /// <summary>构建三区界面布局。</summary>
@@ -180,8 +177,7 @@ public sealed class MainForm : Form
         actionColumn.FlowDirection = FlowDirection.TopDown;
         actionColumn.WrapContents = false;
         actionColumn.Controls.Add(_sendTextButton);
-        actionColumn.Controls.Add(_sendGeometryButton);
-        actionColumn.Controls.Add(_sendJobButton);
+        actionColumn.Controls.Add(_cancelJobButton);
 
         composer.Controls.Add(_inputBox, 0, 0);
         composer.Controls.Add(actionColumn, 1, 0);
@@ -242,22 +238,16 @@ public sealed class MainForm : Form
         await SendTextAsync();
     }
 
-    /// <summary>发送坐标文件事件。</summary>
-    private async void OnSendGeometryClick(object? sender, EventArgs e)
+    /// <summary>取消当前计算事件。</summary>
+    private async void OnCancelJobClick(object? sender, EventArgs e)
     {
-        await SendGeometryAsync();
-    }
-
-    /// <summary>提交任务文件事件。</summary>
-    private async void OnSendJobClick(object? sender, EventArgs e)
-    {
-        await SubmitJobAsync();
+        await CancelActiveCalculationAsync();
     }
 
     /// <summary>定时轮询任务状态事件。</summary>
     private async void OnTimerTick(object? sender, EventArgs e)
     {
-        await PollActiveJobsAsync();
+        await PollActiveCalculationsAsync();
     }
 
     /// <summary>创建一个新的本地会话并选中它。</summary>
@@ -501,6 +491,12 @@ public sealed class MainForm : Form
                 return;
             }
 
+            if (string.IsNullOrWhiteSpace(result.JobId))
+            {
+                AppendMessage("error", "服务器没有返回计算作业标识。");
+                return;
+            }
+
             AppendMessage(
                 "system",
                 "任务类型：" + result.TaskType +
@@ -514,6 +510,15 @@ public sealed class MainForm : Form
             {
                 AppendMessage("hint", "诊断：" + result.Diagnostics[index]);
             }
+
+            CalculationJobItem calculation = new CalculationJobItem();
+            calculation.JobId = result.JobId;
+            calculation.State = result.Status;
+            _calculations[calculation.JobId] = calculation;
+            _activeCalculationId = calculation.JobId;
+            _cancelJobButton.Enabled = true;
+
+            await RefreshCalculationAsync(calculation);
         }
         catch (Exception ex)
         {
@@ -521,117 +526,8 @@ public sealed class MainForm : Form
         }
     }
 
-    /// <summary>把坐标文本发送到 POST /geometries。</summary>
-    private async Task SendGeometryAsync()
-    {
-        string filePath;
-        if (!TryGetSelectedFile(out filePath))
-        {
-            return;
-        }
-
-        string fileName = Path.GetFileName(filePath);
-        AppendMessage("user", "发送坐标文件：" + fileName);
-
-        try
-        {
-            string text = await File.ReadAllTextAsync(filePath);
-            StringContent content = new StringContent(text, Encoding.UTF8, "text/plain");
-            HttpResponseMessage response = await _http.PostAsync(Endpoint("/geometries"), content);
-            response.EnsureSuccessStatusCode();
-
-            GeometrySubmitResult? geometryResult =
-                await response.Content.ReadFromJsonAsync<GeometrySubmitResult>();
-
-            if (geometryResult == null || geometryResult.AtomCount == 0)
-            {
-                AppendMessage("error", "坐标发送失败：服务器没有返回分子数据。");
-                return;
-            }
-
-            StringBuilder elements = new StringBuilder();
-
-            for (int index = 0; index < geometryResult.Atoms.Count; index++)
-            {
-                if (index > 0)
-                {
-                    elements.Append(", ");
-                }
-
-                elements.Append(geometryResult.Atoms[index].Element);
-            }
-
-            string summary = "服务器已接收 " + geometryResult.SourceName + "：" +
-                geometryResult.Formula + "，共 " + geometryResult.AtomCount.ToString() +
-                " 个原子（" + elements.ToString() + "）。";
-            AppendMessage("system", summary);
-
-            for (int index = 0; index < geometryResult.Diagnostics.Count; index++)
-            {
-                AppendMessage("hint", "诊断：" + geometryResult.Diagnostics[index]);
-            }
-        }
-        catch (Exception ex)
-        {
-            AppendMessage("error", "坐标发送失败：" + ex.Message);
-        }
-    }
-
-    /// <summary>把任务文本发送到 POST /client/jobs。</summary>
-    private async Task SubmitJobAsync()
-    {
-        string filePath;
-        if (!TryGetSelectedFile(out filePath))
-        {
-            return;
-        }
-
-        string fileName = Path.GetFileName(filePath);
-        AppendMessage("user", "提交任务文件：" + fileName);
-
-        try
-        {
-            string text = await File.ReadAllTextAsync(filePath);
-            StringContent content = new StringContent(text, Encoding.UTF8, "text/plain");
-
-            HttpResponseMessage response = await _http.PostAsync(Endpoint("/client/jobs"), content);
-            response.EnsureSuccessStatusCode();
-
-            ClientJobSummary? summary = await response.Content.ReadFromJsonAsync<ClientJobSummary>();
-            if (summary == null)
-            {
-                AppendMessage("error", "提交失败：服务端没有返回任务编号。");
-                return;
-            }
-
-            string jobId = summary.JobId;
-            if (string.IsNullOrWhiteSpace(jobId))
-            {
-                jobId = summary.Id;
-            }
-
-            if (string.IsNullOrWhiteSpace(jobId))
-            {
-                AppendMessage("error", "提交失败：服务端没有返回任务编号。");
-                return;
-            }
-
-            ClientJobItem job = new ClientJobItem();
-            job.Id = jobId;
-            job.Status = "Queued";
-
-            _jobs[job.Id] = job;
-            AppendMessage("system", "任务已提交：" + job.Id + "，状态 " + job.Status + "。");
-            await PollActiveJobsAsync();
-        }
-        catch (Exception ex)
-        {
-            AppendMessage("error", "提交失败：" + ex.Message);
-        }
-    }
-
-    /// <summary>轮询所有未结束任务的状态。</summary>
-    private async Task PollActiveJobsAsync()
+    /// <summary>轮询所有未结束计算作业的状态。</summary>
+    private async Task PollActiveCalculationsAsync()
     {
         if (_polling)
         {
@@ -642,19 +538,20 @@ public sealed class MainForm : Form
 
         try
         {
-            List<ClientJobItem> activeJobs = new List<ClientJobItem>();
+            List<CalculationJobItem> activeCalculations =
+                new List<CalculationJobItem>();
 
-            foreach (KeyValuePair<string, ClientJobItem> pair in _jobs)
+            foreach (KeyValuePair<string, CalculationJobItem> pair in _calculations)
             {
-                if (pair.Value.Status != "Passed" && pair.Value.Status != "Failed")
+                if (!pair.Value.IsFinished)
                 {
-                    activeJobs.Add(pair.Value);
+                    activeCalculations.Add(pair.Value);
                 }
             }
 
-            for (int index = 0; index < activeJobs.Count; index++)
+            for (int index = 0; index < activeCalculations.Count; index++)
             {
-                await RefreshJobAsync(activeJobs[index]);
+                await RefreshCalculationAsync(activeCalculations[index]);
             }
         }
         catch (Exception ex)
@@ -667,55 +564,216 @@ public sealed class MainForm : Form
         }
     }
 
-    /// <summary>刷新单个任务的状态，并在结果就绪时读取结果。</summary>
-    private async Task RefreshJobAsync(ClientJobItem job)
+    /// <summary>刷新单个计算作业并在结束时读取结果和验证报告。</summary>
+    private async Task RefreshCalculationAsync(CalculationJobItem calculation)
     {
         HttpResponseMessage statusResponse =
-            await _http.GetAsync(Endpoint("/client/jobs/" + job.Id + "/status"));
+            await _http.GetAsync(
+                Endpoint("/calculations/" + calculation.JobId + "/status"));
 
         if (!statusResponse.IsSuccessStatusCode)
         {
             return;
         }
 
-        ClientJobSummary? summary = await statusResponse.Content.ReadFromJsonAsync<ClientJobSummary>();
-        if (summary == null)
+        CalculationStatusDto? status =
+            await statusResponse.Content.ReadFromJsonAsync<CalculationStatusDto>();
+
+        if (status == null)
         {
             return;
         }
 
-        string previousStatus = job.Status;
+        string previousState = calculation.State;
 
-        if (!string.IsNullOrWhiteSpace(summary.Status))
+        if (!string.IsNullOrWhiteSpace(status.State))
         {
-            job.Status = summary.Status;
+            calculation.State = status.State;
         }
 
-        if (previousStatus != job.Status)
+        if (!string.Equals(
+            previousState,
+            calculation.State,
+            StringComparison.OrdinalIgnoreCase))
         {
-            AppendMessage("system", job.Id + " 状态：" + job.Status);
+            AppendMessage(
+                "system",
+                calculation.JobId + " 状态：" + calculation.State);
         }
 
-        if (summary.HasResult && job.ResultText == null)
+        if (!IsTerminalState(calculation.State)
+            || calculation.ResultText != null)
         {
-            HttpResponseMessage resultResponse =
-                await _http.GetAsync(Endpoint("/client/jobs/" + job.Id + "/result"));
+            return;
+        }
 
-            if (resultResponse.IsSuccessStatusCode)
+        calculation.IsFinished = true;
+
+        if (string.Equals(
+            _activeCalculationId,
+            calculation.JobId,
+            StringComparison.OrdinalIgnoreCase))
+        {
+            _activeCalculationId = string.Empty;
+            _cancelJobButton.Enabled = false;
+        }
+
+        if (string.Equals(
+            calculation.State,
+            "Canceled",
+            StringComparison.OrdinalIgnoreCase))
+        {
+            calculation.ResultText = "计算已取消。";
+            _latestResultText = calculation.ResultText;
+            AppendMessage("system", calculation.ResultText);
+            return;
+        }
+
+        CalculationResultDto? result = null;
+        CalculationValidationDto? validation = null;
+
+        HttpResponseMessage resultResponse =
+            await _http.GetAsync(
+                Endpoint("/calculations/" + calculation.JobId + "/result"));
+
+        if (resultResponse.IsSuccessStatusCode)
+        {
+            result =
+                await resultResponse.Content.ReadFromJsonAsync<CalculationResultDto>();
+        }
+
+        HttpResponseMessage validationResponse =
+            await _http.GetAsync(
+                Endpoint("/calculations/" + calculation.JobId + "/validation"));
+
+        if (validationResponse.IsSuccessStatusCode)
+        {
+            validation =
+                await validationResponse.Content.ReadFromJsonAsync<CalculationValidationDto>();
+        }
+
+        calculation.ResultText = BuildCalculationResultText(
+            calculation,
+            result,
+            validation);
+        _latestResultText = calculation.ResultText;
+        AppendMessage(
+            "system",
+            calculation.JobId + " 计算结束：" +
+            Environment.NewLine +
+            calculation.ResultText);
+    }
+
+    /// <summary>取消当前正在运行的计算。</summary>
+    private async Task CancelActiveCalculationAsync()
+    {
+        if (string.IsNullOrWhiteSpace(_activeCalculationId))
+        {
+            AppendMessage("error", "当前没有正在运行的计算作业。");
+            return;
+        }
+
+        try
+        {
+            HttpResponseMessage response = await _http.PostAsync(
+                Endpoint(
+                    "/calculations/" +
+                    _activeCalculationId +
+                    "/cancel"),
+                null);
+
+            if (!response.IsSuccessStatusCode)
             {
-                job.ResultText = await resultResponse.Content.ReadAsStringAsync();
-                _latestResultText = job.ResultText;
+                string errorText = await response.Content.ReadAsStringAsync();
+                AppendMessage("error", "取消失败：" + errorText);
+                return;
+            }
 
-                string preview = job.ResultText;
-                if (job.ResultText.Length > 400)
-                {
-                    preview = job.ResultText.Substring(0, 400) + "...";
-                }
+            AppendMessage("system", "已请求取消作业：" + _activeCalculationId);
+            _cancelJobButton.Enabled = false;
+        }
+        catch (Exception ex)
+        {
+            AppendMessage("error", "取消失败：" + ex.Message);
+        }
+    }
 
-                AppendMessage("system", job.Id + " 结果已就绪：" +
-                    Environment.NewLine + preview);
+    private static bool IsTerminalState(string state)
+    {
+        return string.Equals(state, "Validated", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(state, "Failed", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(state, "Canceled", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static string BuildCalculationResultText(
+        CalculationJobItem calculation,
+        CalculationResultDto? result,
+        CalculationValidationDto? validation)
+    {
+        StringBuilder builder = new StringBuilder();
+        builder.AppendLine("作业：" + calculation.JobId);
+        builder.AppendLine("状态：" + calculation.State);
+
+        if (result != null)
+        {
+            builder.AppendLine();
+            builder.AppendLine("--- 计算结果 ---");
+
+            if (result.Energy.HasValue)
+            {
+                builder.AppendLine(
+                    "能量：" +
+                    result.Energy.Value.ToString(
+                        "G17",
+                        System.Globalization.CultureInfo.InvariantCulture) +
+                    " " +
+                    result.EnergyUnit);
+            }
+
+            builder.AppendLine("程序：" + result.Program);
+            builder.AppendLine("方法：" + result.Method);
+            builder.AppendLine("基组：" + result.Basis);
+            builder.AppendLine("正常终结：" + result.NormalTermination.ToString());
+            builder.AppendLine("失败类别：" + result.FailureKind);
+            builder.AppendLine("输出文件：" + result.OutputFilePath);
+
+            for (int index = 0; index < result.Diagnostics.Count; index++)
+            {
+                CalculationDiagnosticDto diagnostic = result.Diagnostics[index];
+                builder.AppendLine(
+                    "诊断：" + diagnostic.Code + " - " + diagnostic.Message);
             }
         }
+        else
+        {
+            builder.AppendLine("结果尚未就绪。");
+        }
+
+        if (validation != null)
+        {
+            builder.AppendLine();
+            builder.AppendLine("--- 验证报告 ---");
+            builder.AppendLine("验证：" + validation.Status);
+            builder.AppendLine(validation.Summary);
+
+            for (int index = 0; index < validation.Checks.Count; index++)
+            {
+                CalculationValidationCheckDto check = validation.Checks[index];
+
+                if (!check.Passed)
+                {
+                    builder.AppendLine(
+                        "未通过：" +
+                        check.Code +
+                        " [" +
+                        check.Requirement +
+                        "] - " +
+                        check.Message);
+                }
+            }
+        }
+
+        return builder.ToString().TrimEnd();
     }
 
     /// <summary>把最近一次任务结果保存为用户选择的 txt 文件。</summary>

@@ -8,6 +8,7 @@
 > Skill 集合设计教程见 [docs/ChemSculptor-Skill-Collection-Tutorial.md](docs/ChemSculptor-Skill-Collection-Tutorial.md)。
 > Skill 集合与工作流组织教程见 [docs/Skill-Collections-and-Workflow-Tutorial.md](docs/Skill-Collections-and-Workflow-Tutorial.md)。
 > 单点计算 API 参考见 [docs/Calculation-Api-Reference.md](docs/Calculation-Api-Reference.md)。
+> WinForms 交互说明见 [docs/WinForms-Interaction-Guide.md](docs/WinForms-Interaction-Guide.md)。
 > 单点计算完整调用链说明见 [docs/SinglePoint-Calculation-Walkthrough.md](docs/SinglePoint-Calculation-Walkthrough.md)。
 > 版本与改动记录见 [docs/CHANGES.md](docs/CHANGES.md)。
 

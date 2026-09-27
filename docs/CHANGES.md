@@ -5,6 +5,138 @@
 
 ---
 
+## v0.24.0（2026-09-27）：WinForms 交互闭环
+
+### 版本
+
+- 当前版本：`0.24.0`
+- 日期：2026-09-27
+- 版本类型：新增功能（第九阶段，WinForms 交互）
+
+### 改动目的
+
+把 WinForms 从“多个并列调试动作”收敛为一条明确交互链路：
+
+```text
+选择坐标 txt
+  → 输入原始自然语言
+  → 单击发送
+  → 等待服务器返回 jobId
+  → 轮询计算状态
+  → 读取结果和验证报告
+  → 显示最终能量和验证摘要
+```
+
+客户端仍然不引用任何 ChemSculptor 服务器项目，也不处理化学参数。
+
+### 界面调整
+
+移除：
+
+```text
+发送坐标
+提交任务
+```
+
+保留：
+
+```text
+选择 txt
+输入原始文本
+发送
+取消计算
+保存结果
+```
+
+### 提交链路
+
+WinForms 继续调用：
+
+```text
+POST /agent/messages
+```
+
+请求只包含：
+
+```text
+SessionId
+Text
+CoordinateText
+```
+
+服务器理解 `Text`，返回：
+
+```text
+JobId
+Status
+```
+
+### 轮询链路
+
+客户端根据 `JobId` 调用：
+
+```text
+GET /calculations/{jobId}/status
+```
+
+结束后读取：
+
+```text
+GET /calculations/{jobId}/result
+GET /calculations/{jobId}/validation
+```
+
+显示内容包括：
+
+```text
+能量
+能量单位
+程序
+方法
+基组
+正常终结
+失败类别
+验证状态
+验证摘要
+未通过的验证项
+输出文件路径
+```
+
+### 取消
+
+“取消计算”按钮调用：
+
+```text
+POST /calculations/{jobId}/cancel
+```
+
+### 客户端模型
+
+新增客户端 DTO：
+
+```text
+CalculationJobItem
+CalculationStatusDto
+CalculationResultDto
+CalculationValidationDto
+CalculationValidationCheckDto
+CalculationDiagnosticDto
+```
+
+删除旧的客户端任务、几何提交和单点调试 DTO。
+
+### 验证
+
+- Release 全解决方案构建：0 警告 0 错误
+- 测试：32/32 通过
+- 实际 Agent 提交路径：通过
+- 初始状态：`Running`
+- 最终状态：`Validated`
+- 实际能量：`-76.3801013836 Hartree`
+- 实际验证：`Passed`
+
+---
+
 ## v0.23.1（2026-09-27）：修正单点计算提交契约
 
 ### 版本

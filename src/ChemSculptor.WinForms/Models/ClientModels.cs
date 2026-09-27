@@ -1,0 +1,185 @@
+namespace ChemSculptor.WinForms;
+
+/// <summary>会话中的一条消息。</summary>
+public sealed class ChatMessage
+{
+    public string Role { get; set; } = string.Empty;
+
+    public string Text { get; set; } = string.Empty;
+
+    public DateTimeOffset Timestamp { get; set; } = DateTimeOffset.Now;
+}
+
+/// <summary>一个本地会话。</summary>
+public sealed class ChatSession
+{
+    public string Id { get; set; } = string.Empty;
+
+    public string Title { get; set; } = string.Empty;
+
+    public List<ChatMessage> Messages { get; set; } = new List<ChatMessage>();
+
+    public override string ToString()
+    {
+        return Title;
+    }
+}
+
+/// <summary>发送给服务器的智能体原始消息。</summary>
+public sealed class AgentMessageRequestDto
+{
+    /// <summary>客户端会话标识。</summary>
+    public string SessionId { get; set; } = string.Empty;
+
+    /// <summary>用户原始自然语言文本。</summary>
+    public string Text { get; set; } = string.Empty;
+
+    /// <summary>当前选择的坐标文本。</summary>
+    public string CoordinateText { get; set; } = string.Empty;
+}
+
+/// <summary>服务器处理智能体消息后的响应。</summary>
+public sealed class AgentMessageResultDto
+{
+    /// <summary>服务器解释出的任务类型。</summary>
+    public string TaskType { get; set; } = string.Empty;
+
+    /// <summary>计算作业标识。</summary>
+    public string JobId { get; set; } = string.Empty;
+
+    /// <summary>当前状态。</summary>
+    public string Status { get; set; } = string.Empty;
+
+    /// <summary>生成的输入文件路径。</summary>
+    public string InputFilePath { get; set; } = string.Empty;
+
+    /// <summary>计算输出文件路径。</summary>
+    public string OutputFilePath { get; set; } = string.Empty;
+
+    /// <summary>面向用户的说明。</summary>
+    public string Message { get; set; } = string.Empty;
+
+    /// <summary>诊断信息。</summary>
+    public List<string> Diagnostics { get; set; } = new List<string>();
+}
+
+/// <summary>客户端跟踪的单个计算作业。</summary>
+public sealed class CalculationJobItem
+{
+    /// <summary>作业标识。</summary>
+    public string JobId { get; set; } = string.Empty;
+
+    /// <summary>当前状态。</summary>
+    public string State { get; set; } = "Running";
+
+    /// <summary>是否已经结束。</summary>
+    public bool IsFinished { get; set; }
+
+    /// <summary>已格式化的结果文本。</summary>
+    public string? ResultText { get; set; }
+
+    public override string ToString()
+    {
+        return JobId + "    [" + State + "]";
+    }
+}
+
+/// <summary>计算状态响应。</summary>
+public sealed class CalculationStatusDto
+{
+    public string JobId { get; set; } = string.Empty;
+
+    public string State { get; set; } = string.Empty;
+
+    public DateTimeOffset? StartedAt { get; set; }
+
+    public DateTimeOffset? CompletedAt { get; set; }
+
+    public string InputFilePath { get; set; } = string.Empty;
+
+    public string OutputFilePath { get; set; } = string.Empty;
+
+    public List<CalculationDiagnosticDto> Diagnostics { get; set; } =
+        new List<CalculationDiagnosticDto>();
+}
+
+/// <summary>通用计算结果响应。</summary>
+public sealed class CalculationResultDto
+{
+    public string JobId { get; set; } = string.Empty;
+
+    public double? Energy { get; set; }
+
+    public string EnergyUnit { get; set; } = string.Empty;
+
+    public bool NormalTermination { get; set; }
+
+    public string FailureKind { get; set; } = string.Empty;
+
+    public string Program { get; set; } = string.Empty;
+
+    public string Method { get; set; } = string.Empty;
+
+    public string Basis { get; set; } = string.Empty;
+
+    public int Charge { get; set; }
+
+    public int Multiplicity { get; set; }
+
+    public string OutputFilePath { get; set; } = string.Empty;
+
+    public List<CalculationDiagnosticDto> Diagnostics { get; set; } =
+        new List<CalculationDiagnosticDto>();
+}
+
+/// <summary>计算结果验证响应。</summary>
+public sealed class CalculationValidationDto
+{
+    public string JobId { get; set; } = string.Empty;
+
+    public bool Passed { get; set; }
+
+    public string Status { get; set; } = string.Empty;
+
+    public string Summary { get; set; } = string.Empty;
+
+    public string ValidatorName { get; set; } = string.Empty;
+
+    public List<CalculationValidationCheckDto> Checks { get; set; } =
+        new List<CalculationValidationCheckDto>();
+
+    public List<CalculationDiagnosticDto> Issues { get; set; } =
+        new List<CalculationDiagnosticDto>();
+}
+
+/// <summary>单条计算验证检查响应。</summary>
+public sealed class CalculationValidationCheckDto
+{
+    public string Code { get; set; } = string.Empty;
+
+    public string Description { get; set; } = string.Empty;
+
+    public bool Passed { get; set; }
+
+    public string Severity { get; set; } = string.Empty;
+
+    public string Requirement { get; set; } = string.Empty;
+
+    public string Scope { get; set; } = string.Empty;
+
+    public string ExpectedValue { get; set; } = string.Empty;
+
+    public string ActualValue { get; set; } = string.Empty;
+
+    public string Message { get; set; } = string.Empty;
+}
+
+/// <summary>计算诊断响应。</summary>
+public sealed class CalculationDiagnosticDto
+{
+    public string Severity { get; set; } = string.Empty;
+
+    public string Code { get; set; } = string.Empty;
+
+    public string Message { get; set; } = string.Empty;
+}
