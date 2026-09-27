@@ -5,6 +5,82 @@
 
 ---
 
+## v0.23.1（2026-09-27）：修正单点计算提交契约
+
+### 版本
+
+- 当前版本：`0.23.1`
+- 日期：2026-09-27
+- 版本类型：接口修正
+
+### 改动目的
+
+纠正客户端提交契约中的职责越界。
+
+客户端只能提交：
+
+```text
+coordinateText
+text
+```
+
+客户端不能提交：
+
+```text
+charge
+multiplicity
+method
+basis
+program
+overrides
+sessionId
+```
+
+客户的原始文本应在服务器端解释，不能由客户端提前转换成计算参数。
+
+### API 请求
+
+```json
+{
+  "coordinateText": "O 0.000000 0.000000 0.117300\nH 0.000000 0.757200 -0.469200\nH 0.000000 -0.757200 -0.469200",
+  "text": "计算水分子的单点能"
+}
+```
+
+### 代码调整
+
+`SinglePointCalculationRequest` 只保留：
+
+```text
+CoordinateText
+Text
+```
+
+删除：
+
+```text
+SessionId
+Goal
+Overrides
+CalculationParameterRequest
+```
+
+`CalculationEndpoints` 现在只把两个客户端字段转换为：
+
+```text
+CalculationRequest.CoordinateText
+CalculationRequest.Goal
+```
+
+服务内部的服务器侧参数覆盖框架仍保留，但不通过当前客户端 API 暴露。
+
+### 验证
+
+- 文档中的请求体已修正
+- 客户端化学参数不再出现在计算端点
+
+---
+
 ## v0.23.0（2026-09-27）：单点计算 API 端点
 
 ### 版本

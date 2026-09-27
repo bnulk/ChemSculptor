@@ -135,28 +135,11 @@ public sealed class GeometryErrorResponse
 /// <summary>触发单点计算的请求。</summary>
 public sealed class SinglePointCalculationRequest
 {
-    /// <summary>客户端会话标识。</summary>
-    public string SessionId { get; set; } = string.Empty;
-
-    /// <summary>用户自然语言目标。</summary>
-    public string Goal { get; set; } = string.Empty;
-
     /// <summary>分子坐标文本。</summary>
     public string CoordinateText { get; set; } = string.Empty;
 
-    /// <summary>请求覆盖的计算参数。</summary>
-    public List<CalculationParameterRequest> Overrides { get; set; } =
-        new List<CalculationParameterRequest>();
-}
-
-/// <summary>计算参数覆盖请求。</summary>
-public sealed class CalculationParameterRequest
-{
-    /// <summary>参数名称。</summary>
-    public string Name { get; set; } = string.Empty;
-
-    /// <summary>参数值。</summary>
-    public string Value { get; set; } = string.Empty;
+    /// <summary>客户提交的原始自然语言文本。</summary>
+    public string Text { get; set; } = string.Empty;
 }
 
 /// <summary>单点计算触发结果。</summary>

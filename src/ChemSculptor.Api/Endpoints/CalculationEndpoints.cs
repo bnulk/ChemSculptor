@@ -32,16 +32,21 @@ public static class CalculationEndpoints
         ISinglePointCalculationService calculationService,
         CancellationToken cancellationToken)
     {
+        if (string.IsNullOrWhiteSpace(request.Text))
+        {
+            CalculationErrorResponse textError = new CalculationErrorResponse();
+            textError.Error = "用户文本不能为空。";
+            return Results.BadRequest(textError);
+        }
+
         CalculationRequest calculationRequest = new CalculationRequest();
-        calculationRequest.SessionId = request.SessionId;
-        calculationRequest.Goal = request.Goal;
+        calculationRequest.Goal = request.Text;
         calculationRequest.CoordinateText = request.CoordinateText;
-        calculationRequest.Overrides = ConvertParameters(request.Overrides);
 
         SinglePointCalculationSubmissionResult submission =
             await calculationService.SubmitAsync(
-            calculationRequest,
-            cancellationToken);
+                calculationRequest,
+                cancellationToken);
 
         if (!submission.Succeeded || submission.Job == null)
         {
@@ -212,29 +217,6 @@ public static class CalculationEndpoints
         response.Canceled = true;
         response.Message = "计算作业已取消。";
         return Results.Ok(response);
-    }
-
-    private static List<CalculationParameter> ConvertParameters(
-        List<CalculationParameterRequest> parameters)
-    {
-        List<CalculationParameter> converted =
-            new List<CalculationParameter>();
-
-        for (int index = 0; index < parameters.Count; index++)
-        {
-            CalculationParameterRequest source = parameters[index];
-            CalculationParameter target = new CalculationParameter();
-            target.Name = source.Name;
-            target.DisplayName = source.Name;
-            target.CurrentValue = source.Value;
-            target.DefaultValue = string.Empty;
-            target.Source = ParameterSource.User;
-            target.RiskLevel = CalculationRiskLevel.Info;
-            target.RequiresApproval = false;
-            converted.Add(target);
-        }
-
-        return converted;
     }
 
     private static List<CalculationValidationCheckResponse> ConvertValidationChecks(

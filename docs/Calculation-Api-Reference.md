@@ -35,47 +35,33 @@ Content-Type: application/json
 
 ```json
 {
-  "sessionId": "session-001",
-  "goal": "计算水分子的单点能",
   "coordinateText": "O 0.000000 0.000000 0.117300\nH 0.000000 0.757200 -0.469200\nH 0.000000 -0.757200 -0.469200",
-  "overrides": [
-    {
-      "name": "charge",
-      "value": "0"
-    },
-    {
-      "name": "multiplicity",
-      "value": "1"
-    }
-  ]
+  "text": "计算水分子的单点能"
 }
 ```
 
 字段：
 
 ```text
-sessionId
-  会话标识，可以为空
-
-goal
-  用户目标，可以为空
-
 coordinateText
   必需的分子坐标文本
 
-overrides
-  可选的计算参数覆盖
+text
+  必需的客户原始自然语言，一字不改地交给服务器端理解
 ```
 
-当前支持的覆盖：
+客户端不发送：
 
 ```text
-program
-method
-basis
 charge
 multiplicity
+method
+basis
+program
+overrides
 ```
+
+这些计算参数由服务器端的会话、规划和审批流程决定。
 
 成功时返回 HTTP 202：
 
