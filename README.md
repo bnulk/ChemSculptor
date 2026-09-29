@@ -9,6 +9,7 @@
 > Skill 集合与工作流组织教程见 [docs/Skill-Collections-and-Workflow-Tutorial.md](docs/Skill-Collections-and-Workflow-Tutorial.md)。
 > 单点计算 API 参考见 [docs/Calculation-Api-Reference.md](docs/Calculation-Api-Reference.md)。
 > WinForms 交互说明见 [docs/WinForms-Interaction-Guide.md](docs/WinForms-Interaction-Guide.md)。
+> 声明式单点计算工作流见 [docs/Declarative-SinglePoint-Workflow.md](docs/Declarative-SinglePoint-Workflow.md)。
 > 单点计算完整调用链说明见 [docs/SinglePoint-Calculation-Walkthrough.md](docs/SinglePoint-Calculation-Walkthrough.md)。
 > 版本与改动记录见 [docs/CHANGES.md](docs/CHANGES.md)。
 

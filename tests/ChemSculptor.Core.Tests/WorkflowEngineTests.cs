@@ -86,6 +86,47 @@ public class WorkflowEngineTests
         Assert.Contains("Validation gate", run.Results["soc"].Diagnostics);
     }
 
+    /// <summary>验证初始输入和节点输入映射可以传递数据。</summary>
+    [Fact]
+    public async Task MapsInitialAndUpstreamInputs()
+    {
+        MappedInputSkill skill = new MappedInputSkill();
+        WorkflowEngine engine = CreateEngine(skill);
+
+        WorkflowDefinition definition = new WorkflowDefinition();
+        definition.Id = "wf_inputs";
+        definition.Version = "1.0.0";
+        definition.Goal = "mapped inputs";
+        definition.Nodes = new List<WorkflowNode>();
+
+        WorkflowNode first = new WorkflowNode();
+        first.Id = "first";
+        first.Skill = skill.Name;
+        first.Inputs["seed"] = "$input.request";
+
+        WorkflowNode second = new WorkflowNode();
+        second.Id = "second";
+        second.Skill = skill.Name;
+        second.DependsOn.Add("first");
+        second.Inputs["upstream"] = "first";
+
+        definition.Nodes.Add(first);
+        definition.Nodes.Add(second);
+
+        Dictionary<string, string> inputs =
+            new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        inputs["request"] = "initial-value";
+
+        WorkflowRun submitted = await engine.SubmitAsync(definition, inputs);
+        WorkflowRun run = await engine.RunAsync(submitted.Id);
+
+        Assert.Equal(WorkflowState.Passed, run.State);
+        Assert.Equal("initial-value", skill.InputsByNode["first"]["seed"]);
+        Assert.Equal(
+            "initial-value",
+            skill.InputsByNode["second"]["upstream"]);
+    }
+
     /// <summary>创建用于测试的工作流引擎。</summary>
     private static WorkflowEngine CreateEngine(
         ISkill? skill = null,
@@ -189,6 +230,72 @@ public class WorkflowEngineTests
             report.Confidence = 0.1;
 
             return Task.FromResult(report);
+        }
+    }
+
+    private sealed class MappedInputSkill : ISkill
+    {
+        private readonly List<string> _capabilities;
+
+        public MappedInputSkill()
+        {
+            _capabilities = new List<string>();
+            _capabilities.Add("mapped-input");
+            InputsByNode = new Dictionary<string, Dictionary<string, string>>(
+                StringComparer.OrdinalIgnoreCase);
+        }
+
+        public Dictionary<string, Dictionary<string, string>> InputsByNode
+        {
+            get;
+            private set;
+        }
+
+        public string Name
+        {
+            get { return "mapped-input"; }
+        }
+
+        public string Version
+        {
+            get { return "1.0.0"; }
+        }
+
+        public IReadOnlyList<string> Capabilities
+        {
+            get { return _capabilities; }
+        }
+
+        public Task<TaskResult> ExecuteAsync(
+            TaskRequest request,
+            CancellationToken cancellationToken = default)
+        {
+            Dictionary<string, string> copiedInputs =
+                new Dictionary<string, string>(request.Inputs);
+            InputsByNode[request.NodeId] = copiedInputs;
+
+            string output = string.Empty;
+
+            if (copiedInputs.ContainsKey("seed"))
+            {
+                output = copiedInputs["seed"];
+            }
+            else if (copiedInputs.ContainsKey("upstream"))
+            {
+                output = copiedInputs["upstream"];
+            }
+
+            TaskResult result = new TaskResult();
+            result.WorkflowId = request.WorkflowId;
+            result.NodeId = request.NodeId;
+            result.Succeeded = true;
+            result.Output = output;
+            return Task.FromResult(result);
+        }
+
+        public Task<bool> HealthAsync(CancellationToken cancellationToken = default)
+        {
+            return Task.FromResult(true);
         }
     }
 }

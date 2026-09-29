@@ -110,8 +110,10 @@ public class CalculationResultValidationSkillTests
                 new SyntheticScientificValidator(
                     CalculationValidationRequirement.Recommended));
 
+            CalculationValidationService validationService =
+                new CalculationValidationService(validators);
             CalculationResultValidationSkill skill =
-                new CalculationResultValidationSkill(validators);
+                new CalculationResultValidationSkill(validationService);
             CalculationResultValidationSkillResult result =
                 await ExecuteValidationAsync(
                     skill,
@@ -146,8 +148,10 @@ public class CalculationResultValidationSkillTests
                 new SyntheticScientificValidator(
                     CalculationValidationRequirement.Required));
 
+            CalculationValidationService validationService =
+                new CalculationValidationService(validators);
             CalculationResultValidationSkill skill =
-                new CalculationResultValidationSkill(validators);
+                new CalculationResultValidationSkill(validationService);
             CalculationResultValidationSkillResult result =
                 await ExecuteValidationAsync(
                     skill,
@@ -169,7 +173,9 @@ public class CalculationResultValidationSkillTests
         List<ICalculationResultValidator> validators =
             new List<ICalculationResultValidator>();
         validators.Add(new SinglePointCalculationResultValidator());
-        return new CalculationResultValidationSkill(validators);
+        CalculationValidationService validationService =
+            new CalculationValidationService(validators);
+        return new CalculationResultValidationSkill(validationService);
     }
 
     private static CalculationResultValidationRequest CreateValidRequest(

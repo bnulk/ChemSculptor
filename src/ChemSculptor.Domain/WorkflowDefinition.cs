@@ -36,4 +36,12 @@ public sealed class WorkflowNode
 
     /// <summary>可选的验证门名称；为空表示本节点不需要额外验证。</summary>
     public string? Gate { get; set; }
+
+    /// <summary>
+    /// 节点输入映射。
+    /// 键是传给技能的输入名，值可以是上游节点标识或 $input.名称。
+    /// 为空时兼容旧行为：传入所有已完成节点的输出。
+    /// </summary>
+    public Dictionary<string, string> Inputs { get; set; } =
+        new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 }

@@ -1,4 +1,6 @@
+using System.Text.Json;
 using ChemSculptor.Compute;
+using ChemSculptor.Domain;
 
 namespace ChemSculptor.Agent;
 
@@ -11,16 +13,14 @@ public sealed class SinglePointCalculationService : ISinglePointCalculationServi
     private readonly ICalculationWorkspace _workspace;
     private readonly IComputeBackend _computeBackend;
     private readonly ICalculationRepository _repository;
-    private readonly ICalculationJobMonitor _jobMonitor;
-    private readonly ISkillInvoker _skillInvoker;
+    private readonly ISinglePointWorkflowEngine _workflowEngine;
 
     /// <summary>创建单点计算服务。</summary>
     public SinglePointCalculationService(
         ICalculationWorkspace workspace,
         IComputeBackend computeBackend,
         ICalculationRepository repository,
-        ICalculationJobMonitor jobMonitor,
-        ISkillInvoker skillInvoker)
+        ISinglePointWorkflowEngine workflowEngine)
     {
         if (workspace == null)
         {
@@ -37,21 +37,15 @@ public sealed class SinglePointCalculationService : ISinglePointCalculationServi
             throw new ArgumentNullException(nameof(repository));
         }
 
-        if (jobMonitor == null)
+        if (workflowEngine == null)
         {
-            throw new ArgumentNullException(nameof(jobMonitor));
-        }
-
-        if (skillInvoker == null)
-        {
-            throw new ArgumentNullException(nameof(skillInvoker));
+            throw new ArgumentNullException(nameof(workflowEngine));
         }
 
         _workspace = workspace;
         _computeBackend = computeBackend;
         _repository = repository;
-        _jobMonitor = jobMonitor;
-        _skillInvoker = skillInvoker;
+        _workflowEngine = workflowEngine;
     }
 
     /// <summary>提交单点计算。</summary>
@@ -129,36 +123,24 @@ public sealed class SinglePointCalculationService : ISinglePointCalculationServi
             inputRequest.RunInputFilePath = runInputPath;
             inputRequest.OutputFilePath = outputPath;
 
-            CalculationInputGenerationResult inputResult =
-                await _skillInvoker.InvokeAsync<
-                    CalculationInputGenerationRequest,
-                    CalculationInputGenerationResult>(
-                        CalculationSkillIds.GaussianInputGeneration,
-                        inputRequest,
-                        cancellationToken);
+            WorkflowDefinition definition =
+                SinglePointWorkflowDefinitionFactory.Create(
+                    jobId,
+                    request.Goal);
 
-            if (!inputResult.Succeeded)
-            {
-                result.Succeeded = false;
-                result.Error = inputResult.Error;
-                result.Diagnostics = new List<string>(inputResult.Diagnostics);
-                return result;
-            }
+            Dictionary<string, string> workflowInputs =
+                new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            workflowInputs["request"] = SerializeSkillInput(inputRequest);
 
-            job = inputResult.Job;
-            CalculationExecutionContext context = inputResult.ExecutionContext;
-
-            await _repository.SaveJobAsync(job, CancellationToken.None);
-
-            await _computeBackend.SubmitAsync(
+            WorkflowRun workflowRun = await _workflowEngine.StartAsync(
+                definition,
+                workflowInputs,
                 job,
-                context,
-                CancellationToken.None);
+                cancellationToken);
 
             job.State = CalculationJobState.Running;
             job.StartedAt = DateTimeOffset.UtcNow;
             await _repository.SaveJobAsync(job, CancellationToken.None);
-            _jobMonitor.Start(job);
 
             result.Succeeded = true;
             result.Job = job;
@@ -244,6 +226,13 @@ public sealed class SinglePointCalculationService : ISinglePointCalculationServi
         }
 
         return string.Empty;
+    }
+
+    private static string SerializeSkillInput<T>(T value)
+    {
+        JsonSerializerOptions options =
+            new JsonSerializerOptions(JsonSerializerDefaults.Web);
+        return JsonSerializer.Serialize(value, options);
     }
 
     private static bool ApplyOverride(

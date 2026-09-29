@@ -1,10 +1,8 @@
 using ChemSculptor.Agent;
 using ChemSculptor.Compute;
-using ChemSculptor.Compute.Gaussian;
-using ChemSculptor.Core;
 using ChemSculptor.Conversation;
 using ChemSculptor.InputProcessor;
-using ChemSculptor.Skills.Gaussian.GaussianInputGeneration;
+using ChemSculptor.Domain;
 
 namespace ChemSculptor.Core.Tests;
 
@@ -21,8 +19,8 @@ public class AgentServiceTests
 
         try
         {
-            RecordingComputeBackend backend;
-            AgentService service = CreateAgentService(root, out backend);
+            RecordingWorkflowEngine workflowEngine;
+            AgentService service = CreateAgentService(root, out workflowEngine);
 
             AgentRequest request = new AgentRequest();
             request.SessionId = "session-1";
@@ -48,8 +46,8 @@ public class AgentServiceTests
 
         try
         {
-            RecordingComputeBackend backend;
-            AgentService service = CreateAgentService(root, out backend);
+            RecordingWorkflowEngine workflowEngine;
+            AgentService service = CreateAgentService(root, out workflowEngine);
 
             AgentRequest request = new AgentRequest();
             request.SessionId = "session-2";
@@ -63,30 +61,8 @@ public class AgentServiceTests
 
             Assert.True(result.IsSupported);
             Assert.Equal("Running", result.Status);
-            Assert.True(File.Exists(result.InputFilePath));
             Assert.Contains("output.log", result.OutputFilePath);
-            Assert.Equal("g16", backend.LastContext.ExecutablePath);
-            Assert.Equal(2, backend.LastContext.Arguments.Count);
-
-            string? runDirectory = Path.GetDirectoryName(result.OutputFilePath);
-            if (string.IsNullOrWhiteSpace(runDirectory))
-            {
-                throw new InvalidOperationException("测试输出文件没有运行目录。");
-            }
-
-            string runInputPath = Path.Combine(
-                runDirectory,
-                Path.GetFileName(result.InputFilePath));
-            Assert.True(File.Exists(runInputPath));
-            Assert.Equal(runInputPath, backend.LastContext.InputFilePath);
-            Assert.Equal(runInputPath, backend.LastContext.Arguments[0]);
-            Assert.Equal(result.OutputFilePath, backend.LastContext.Arguments[1]);
-
-            string text = await File.ReadAllTextAsync(result.InputFilePath);
-            Assert.Contains("#p CAM-B3LYP/6-31G* SP", text);
-            Assert.Contains(
-                "%chk=" + Path.GetFileNameWithoutExtension(result.InputFilePath) + ".chk",
-                text);
+            Assert.Equal(result.JobId, workflowEngine.StartedJobId);
         }
         finally
         {
@@ -96,7 +72,7 @@ public class AgentServiceTests
 
     private static AgentService CreateAgentService(
         string root,
-        out RecordingComputeBackend backend)
+        out RecordingWorkflowEngine workflowEngine)
     {
         CalculationWorkspaceOptions options = new CalculationWorkspaceOptions();
         options.RootDirectory = root;
@@ -104,38 +80,15 @@ public class AgentServiceTests
         WorkspaceManager workspace = new WorkspaceManager(options);
         FileCalculationRepository calculationRepository =
             new FileCalculationRepository(workspace);
-        GaussianInputWriter inputWriter = new GaussianInputWriter();
-        GaussianOutputParser outputParser = new GaussianOutputParser();
-        GaussianResultTranslator resultTranslator = new GaussianResultTranslator();
-        GaussianProcessingPlanTranslator processingPlanTranslator =
-            new GaussianProcessingPlanTranslator();
-        Gaussian16ProgramAdapterOptions programOptions =
-            Gaussian16ProgramAdapterOptions.CreateDefault();
-        Gaussian16ProgramAdapter programAdapter =
-            new Gaussian16ProgramAdapter(
-                inputWriter,
-                outputParser,
-                resultTranslator,
-                processingPlanTranslator,
-                programOptions);
-        GeometryTextParser geometryParser = new GeometryTextParser();
-        GaussianInputGenerationSkill inputGenerationSkill =
-            new GaussianInputGenerationSkill(geometryParser, programAdapter);
-        SkillRegistry skillRegistry = new SkillRegistry();
-        skillRegistry.RegisterAsync(inputGenerationSkill)
-            .GetAwaiter()
-            .GetResult();
-        SkillJsonInvoker skillInvoker = new SkillJsonInvoker(skillRegistry);
-        backend = new RecordingComputeBackend();
-        NoOpCalculationJobMonitor jobMonitor = new NoOpCalculationJobMonitor();
+        RecordingComputeBackend backend = new RecordingComputeBackend();
+        workflowEngine = new RecordingWorkflowEngine();
 
         SinglePointCalculationService singlePointService =
             new SinglePointCalculationService(
                 workspace,
                 backend,
                 calculationRepository,
-                jobMonitor,
-                skillInvoker);
+                workflowEngine);
         RuleBasedTaskInterpreter interpreter = new RuleBasedTaskInterpreter();
         InMemoryConversationRepository repository = new InMemoryConversationRepository();
         ConversationService conversationService = new ConversationService(interpreter, repository);
@@ -207,10 +160,23 @@ public class AgentServiceTests
         }
     }
 
-    private sealed class NoOpCalculationJobMonitor : ICalculationJobMonitor
+    private sealed class RecordingWorkflowEngine : ISinglePointWorkflowEngine
     {
-        public void Start(CalculationJob job)
+        public string StartedJobId { get; private set; } = string.Empty;
+
+        public Task<WorkflowRun> StartAsync(
+            WorkflowDefinition definition,
+            IReadOnlyDictionary<string, string> inputs,
+            CalculationJob job,
+            CancellationToken cancellationToken = default)
         {
+            StartedJobId = job.JobId;
+
+            WorkflowRun run = new WorkflowRun();
+            run.Id = definition.Id;
+            run.Definition = definition;
+            run.State = WorkflowState.Running;
+            return Task.FromResult(run);
         }
     }
 }

@@ -30,16 +30,9 @@ public static class AgentServiceRegistration
             services);
         ServiceCollectionServiceExtensions.AddSingleton<ISkillInvoker, SkillJsonInvoker>(
             services);
-        CalculationJobMonitorOptions monitorOptions =
-            CalculationJobMonitorOptions.CreateDefault();
-        ServiceCollectionServiceExtensions.AddSingleton<CalculationJobMonitorOptions>(
-            services,
-            monitorOptions);
         ServiceCollectionServiceExtensions.AddSingleton<
-            ICalculationProcessingPlanner,
-            RuleBasedCalculationProcessingPlanner>(services);
-        ServiceCollectionServiceExtensions.AddSingleton<ICalculationJobMonitor, CalculationJobMonitor>(
-            services);
+            ISinglePointWorkflowEngine,
+            SinglePointWorkflowEngine>(services);
         ServiceCollectionServiceExtensions.AddSingleton<
             ISinglePointCalculationService,
             SinglePointCalculationService>(services);

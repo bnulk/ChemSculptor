@@ -1,5 +1,6 @@
 using ChemSculptor.Agent;
 using ChemSculptor.Compute;
+using ChemSculptor.Domain;
 
 namespace ChemSculptor.Core.Tests;
 
@@ -21,17 +22,16 @@ public class SinglePointCalculationServiceTests
             WorkspaceManager workspace = new WorkspaceManager(workspaceOptions);
             FileCalculationRepository repository =
                 new FileCalculationRepository(workspace);
-            RecordingSkillInvoker skillInvoker = new RecordingSkillInvoker();
             RecordingComputeBackend backend = new RecordingComputeBackend();
-            RecordingJobMonitor monitor = new RecordingJobMonitor();
+            RecordingWorkflowEngine workflowEngine =
+                new RecordingWorkflowEngine();
 
             SinglePointCalculationService service =
                 new SinglePointCalculationService(
                     workspace,
                     backend,
                     repository,
-                    monitor,
-                    skillInvoker);
+                    workflowEngine);
 
             CalculationRequest request = new CalculationRequest();
             request.SessionId = "session-service";
@@ -53,7 +53,7 @@ public class SinglePointCalculationServiceTests
             Assert.Equal(3, submission.Job.Spec.Multiplicity);
             Assert.Equal("session-service", submission.Job.SessionId);
             Assert.Equal("计算水的单点能", submission.Job.Goal);
-            Assert.Equal(submission.Job.JobId, monitor.StartedJobId);
+            Assert.Equal(submission.Job.JobId, workflowEngine.StartedJobId);
 
             CalculationJob? savedJob =
                 await service.GetJobAsync(submission.Job.JobId);
@@ -88,17 +88,16 @@ public class SinglePointCalculationServiceTests
             WorkspaceManager workspace = new WorkspaceManager(workspaceOptions);
             FileCalculationRepository repository =
                 new FileCalculationRepository(workspace);
-            RecordingSkillInvoker skillInvoker = new RecordingSkillInvoker();
             RecordingComputeBackend backend = new RecordingComputeBackend();
-            RecordingJobMonitor monitor = new RecordingJobMonitor();
+            RecordingWorkflowEngine workflowEngine =
+                new RecordingWorkflowEngine();
 
             SinglePointCalculationService service =
                 new SinglePointCalculationService(
                     workspace,
                     backend,
                     repository,
-                    monitor,
-                    skillInvoker);
+                    workflowEngine);
 
             CalculationRequest request = new CalculationRequest();
             request.CoordinateText = string.Empty;
@@ -131,17 +130,16 @@ public class SinglePointCalculationServiceTests
             WorkspaceManager workspace = new WorkspaceManager(workspaceOptions);
             FileCalculationRepository repository =
                 new FileCalculationRepository(workspace);
-            RecordingSkillInvoker skillInvoker = new RecordingSkillInvoker();
             RecordingComputeBackend backend = new RecordingComputeBackend();
-            RecordingJobMonitor monitor = new RecordingJobMonitor();
+            RecordingWorkflowEngine workflowEngine =
+                new RecordingWorkflowEngine();
 
             SinglePointCalculationService service =
                 new SinglePointCalculationService(
                     workspace,
                     backend,
                     repository,
-                    monitor,
-                    skillInvoker);
+                    workflowEngine);
 
             CalculationRequest request = new CalculationRequest();
             request.CoordinateText = "O 0.0 0.0 0.0";
@@ -197,43 +195,6 @@ public class SinglePointCalculationServiceTests
         }
     }
 
-    private sealed class RecordingSkillInvoker : ISkillInvoker
-    {
-        public Task<TResult> InvokeAsync<TRequest, TResult>(
-            string skillId,
-            TRequest request,
-            CancellationToken cancellationToken = default)
-            where TRequest : class
-            where TResult : class
-        {
-            object? typedRequest = request;
-            CalculationInputGenerationRequest? inputRequest =
-                typedRequest as CalculationInputGenerationRequest;
-
-            if (inputRequest == null)
-            {
-                throw new InvalidOperationException("请求类型不正确。");
-            }
-
-            CalculationExecutionContext context =
-                new CalculationExecutionContext();
-            context.JobId = inputRequest.Job.JobId;
-            context.RunDirectory = inputRequest.Job.RunDirectory;
-            context.InputFilePath = inputRequest.RunInputFilePath;
-            context.OutputFilePath = inputRequest.OutputFilePath;
-            context.ExecutablePath = "g16";
-
-            CalculationInputGenerationResult inputResult =
-                new CalculationInputGenerationResult();
-            inputResult.Succeeded = true;
-            inputResult.Job = inputRequest.Job;
-            inputResult.ExecutionContext = context;
-
-            object result = inputResult;
-            return Task.FromResult((TResult)result);
-        }
-    }
-
     private sealed class RecordingComputeBackend : IComputeBackend
     {
         public string CanceledJobId { get; private set; } = string.Empty;
@@ -275,13 +236,23 @@ public class SinglePointCalculationServiceTests
         }
     }
 
-    private sealed class RecordingJobMonitor : ICalculationJobMonitor
+    private sealed class RecordingWorkflowEngine : ISinglePointWorkflowEngine
     {
         public string StartedJobId { get; private set; } = string.Empty;
 
-        public void Start(CalculationJob job)
+        public Task<WorkflowRun> StartAsync(
+            WorkflowDefinition definition,
+            IReadOnlyDictionary<string, string> inputs,
+            CalculationJob job,
+            CancellationToken cancellationToken = default)
         {
             StartedJobId = job.JobId;
+
+            WorkflowRun run = new WorkflowRun();
+            run.Id = definition.Id;
+            run.Definition = definition;
+            run.State = WorkflowState.Running;
+            return Task.FromResult(run);
         }
     }
 }

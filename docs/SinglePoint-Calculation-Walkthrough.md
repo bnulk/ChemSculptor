@@ -606,10 +606,9 @@ OutputFilePath = <作业目录>\run\output.log
 如果系统没有配置 `GAUSS_EXEDIR`，适配器会从 `PATH` 中找到 `g16.exe`
 所在目录，并把它传给子进程。否则 Gaussian 可能找不到 `l1.exe`。
 
-`SinglePointCalculationService` 把上下文交给 `IComputeBackend`。
-当前注册的是 `LocalProcessBackend`，它使用 `ProcessStartInfo` 启动 `g16`，
-并异步等待进程结束。服务随后启动 `CalculationJobMonitor`，由它在后台等待
-最终状态、解析输出并保存结果。
+`SinglePointCalculationService` 不再直接调用计算后端，而是启动声明式工作流。
+工作流中的 `CalculationSubmissionSkill` 负责提交，`CalculationWaitSkill`
+负责等待 `LocalProcessBackend` 中运行的 `g16` 结束。
 
 等价命令是：
 
@@ -625,6 +624,8 @@ g16 <jobId>.gjf <output.log>
 
 ```text
 src/ChemSculptor.Agent/CalculationJobMonitor.cs
+src/ChemSculptor.Agent/SinglePointWorkflowDefinitionFactory.cs
+src/ChemSculptor.Skills.Common/CalculationWorkflow
 src/ChemSculptor.Skills.Gaussian/GaussianSinglePointResultExtraction
 src/ChemSculptor.Skills.Common/CalculationResultValidation
 src/ChemSculptor.Compute/FileCalculationRepository.cs
@@ -707,7 +708,7 @@ GaussianSinglePointOutputValidator
   检查是否包含 Normal termination
 ```
 
-Agent 的 `RuleBasedCalculationProcessingPlanner` 只读取这些通用分类，生成
+`CalculationWorkflowProcessingPlanSkill` 使用通用方案工厂生成
 通用处理方案：
 
 ```text
@@ -989,33 +990,41 @@ Get-Content "<返回的 inputFilePath>"
 17. Skills.Common/CalculationResultValidation/CalculationResultValidationSkill.cs
 18. Compute.Gaussian/GaussianOutputParser.cs
 19. Compute.Gaussian/GaussianResultTranslator.cs
-20. Agent/RuleBasedCalculationProcessingPlanner.cs
-21. Compute.Gaussian/GaussianProcessingPlanTranslator.cs
-22. Compute/FileCalculationRepository.cs
-23. tests/*Tests.cs
+20. Agent/SinglePointWorkflowDefinitionFactory.cs
+21. Skills.Common/CalculationWorkflow/CalculationSubmissionSkill.cs
+22. Skills.Common/CalculationWorkflow/CalculationWaitSkill.cs
+23. Skills.Gaussian/GaussianSinglePointWorkflowExtraction/GaussianSinglePointWorkflowExtractionSkill.cs
+24. Skills.Common/CalculationWorkflow/CalculationWorkflowValidationSkill.cs
+25. Skills.Common/CalculationWorkflow/CalculationWorkflowProcessingPlanSkill.cs
+26. Compute.Gaussian/GaussianProcessingPlanTranslator.cs
+27. Compute/FileCalculationRepository.cs
+28. tests/*Tests.cs
 ```
 
 ---
 
 ## 26. 下一步
 
-当前链路已经能启动 Gaussian、解析输出、验证结果并保存报告。下一步是：
+当前链路已经由声明式工作流驱动，完成 Gaussian 启动、解析、验证和方案保存。
+下一步是：
 
 ```text
-第七阶段：客户端反馈与异常处理
-  WinForms 自动轮询状态和能量
-  显示验证报告
-  接入异常诊断和修正子工作流
+异常诊断与修正子工作流
+  SCF 等异常识别
+  通用处理方案
+  Gaussian 修正方案
+  人工审批
+  修正后重算
 ```
 
 之后是：
 
 ```text
-自动查错纠错、取消计算、远程 HPC 后端和作业队列
+远程 HPC 后端、队列与多作业调度
 ```
 
 ---
 
 ## 27. 一句话总结
 
-> 当前“单点计算”链路是：客户端原样发送文本和坐标，会话层解释出单点计算意图，`SinglePointCalculationService` 创建作业并通过 `GaussianInputGenerationSkill` 生成输入，通过本机执行后端启动 `g16`，再由后台监控器调用 `GaussianSinglePointResultExtractionSkill` 和 `CalculationResultValidationSkill`，保存通用结果、验证报告和处理方案。异常处理只保留技能框架，尚未执行。
+> 当前“单点计算”链路是：客户端原样发送文本和坐标，会话层解释出单点计算意图，`SinglePointCalculationService` 创建作业并启动声明式工作流。工作流依次执行输入生成、提交、等待、结果提取、验证和处理方案生成。Api、Agent 和客户端都不直接包含 Gaussian 细节；异常处理仍只保留技能框架。

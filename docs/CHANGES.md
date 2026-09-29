@@ -5,6 +5,142 @@
 
 ---
 
+## v0.25.0（2026-09-29）：声明式工作流接管单点计算
+
+### 版本
+
+- 当前版本：`0.25.0`
+- 日期：2026-09-29
+- 版本类型：架构升级（工作流驱动）
+
+### 改动目的
+
+让单点计算不再由 `SinglePointCalculationService` 直接按代码顺序调用技能，而是
+由声明式 DAG 工作流接管。
+
+现在工作流：
+
+```text
+input-generation
+  → submit
+  → wait
+  → extract
+  → validate
+  → plan
+```
+
+对应技能：
+
+```text
+gaussian.input-generation
+  → calculation.submit
+  → calculation.wait
+  → gaussian.single-point-workflow-extraction
+  → calculation.workflow-validation
+  → calculation.workflow-processing-plan
+```
+
+### 工作流模型增强
+
+`WorkflowNode` 新增：
+
+```text
+Inputs
+```
+
+输入映射支持：
+
+```text
+$input.名称
+  引用工作流初始输入
+
+节点标识
+  引用上游节点输出
+```
+
+`WorkflowRun` 新增：
+
+```text
+Inputs
+```
+
+`WorkflowEngine` 新增 `SubmitAsync(definition, inputs)` 重载。
+
+### 新增工作流技能
+
+Common：
+
+```text
+CalculationSubmissionSkill
+CalculationWaitSkill
+CalculationWorkflowValidationSkill
+CalculationWorkflowProcessingPlanSkill
+```
+
+Gaussian：
+
+```text
+GaussianSinglePointWorkflowExtractionSkill
+```
+
+### 服务调整
+
+`SinglePointCalculationService` 现在：
+
+```text
+创建计算作业
+创建工作流输入
+提交 WorkflowDefinition
+立即返回 jobId
+由后台工作流完成提交、等待、提取、验证和方案生成
+```
+
+新增：
+
+```text
+ISinglePointWorkflowEngine
+SinglePointWorkflowEngine
+SinglePointWorkflowDefinitionFactory
+```
+
+删除旧的直接监控路径：
+
+```text
+CalculationJobMonitor
+CalculationJobMonitorOptions
+ICalculationJobMonitor
+RuleBasedCalculationProcessingPlanner
+ICalculationProcessingPlanner
+```
+
+处理方案逻辑移动到：
+
+```text
+CalculationProcessingPlanFactory
+```
+
+### 验证
+
+- Release 全解决方案构建：0 警告 0 错误
+- 测试：32/32 通过
+- 实际工作流状态：`Passed`
+- 实际节点状态：
+
+```text
+input-generation = Passed
+submit = Passed
+wait = Passed
+extract = Passed
+validate = Passed
+plan = Passed
+```
+
+- 实际计算状态：`Validated`
+- 实际能量：`-76.3801013836 Hartree`
+- 实际验证：`Passed`
+
+---
+
 ## v0.24.0（2026-09-27）：WinForms 交互闭环
 
 ### 版本

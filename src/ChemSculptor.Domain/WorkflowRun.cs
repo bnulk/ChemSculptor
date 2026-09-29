@@ -12,6 +12,10 @@ public sealed class WorkflowRun
     /// <summary>本次运行依据的工作流定义。</summary>
     public WorkflowDefinition Definition { get; set; } = new WorkflowDefinition();
 
+    /// <summary>工作流初始输入，键为输入名。</summary>
+    public Dictionary<string, string> Inputs { get; set; } =
+        new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+
     /// <summary>工作流整体状态。</summary>
     public WorkflowState State { get; set; } = WorkflowState.Draft;
 

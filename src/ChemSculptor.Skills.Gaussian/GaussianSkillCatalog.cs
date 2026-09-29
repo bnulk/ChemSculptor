@@ -15,6 +15,7 @@ public static class GaussianSkillCatalog
         List<string> ids = new List<string>();
         ids.Add(GaussianInputGenerationSkillDescriptor.Id);
         ids.Add(GaussianSinglePointResultExtractionSkillDescriptor.Id);
+        ids.Add(CalculationSkillIds.GaussianSinglePointWorkflowExtraction);
         ids.Add(GaussianFailureDiagnosisSkill.NameValue);
         ids.Add(GaussianFailureCorrectionProposalSkillDescriptor.Id);
         return ids;

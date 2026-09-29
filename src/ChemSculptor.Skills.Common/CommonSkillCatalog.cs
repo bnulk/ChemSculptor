@@ -1,3 +1,5 @@
+using ChemSculptor.Compute;
+
 namespace ChemSculptor.Skills.Common;
 
 /// <summary>通用技能目录。</summary>
@@ -9,6 +11,10 @@ public static class CommonSkillCatalog
         List<string> ids = new List<string>();
         ids.Add(
             CalculationResultValidation.CalculationResultValidationSkillDescriptor.Id);
+        ids.Add(CalculationSkillIds.CalculationSubmission);
+        ids.Add(CalculationSkillIds.CalculationWait);
+        ids.Add(CalculationSkillIds.CalculationWorkflowValidation);
+        ids.Add(CalculationSkillIds.CalculationWorkflowProcessingPlan);
         return ids;
     }
 }

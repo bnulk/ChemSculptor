@@ -95,6 +95,56 @@ public class CalculationResultValidationResult
         new CalculationValidationReport();
 }
 
+/// <summary>计算提交技能结果。</summary>
+public class CalculationSubmissionSkillResult
+{
+    /// <summary>是否成功。</summary>
+    public bool Succeeded { get; set; }
+
+    /// <summary>失败说明。</summary>
+    public string Error { get; set; } = string.Empty;
+
+    /// <summary>已提交的作业。</summary>
+    public CalculationJob Job { get; set; } = new CalculationJob();
+
+    /// <summary>执行上下文。</summary>
+    public CalculationExecutionContext ExecutionContext { get; set; } =
+        new CalculationExecutionContext();
+}
+
+/// <summary>计算等待技能结果。</summary>
+public class CalculationWaitSkillResult
+{
+    /// <summary>最终作业状态。</summary>
+    public CalculationJobState State { get; set; } =
+        CalculationJobState.Running;
+
+    /// <summary>更新后的作业。</summary>
+    public CalculationJob Job { get; set; } = new CalculationJob();
+}
+
+/// <summary>工作流结果验证技能结果。</summary>
+public class CalculationWorkflowValidationSkillResult
+{
+    /// <summary>是否通过。</summary>
+    public bool Passed { get; set; }
+
+    /// <summary>更新后的作业。</summary>
+    public CalculationJob Job { get; set; } = new CalculationJob();
+
+    /// <summary>验证报告。</summary>
+    public CalculationValidationReport Report { get; set; } =
+        new CalculationValidationReport();
+}
+
+/// <summary>工作流处理方案技能结果。</summary>
+public class CalculationWorkflowProcessingPlanSkillResult
+{
+    /// <summary>通用处理方案。</summary>
+    public CalculationProcessingPlan Plan { get; set; } =
+        new CalculationProcessingPlan();
+}
+
 /// <summary>程序处理方案翻译技能请求。</summary>
 public class ProgramProcessingPlanTranslationRequest
 {

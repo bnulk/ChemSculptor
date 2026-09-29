@@ -1,15 +1,10 @@
-using ChemSculptor.Compute;
+namespace ChemSculptor.Compute;
 
-namespace ChemSculptor.Agent;
-
-/// <summary>
-/// 基于通用结果的规则处理方案生成器。
-/// 当前只区分正常完成、缺少能量和需要人工检查等基本场景。
-/// </summary>
-public sealed class RuleBasedCalculationProcessingPlanner : ICalculationProcessingPlanner
+/// <summary>通用计算处理方案工厂。</summary>
+public static class CalculationProcessingPlanFactory
 {
-    /// <summary>生成通用处理方案。</summary>
-    public CalculationProcessingPlan CreatePlan(
+    /// <summary>根据通用结果创建处理方案。</summary>
+    public static CalculationProcessingPlan Create(
         CalculationJob job,
         CalculationResult result)
     {

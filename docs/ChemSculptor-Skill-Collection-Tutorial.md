@@ -404,15 +404,17 @@ SkillId:
 
 ```text
 SinglePointCalculationService
-  → IComputeBackend.SubmitAsync
-  → LocalProcessBackend
-  → g16
+  → ISinglePointWorkflowEngine
+  → WorkflowEngine
+  → CalculationSubmissionSkill
+  → CalculationWaitSkill
+  → GaussianSinglePointWorkflowExtractionSkill
 ```
 
 ### 第六步：后台监控
 
 ```text
-CalculationJobMonitor
+CalculationWaitSkill
   → 轮询 IComputeBackend.GetStatusAsync
 ```
 

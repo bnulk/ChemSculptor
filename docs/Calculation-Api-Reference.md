@@ -294,12 +294,14 @@ Api 端点不直接操作 Gaussian、文件或进程。
 ```text
 CalculationEndpoints
   → ISinglePointCalculationService
-  → ISkillInvoker
+  → ISinglePointWorkflowEngine
+  → WorkflowEngine
   → GaussianInputGenerationSkill
-  → IComputeBackend
-  → CalculationJobMonitor
-  → GaussianSinglePointResultExtractionSkill
-  → CalculationResultValidationSkill
+  → CalculationSubmissionSkill
+  → CalculationWaitSkill
+  → GaussianSinglePointWorkflowExtractionSkill
+  → CalculationWorkflowValidationSkill
+  → CalculationWorkflowProcessingPlanSkill
 ```
 
 因此 Api 的职责仅是：

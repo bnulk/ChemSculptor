@@ -40,6 +40,20 @@ public sealed class WorkflowEngine
         WorkflowDefinition definition,
         CancellationToken cancellationToken = default)
     {
+        return await SubmitAsync(
+            definition,
+            new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase),
+            cancellationToken);
+    }
+
+    /// <summary>
+    /// 提交工作流定义和初始输入。
+    /// </summary>
+    public async Task<WorkflowRun> SubmitAsync(
+        WorkflowDefinition definition,
+        IReadOnlyDictionary<string, string> inputs,
+        CancellationToken cancellationToken = default)
+    {
         IReadOnlyList<string> violations = await _rules.ValidateWorkflowAsync(definition, cancellationToken);
         if (violations.Count > 0)
         {
@@ -51,6 +65,9 @@ public sealed class WorkflowEngine
         run.Id = definition.Id;
         run.Definition = definition;
         run.State = WorkflowState.Ready;
+        run.Inputs = new Dictionary<string, string>(
+            inputs,
+            StringComparer.OrdinalIgnoreCase);
         run.NodeStates = new Dictionary<string, TaskState>(StringComparer.OrdinalIgnoreCase);
 
         for (int index = 0; index < definition.Nodes.Count; index++)
@@ -198,15 +215,29 @@ public sealed class WorkflowEngine
             request.SkillId = node.Skill;
             request.Inputs = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 
-            foreach (KeyValuePair<string, TaskResult> pair in completed)
+            if (node.Inputs.Count > 0)
             {
-                string? output = pair.Value.Output;
-                if (output == null)
+                foreach (KeyValuePair<string, string> pair in node.Inputs)
                 {
-                    output = string.Empty;
+                    string value = ResolveNodeInput(
+                        run,
+                        completed,
+                        pair.Value);
+                    request.Inputs[pair.Key] = value;
                 }
+            }
+            else
+            {
+                foreach (KeyValuePair<string, TaskResult> pair in completed)
+                {
+                    string? output = pair.Value.Output;
+                    if (output == null)
+                    {
+                        output = string.Empty;
+                    }
 
-                request.Inputs.Add(pair.Key, output);
+                    request.Inputs.Add(pair.Key, output);
+                }
             }
 
             result = await skill.ExecuteAsync(request, cancellationToken);
@@ -254,6 +285,44 @@ public sealed class WorkflowEngine
 
         await EmitAsync(eventType, run.Id, node.Id, result.Diagnostics, cancellationToken);
         return result;
+    }
+
+    private static string ResolveNodeInput(
+        WorkflowRun run,
+        IReadOnlyDictionary<string, TaskResult> completed,
+        string reference)
+    {
+        const string inputPrefix = "$input.";
+
+        if (reference.StartsWith(
+            inputPrefix,
+            StringComparison.OrdinalIgnoreCase))
+        {
+            string inputName = reference.Substring(inputPrefix.Length);
+            string? inputValue;
+
+            if (run.Inputs.TryGetValue(inputName, out inputValue))
+            {
+                return inputValue;
+            }
+
+            throw new InvalidOperationException(
+                "Workflow input was not found: " + inputName);
+        }
+
+        TaskResult? upstream;
+        if (completed.TryGetValue(reference, out upstream))
+        {
+            if (upstream.Output == null)
+            {
+                return string.Empty;
+            }
+
+            return upstream.Output;
+        }
+
+        throw new InvalidOperationException(
+            "Workflow node output was not found: " + reference);
     }
 
     /// <summary>将工作流标记为失败，并记录失败事件与案例。</summary>

@@ -7,6 +7,7 @@ using ChemSculptor.Skills.Gaussian.GaussianFailureDiagnosis;
 using ChemSculptor.Skills.Gaussian.GaussianInputGeneration;
 using ChemSculptor.Skills.Gaussian.GaussianSinglePointResultExtraction;
 using ChemSculptor.Skills.Gaussian.GaussianSinglePointResultValidation;
+using ChemSculptor.Skills.Gaussian.GaussianSinglePointWorkflowExtraction;
 using ChemSculptor.Skills.Common.CalculationResultValidation;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -52,6 +53,9 @@ public static class GaussianSkillServiceRegistration
         ServiceCollectionServiceExtensions.AddSingleton<
             ICalculationResultValidator,
             GaussianSinglePointOutputValidator>(services);
+        ServiceCollectionServiceExtensions.AddSingleton<
+            ISkill,
+            GaussianSinglePointWorkflowExtractionSkill>(services);
 
         return services;
     }
