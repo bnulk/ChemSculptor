@@ -78,6 +78,8 @@ public class AgentServiceTests
         options.RootDirectory = root;
 
         WorkspaceManager workspace = new WorkspaceManager(options);
+        TestQuantumProgramAdapterRegistry adapterRegistry =
+            new TestQuantumProgramAdapterRegistry();
         FileCalculationRepository calculationRepository =
             new FileCalculationRepository(workspace);
         RecordingComputeBackend backend = new RecordingComputeBackend();
@@ -87,6 +89,7 @@ public class AgentServiceTests
             new SinglePointCalculationService(
                 workspace,
                 backend,
+                adapterRegistry,
                 calculationRepository,
                 workflowEngine);
         RuleBasedTaskInterpreter interpreter = new RuleBasedTaskInterpreter();

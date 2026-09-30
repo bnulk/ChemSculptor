@@ -19,7 +19,7 @@ public static class SinglePointWorkflowDefinitionFactory
 
         WorkflowNode inputGeneration = new WorkflowNode();
         inputGeneration.Id = "input-generation";
-        inputGeneration.Skill = CalculationSkillIds.GaussianInputGeneration;
+        inputGeneration.Skill = CalculationSkillIds.CalculationInputPreparation;
         inputGeneration.Inputs["request"] = "$input.request";
         definition.Nodes.Add(inputGeneration);
 
@@ -39,7 +39,7 @@ public static class SinglePointWorkflowDefinitionFactory
 
         WorkflowNode extract = new WorkflowNode();
         extract.Id = "extract";
-        extract.Skill = CalculationSkillIds.GaussianSinglePointWorkflowExtraction;
+        extract.Skill = CalculationSkillIds.CalculationResultExtraction;
         extract.DependsOn.Add(wait.Id);
         extract.Inputs["submission"] = submit.Id;
         definition.Nodes.Add(extract);

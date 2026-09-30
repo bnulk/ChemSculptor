@@ -107,6 +107,17 @@ public sealed class Gaussian16ProgramAdapter : IQuantumProgramAdapter
             cancellationToken);
     }
 
+    /// <summary>获取 Gaussian 输入文件名称。</summary>
+    public string GetInputFileName(string jobId)
+    {
+        if (string.IsNullOrWhiteSpace(jobId))
+        {
+            throw new ArgumentException("作业标识不能为空。", nameof(jobId));
+        }
+
+        return jobId + ".gjf";
+    }
+
     /// <summary>
     /// 构建 Gaussian 16 的本机执行上下文。
     /// 默认调用 PATH 中的 g16，并把输入文件作为第一个参数、输出文件作为第二个参数。

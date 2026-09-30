@@ -145,13 +145,14 @@ GAUSS_EXEDIR
 ORCA 的 ! 关键词
 ```
 
-### 3.2 程序专用 Skill
+### 3.2 程序专用实现
 
 例如 Gaussian：
 
 ```text
-GaussianInputGenerationSkill
-GaussianSinglePointResultExtractionSkill
+Gaussian16ProgramAdapter
+GaussianOutputParser
+GaussianResultTranslator
 GaussianFailureDiagnosisSkill
 GaussianFailureCorrectionProposalSkill
 GaussianCorrectionExecutionSkill
@@ -347,11 +348,11 @@ DAG 是“有向无环图”。
 最直白的工作流：
 
 ```text
-GaussianInputGenerationSkill
+CalculationInputPreparationSkill
   ↓
-CalculationJobSubmissionSkill
+CalculationSubmissionSkill
   ↓
-GaussianSinglePointResultExtractionSkill
+CalculationResultExtractionWorkflowSkill
   ↓
 CalculationResultValidationSkill
 ```
@@ -838,8 +839,12 @@ Agent 的可靠性来自：
 当前使用显式技能标识：
 
 ```text
-gaussian.input-generation
-gaussian.single-point-result-extraction
+calculation.prepare-input
+calculation.submit
+calculation.wait
+calculation.extract-result
+calculation.workflow-validation
+calculation.workflow-processing-plan
 calculation.result-validation
 ```
 
@@ -972,8 +977,10 @@ InputHashes
 ```text
 ISkill 契约
 ISkillRegistry
-GaussianInputGenerationSkill
-GaussianSinglePointResultExtractionSkill
+CalculationInputPreparationSkill
+CalculationSubmissionSkill
+CalculationWaitSkill
+CalculationResultExtractionWorkflowSkill
 CalculationResultValidationSkill
 GaussianFailureDiagnosisSkill 框架
 GaussianFailureCorrectionProposalSkill 框架

@@ -1,13 +1,10 @@
 using ChemSculptor.Compute;
 using ChemSculptor.Compute.Gaussian;
 using ChemSculptor.Domain;
-using ChemSculptor.InputProcessor;
 using ChemSculptor.Skills.Gaussian.GaussianFailureCorrectionProposal;
 using ChemSculptor.Skills.Gaussian.GaussianFailureDiagnosis;
-using ChemSculptor.Skills.Gaussian.GaussianInputGeneration;
 using ChemSculptor.Skills.Gaussian.GaussianSinglePointResultExtraction;
 using ChemSculptor.Skills.Gaussian.GaussianSinglePointResultValidation;
-using ChemSculptor.Skills.Gaussian.GaussianSinglePointWorkflowExtraction;
 using ChemSculptor.Skills.Common.CalculationResultValidation;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -35,12 +32,6 @@ public static class GaussianSkillServiceRegistration
             IQuantumProgramAdapter,
             Gaussian16ProgramAdapter>(services);
 
-        ServiceCollectionServiceExtensions.AddSingleton<IGeometryTextParser, GeometryTextParser>(
-            services);
-
-        ServiceCollectionServiceExtensions.AddSingleton<
-            ISkill,
-            GaussianInputGenerationSkill>(services);
         ServiceCollectionServiceExtensions.AddSingleton<
             ISkill,
             GaussianSinglePointResultExtractionSkill>(services);
@@ -53,10 +44,6 @@ public static class GaussianSkillServiceRegistration
         ServiceCollectionServiceExtensions.AddSingleton<
             ICalculationResultValidator,
             GaussianSinglePointOutputValidator>(services);
-        ServiceCollectionServiceExtensions.AddSingleton<
-            ISkill,
-            GaussianSinglePointWorkflowExtractionSkill>(services);
-
         return services;
     }
 }

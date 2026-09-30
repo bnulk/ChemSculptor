@@ -48,10 +48,10 @@ plan
 对应技能：
 
 ```text
-gaussian.input-generation
+calculation.prepare-input
 calculation.submit
 calculation.wait
-gaussian.single-point-workflow-extraction
+calculation.extract-result
 calculation.workflow-validation
 calculation.workflow-processing-plan
 ```

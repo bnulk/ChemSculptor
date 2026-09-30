@@ -296,10 +296,10 @@ CalculationEndpoints
   → ISinglePointCalculationService
   → ISinglePointWorkflowEngine
   → WorkflowEngine
-  → GaussianInputGenerationSkill
+  → CalculationInputPreparationSkill
   → CalculationSubmissionSkill
   → CalculationWaitSkill
-  → GaussianSinglePointWorkflowExtractionSkill
+  → CalculationResultExtractionWorkflowSkill
   → CalculationWorkflowValidationSkill
   → CalculationWorkflowProcessingPlanSkill
 ```

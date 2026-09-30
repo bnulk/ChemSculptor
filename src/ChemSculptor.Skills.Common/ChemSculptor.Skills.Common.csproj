@@ -13,6 +13,7 @@
   <ItemGroup>
     <ProjectReference Include="..\ChemSculptor.Compute\ChemSculptor.Compute.csproj" />
     <ProjectReference Include="..\ChemSculptor.Domain\ChemSculptor.Domain.csproj" />
+    <ProjectReference Include="..\ChemSculptor.InputProcessor\ChemSculptor.InputProcessor.csproj" />
   </ItemGroup>
 
 </Project>

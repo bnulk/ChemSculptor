@@ -15,6 +15,8 @@ public static class CommonSkillCatalog
         ids.Add(CalculationSkillIds.CalculationWait);
         ids.Add(CalculationSkillIds.CalculationWorkflowValidation);
         ids.Add(CalculationSkillIds.CalculationWorkflowProcessingPlan);
+        ids.Add(CalculationSkillIds.CalculationInputPreparation);
+        ids.Add(CalculationSkillIds.CalculationResultExtraction);
         return ids;
     }
 }

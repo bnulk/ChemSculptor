@@ -1,6 +1,6 @@
 # ChemSculptor“单点计算”代码全流程说明
 
-> 适用版本：v0.20.0 之后
+> 适用版本：v0.26.0 之后
 > 当前阶段目标：客户端发送原始文本，服务器通过显式 Skill 集合完成单点计算、结果提取和结果验证
 > 当前未实现：科学合理性判断、自动查错纠错、远程执行
 
@@ -17,17 +17,17 @@
    ↓
 服务器根据意图调用单点计算服务
    ↓
-解析坐标、创建工作区、生成 Gaussian 输入文件
+calculation.prepare-input
    ↓
-GaussianInputGenerationSkill
+calculation.submit
    ↓
-构建 g16 命令并提交本机执行后端
+calculation.wait
    ↓
-后台监控进程
+calculation.extract-result
    ↓
-GaussianSinglePointResultExtractionSkill
+calculation.workflow-validation
    ↓
-CalculationResultValidationSkill
+calculation.workflow-processing-plan
    ↓
 保存 result.json、validation.json 和 processing-plan.json
    ↓
@@ -623,15 +623,13 @@ g16 <jobId>.gjf <output.log>
 位置：
 
 ```text
-src/ChemSculptor.Agent/CalculationJobMonitor.cs
 src/ChemSculptor.Agent/SinglePointWorkflowDefinitionFactory.cs
 src/ChemSculptor.Skills.Common/CalculationWorkflow
-src/ChemSculptor.Skills.Gaussian/GaussianSinglePointResultExtraction
 src/ChemSculptor.Skills.Common/CalculationResultValidation
 src/ChemSculptor.Compute/FileCalculationRepository.cs
 ```
 
-作业提交后，监控器轮询：
+作业提交后，`CalculationWaitSkill` 轮询：
 
 ```text
 IComputeBackend.GetStatusAsync
@@ -904,12 +902,12 @@ Gaussian16ProgramAdapter.WriteInputAsync
 Gaussian16ProgramAdapter.BuildExecutionContext
 LocalProcessBackend.SubmitAsync
 LocalProcessBackend.MonitorProcessAsync
-CalculationJobMonitor.MonitorAsync
-GaussianSinglePointResultExtractionSkill.ExecuteAsync
+CalculationWaitSkill.ExecuteAsync
+CalculationResultExtractionWorkflowSkill.ExecuteAsync
 CalculationResultValidationSkill.ExecuteAsync
 GaussianOutputParser.ParseAsync
 GaussianResultTranslator.Translate
-RuleBasedCalculationProcessingPlanner.CreatePlan
+CalculationWorkflowProcessingPlanSkill.ExecuteAsync
 GaussianProcessingPlanTranslator.Translate
 FileCalculationRepository.SaveResultAsync
 ```
@@ -984,21 +982,18 @@ Get-Content "<返回的 inputFilePath>"
 11. Compute.Gaussian/GaussianInputWriter.cs
 12. Compute.Gaussian/Gaussian16ProgramAdapter.cs
 13. Compute.Local/LocalProcessBackend.cs
-14. Agent/CalculationJobMonitor.cs
-15. Skills.Gaussian/GaussianInputGeneration/GaussianInputGenerationSkill.cs
-16. Skills.Gaussian/GaussianSinglePointResultExtraction/GaussianSinglePointResultExtractionSkill.cs
-17. Skills.Common/CalculationResultValidation/CalculationResultValidationSkill.cs
-18. Compute.Gaussian/GaussianOutputParser.cs
-19. Compute.Gaussian/GaussianResultTranslator.cs
-20. Agent/SinglePointWorkflowDefinitionFactory.cs
-21. Skills.Common/CalculationWorkflow/CalculationSubmissionSkill.cs
-22. Skills.Common/CalculationWorkflow/CalculationWaitSkill.cs
-23. Skills.Gaussian/GaussianSinglePointWorkflowExtraction/GaussianSinglePointWorkflowExtractionSkill.cs
-24. Skills.Common/CalculationWorkflow/CalculationWorkflowValidationSkill.cs
-25. Skills.Common/CalculationWorkflow/CalculationWorkflowProcessingPlanSkill.cs
-26. Compute.Gaussian/GaussianProcessingPlanTranslator.cs
-27. Compute/FileCalculationRepository.cs
-28. tests/*Tests.cs
+14. Agent/SinglePointWorkflowDefinitionFactory.cs
+15. Skills.Common/CalculationWorkflow/CalculationInputPreparationSkill.cs
+16. Skills.Common/CalculationWorkflow/CalculationSubmissionSkill.cs
+17. Skills.Common/CalculationWorkflow/CalculationWaitSkill.cs
+18. Skills.Common/CalculationWorkflow/CalculationResultExtractionWorkflowSkill.cs
+19. Skills.Common/CalculationWorkflow/CalculationWorkflowValidationSkill.cs
+20. Skills.Common/CalculationWorkflow/CalculationWorkflowProcessingPlanSkill.cs
+21. Compute.Gaussian/Gaussian16ProgramAdapter.cs
+22. Compute.Gaussian/GaussianOutputParser.cs
+23. Compute.Gaussian/GaussianResultTranslator.cs
+24. Compute/FileCalculationRepository.cs
+25. tests/*Tests.cs
 ```
 
 ---

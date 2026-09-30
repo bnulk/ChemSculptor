@@ -1,7 +1,5 @@
-using ChemSculptor.Compute;
 using ChemSculptor.Skills.Gaussian.GaussianFailureCorrectionProposal;
 using ChemSculptor.Skills.Gaussian.GaussianFailureDiagnosis;
-using ChemSculptor.Skills.Gaussian.GaussianInputGeneration;
 using ChemSculptor.Skills.Gaussian.GaussianSinglePointResultExtraction;
 
 namespace ChemSculptor.Skills.Gaussian;
@@ -13,9 +11,7 @@ public static class GaussianSkillCatalog
     public static IReadOnlyList<string> ListSkillIds()
     {
         List<string> ids = new List<string>();
-        ids.Add(GaussianInputGenerationSkillDescriptor.Id);
         ids.Add(GaussianSinglePointResultExtractionSkillDescriptor.Id);
-        ids.Add(CalculationSkillIds.GaussianSinglePointWorkflowExtraction);
         ids.Add(GaussianFailureDiagnosisSkill.NameValue);
         ids.Add(GaussianFailureCorrectionProposalSkillDescriptor.Id);
         return ids;

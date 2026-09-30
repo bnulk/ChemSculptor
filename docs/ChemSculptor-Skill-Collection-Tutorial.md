@@ -28,9 +28,9 @@ ChemSculptor 不希望最终变成：
 
 ```text
 单点计算
-  → GaussianInputGenerationSkill
+  → CalculationInputPreparationSkill
   → 本机计算后端
-  → GaussianSinglePointResultExtractionSkill
+  → CalculationResultExtractionWorkflowSkill
   → CalculationResultValidationSkill
 ```
 
@@ -59,8 +59,8 @@ Skill 是智能体可以选择和编排的能力。
 例如：
 
 ```text
-GaussianInputGenerationSkill
-GaussianSinglePointResultExtractionSkill
+CalculationInputPreparationSkill
+CalculationResultExtractionWorkflowSkill
 CalculationResultValidationSkill
 ```
 
@@ -136,6 +136,13 @@ Catalog 让读者明确看到：
 ```text
 src/
   ChemSculptor.Skills.Common/
+    CalculationWorkflow/
+      CalculationInputPreparationSkill.cs
+      CalculationSubmissionSkill.cs
+      CalculationWaitSkill.cs
+      CalculationResultExtractionWorkflowSkill.cs
+      CalculationWorkflowValidationSkill.cs
+      CalculationWorkflowProcessingPlanSkill.cs
     CalculationResultValidation/
       CalculationResultValidationSkill.cs
       CalculationResultValidationSkillRequest.cs
@@ -146,11 +153,6 @@ src/
     JsonSkill.cs
 
   ChemSculptor.Skills.Gaussian/
-    GaussianInputGeneration/
-      GaussianInputGenerationSkill.cs
-      GaussianInputGenerationSkillRequest.cs
-      GaussianInputGenerationSkillResult.cs
-      GaussianInputGenerationSkillDescriptor.cs
     GaussianSinglePointResultExtraction/
       GaussianSinglePointResultExtractionSkill.cs
       GaussianSinglePointResultExtractionSkillRequest.cs
@@ -179,7 +181,7 @@ src/
     GaussianProcessingPlanTranslator.cs
 
   ChemSculptor.Agent/
-    只通过 ISkillRegistry、ISkillInvoker 和通用模型调用能力
+    只通过通用工作流、ISkillRegistry 和通用模型调用能力
 ```
 
 ---
@@ -330,7 +332,12 @@ src/ChemSculptor.Compute/CalculationSkillIds.cs
 当前标识：
 
 ```text
-gaussian.input-generation
+calculation.prepare-input
+calculation.submit
+calculation.wait
+calculation.extract-result
+calculation.workflow-validation
+calculation.workflow-processing-plan
 gaussian.single-point-result-extraction
 gaussian.failure-diagnosis
 gaussian.failure-correction-proposal
@@ -380,13 +387,13 @@ CalculationSpec
 
 ```text
 SkillId:
-  gaussian.input-generation
+  calculation.prepare-input
 
 请求:
   CalculationInputGenerationRequest
 
 实际执行:
-  GaussianInputGenerationSkill
+  CalculationInputPreparationSkill
 ```
 
 该 Skill 内部完成：
@@ -406,9 +413,10 @@ SkillId:
 SinglePointCalculationService
   → ISinglePointWorkflowEngine
   → WorkflowEngine
+  → CalculationInputPreparationSkill
   → CalculationSubmissionSkill
   → CalculationWaitSkill
-  → GaussianSinglePointWorkflowExtractionSkill
+  → CalculationResultExtractionWorkflowSkill
 ```
 
 ### 第六步：后台监控
@@ -422,10 +430,10 @@ CalculationWaitSkill
 
 ```text
 SkillId:
-  gaussian.single-point-result-extraction
+  calculation.extract-result
 
 实际执行:
-  GaussianSinglePointResultExtractionSkill
+  CalculationResultExtractionWorkflowSkill
 ```
 
 该 Skill 内部完成：
@@ -530,9 +538,11 @@ jobs/<jobId>/results/processing-plan.json
 
 ## 10. 逐个理解三个核心 Skill
 
-### 10.1 GaussianInputGenerationSkill
+### 10.1 CalculationInputPreparationSkill
 
-这是“准备 Gaussian 输入并建立运行上下文”的能力。
+这是“准备计算程序输入并建立运行上下文”的通用能力。
+
+它通过 `IQuantumProgramAdapterRegistry` 选择具体实现。
 
 输入包含：
 
@@ -553,9 +563,11 @@ CalculationExecutionContext
 
 它的内部实现可以变化，但 Skill 契约保持稳定。
 
-### 10.2 GaussianSinglePointResultExtractionSkill
+### 10.2 CalculationResultExtractionWorkflowSkill
 
-这是“从 Gaussian 输出中取得通用结果”的能力。
+这是“从计算程序输出中取得通用结果”的能力。
+
+它通过 `IQuantumProgramAdapterRegistry` 选择具体实现。
 
 它不直接向 Agent 返回 Gaussian 字段，而是返回：
 
@@ -611,7 +623,6 @@ CommonSkillCatalog
   calculation.result-validation
 
 GaussianSkillCatalog
-  gaussian.input-generation
   gaussian.single-point-result-extraction
   gaussian.failure-diagnosis
   gaussian.failure-correction-proposal
@@ -803,15 +814,16 @@ Agent 的通用流程保持不变。
 1. CalculationSkillIds.cs
 2. CommonSkillCatalog.cs
 3. GaussianSkillCatalog.cs
-4. GaussianInputGenerationSkill.cs
-5. GaussianSinglePointResultExtractionSkill.cs
-6. CalculationResultValidationSkill.cs
-7. SkillJsonInvoker.cs
-8. SinglePointCalculationService.cs
-9. CalculationJobMonitor.cs
-10. Gaussian16ProgramAdapter.cs
-11. GaussianOutputParser.cs
-12. GaussianResultTranslator.cs
+4. CalculationInputPreparationSkill.cs
+5. CalculationSubmissionSkill.cs
+6. CalculationWaitSkill.cs
+7. CalculationResultExtractionWorkflowSkill.cs
+8. CalculationResultValidationSkill.cs
+9. SinglePointWorkflowDefinitionFactory.cs
+10. SinglePointCalculationService.cs
+11. Gaussian16ProgramAdapter.cs
+12. GaussianOutputParser.cs
+13. GaussianResultTranslator.cs
 ```
 
 先看能力，再看编排，最后看具体实现。

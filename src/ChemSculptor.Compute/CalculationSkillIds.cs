@@ -3,10 +3,6 @@ namespace ChemSculptor.Compute;
 /// <summary>计算工作流使用的技能标识。</summary>
 public static class CalculationSkillIds
 {
-    /// <summary>Gaussian 输入文件生成。</summary>
-    public const string GaussianInputGeneration =
-        "gaussian.input-generation";
-
     /// <summary>Gaussian 单点计算结果提取。</summary>
     public const string GaussianSinglePointResultExtraction =
         "gaussian.single-point-result-extraction";
@@ -39,7 +35,11 @@ public static class CalculationSkillIds
     public const string CalculationWorkflowProcessingPlan =
         "calculation.workflow-processing-plan";
 
-    /// <summary>工作流中的 Gaussian 单点结果提取。</summary>
-    public const string GaussianSinglePointWorkflowExtraction =
-        "gaussian.single-point-workflow-extraction";
+    /// <summary>准备计算程序输入。</summary>
+    public const string CalculationInputPreparation =
+        "calculation.prepare-input";
+
+    /// <summary>提取计算程序结果。</summary>
+    public const string CalculationResultExtraction =
+        "calculation.extract-result";
 }

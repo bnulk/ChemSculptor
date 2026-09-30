@@ -20,6 +20,8 @@ public class SinglePointCalculationServiceTests
             workspaceOptions.RootDirectory = root;
 
             WorkspaceManager workspace = new WorkspaceManager(workspaceOptions);
+            TestQuantumProgramAdapterRegistry adapterRegistry =
+                new TestQuantumProgramAdapterRegistry();
             FileCalculationRepository repository =
                 new FileCalculationRepository(workspace);
             RecordingComputeBackend backend = new RecordingComputeBackend();
@@ -30,6 +32,7 @@ public class SinglePointCalculationServiceTests
                 new SinglePointCalculationService(
                     workspace,
                     backend,
+                    adapterRegistry,
                     repository,
                     workflowEngine);
 
@@ -86,6 +89,8 @@ public class SinglePointCalculationServiceTests
             workspaceOptions.RootDirectory = root;
 
             WorkspaceManager workspace = new WorkspaceManager(workspaceOptions);
+            TestQuantumProgramAdapterRegistry adapterRegistry =
+                new TestQuantumProgramAdapterRegistry();
             FileCalculationRepository repository =
                 new FileCalculationRepository(workspace);
             RecordingComputeBackend backend = new RecordingComputeBackend();
@@ -96,6 +101,7 @@ public class SinglePointCalculationServiceTests
                 new SinglePointCalculationService(
                     workspace,
                     backend,
+                    adapterRegistry,
                     repository,
                     workflowEngine);
 
@@ -128,6 +134,8 @@ public class SinglePointCalculationServiceTests
             workspaceOptions.RootDirectory = root;
 
             WorkspaceManager workspace = new WorkspaceManager(workspaceOptions);
+            TestQuantumProgramAdapterRegistry adapterRegistry =
+                new TestQuantumProgramAdapterRegistry();
             FileCalculationRepository repository =
                 new FileCalculationRepository(workspace);
             RecordingComputeBackend backend = new RecordingComputeBackend();
@@ -138,6 +146,7 @@ public class SinglePointCalculationServiceTests
                 new SinglePointCalculationService(
                     workspace,
                     backend,
+                    adapterRegistry,
                     repository,
                     workflowEngine);
 

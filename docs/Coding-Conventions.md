@@ -134,7 +134,91 @@ public ...
 
 ## 7. 最终口径
 
-### 7.1 技能命名
+### 7.1 通用流程与具体程序分离
+
+通用流程层包括：
+
+```text
+ChemSculptor.Api
+ChemSculptor.Agent
+ChemSculptor.Core
+ChemSculptor.Domain
+ChemSculptor.Compute
+ChemSculptor.Skills.Common
+工作流定义
+通用 Skill ID
+```
+
+这些位置中禁止出现：
+
+```text
+具体计算程序名称
+具体可执行文件名
+具体输入文件扩展名
+具体输入关键词
+具体输出关键词
+具体程序异常名称
+具体程序环境变量
+```
+
+例如禁止出现：
+
+```text
+Gaussian
+g16
+.gjf
+%chk
+SCF Done
+Normal termination
+GAUSS_EXEDIR
+ORCA
+```
+
+具体计算程序内容只允许出现在：
+
+```text
+ChemSculptor.Compute.<Program>
+ChemSculptor.Skills.<Program>
+对应程序适配器、Parser、Translator 和具体实现
+```
+
+允许的例外：
+
+```text
+默认计算程序配置值
+例如 CalculationDefaults.DefaultProgram = "Gaussian 16"
+```
+
+通用工作流必须通过：
+
+```text
+IQuantumProgramAdapterRegistry
+```
+
+根据 `CalculationSpec.Program` 选择具体实现。
+
+通用 Skill ID 必须使用能力语义，例如：
+
+```text
+calculation.prepare-input
+calculation.submit
+calculation.wait
+calculation.extract-result
+calculation.workflow-validation
+calculation.workflow-processing-plan
+```
+
+禁止使用：
+
+```text
+gaussian.input-generation
+gaussian.single-point-workflow-extraction
+orca.input-generation
+```
+
+本规则永久生效，后续代码不得违反。
+
+### 7.2 技能命名
 
 ```text
 正确：
@@ -166,7 +250,7 @@ Docker 容器是运行环境术语，可以继续使用。
 WinForms 的 SplitContainer 是框架界面控件，不属于技能命名。
 ```
 
-### 7.2 总口径
+### 7.3 总口径
 
 ```text
 禁止：

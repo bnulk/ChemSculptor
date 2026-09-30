@@ -1,4 +1,6 @@
+using ChemSculptor.Compute;
 using ChemSculptor.Domain;
+using ChemSculptor.InputProcessor;
 using ChemSculptor.Skills.Common.CalculationWorkflow;
 using ChemSculptor.Skills.Common.CalculationResultValidation;
 using Microsoft.Extensions.DependencyInjection;
@@ -17,6 +19,12 @@ public static class CommonSkillServiceRegistration
         ServiceCollectionServiceExtensions.AddSingleton<
             CalculationValidationService>(services);
         ServiceCollectionServiceExtensions.AddSingleton<
+            IQuantumProgramAdapterRegistry,
+            QuantumProgramAdapterRegistry>(services);
+        ServiceCollectionServiceExtensions.AddSingleton<
+            IGeometryTextParser,
+            GeometryTextParser>(services);
+        ServiceCollectionServiceExtensions.AddSingleton<
             ISkill,
             CalculationResultValidationSkill>(services);
         ServiceCollectionServiceExtensions.AddSingleton<
@@ -31,6 +39,12 @@ public static class CommonSkillServiceRegistration
         ServiceCollectionServiceExtensions.AddSingleton<
             ISkill,
             CalculationWorkflowProcessingPlanSkill>(services);
+        ServiceCollectionServiceExtensions.AddSingleton<
+            ISkill,
+            CalculationInputPreparationSkill>(services);
+        ServiceCollectionServiceExtensions.AddSingleton<
+            ISkill,
+            CalculationResultExtractionWorkflowSkill>(services);
 
         return services;
     }

@@ -1,55 +1,52 @@
 using ChemSculptor.Compute;
 using ChemSculptor.InputProcessor;
 using ChemSculptor.InputProcessor.GeometryIntake;
-using ChemSculptor.Skills.Common;
 
-namespace ChemSculptor.Skills.Gaussian.GaussianInputGeneration;
+namespace ChemSculptor.Skills.Common.CalculationWorkflow;
 
 /// <summary>
-/// Gaussian 输入文件生成技能。
-/// 负责解析坐标、生成输入副本并构建程序执行上下文。
+/// 通用输入准备技能。
+/// 具体输入格式由程序适配器负责。
 /// </summary>
-public sealed class GaussianInputGenerationSkill
-    : JsonSkill<
-        GaussianInputGenerationSkillRequest,
-        GaussianInputGenerationSkillResult>
+public sealed class CalculationInputPreparationSkill
+    : JsonSkill<CalculationInputGenerationRequest, CalculationInputGenerationResult>
 {
     private readonly IGeometryTextParser _geometryParser;
-    private readonly IQuantumProgramAdapter _programAdapter;
+    private readonly IQuantumProgramAdapterRegistry _adapterRegistry;
     private readonly List<string> _capabilities;
 
-    /// <summary>创建 Gaussian 输入文件生成技能。</summary>
-    public GaussianInputGenerationSkill(
+    /// <summary>创建通用输入准备技能。</summary>
+    public CalculationInputPreparationSkill(
         IGeometryTextParser geometryParser,
-        IQuantumProgramAdapter programAdapter)
+        IQuantumProgramAdapterRegistry adapterRegistry)
     {
         if (geometryParser == null)
         {
             throw new ArgumentNullException(nameof(geometryParser));
         }
 
-        if (programAdapter == null)
+        if (adapterRegistry == null)
         {
-            throw new ArgumentNullException(nameof(programAdapter));
+            throw new ArgumentNullException(nameof(adapterRegistry));
         }
 
         _geometryParser = geometryParser;
-        _programAdapter = programAdapter;
+        _adapterRegistry = adapterRegistry;
         _capabilities = new List<string>();
-        _capabilities.Add("calculation.input-generation");
-        _capabilities.Add("gaussian.input");
+        _capabilities.Add("calculation.prepare-input");
+        _capabilities.Add("workflow.calculation");
     }
 
     /// <summary>技能标识。</summary>
     public override string Name
     {
-        get { return GaussianInputGenerationSkillDescriptor.Id; }
+        get { return CalculationSkillIds.CalculationInputPreparation; }
     }
 
     /// <summary>技能版本。</summary>
     public override string Version
     {
-        get { return GaussianInputGenerationSkillDescriptor.VersionValue; }
+        get { return "1.0.0"; }
     }
 
     /// <summary>技能能力。</summary>
@@ -58,15 +55,18 @@ public sealed class GaussianInputGenerationSkill
         get { return _capabilities; }
     }
 
-    /// <summary>生成输入文件并构建执行上下文。</summary>
-    protected override async Task<GaussianInputGenerationSkillResult> ExecuteAsync(
-        GaussianInputGenerationSkillRequest request,
+    /// <summary>准备程序输入并构建执行上下文。</summary>
+    protected override async Task<CalculationInputGenerationResult> ExecuteAsync(
+        CalculationInputGenerationRequest request,
         CancellationToken cancellationToken)
     {
-        GaussianInputGenerationSkillResult result =
-            new GaussianInputGenerationSkillResult();
+        CalculationInputGenerationResult result =
+            new CalculationInputGenerationResult();
 
-        if (!_programAdapter.CanRun(request.Spec))
+        IQuantumProgramAdapter? adapter =
+            _adapterRegistry.Resolve(request.Spec);
+
+        if (adapter == null)
         {
             result.Succeeded = false;
             result.Error = "没有可处理 " + request.Spec.Program + " 的计算程序适配器。";
@@ -94,7 +94,7 @@ public sealed class GaussianInputGenerationSkill
         EnsureParentDirectory(request.InputFilePath);
         EnsureParentDirectory(request.RunInputFilePath);
 
-        await _programAdapter.WriteInputAsync(
+        await adapter.WriteInputAsync(
             request.Spec,
             canonicalGeometry,
             request.InputFilePath,
@@ -109,7 +109,7 @@ public sealed class GaussianInputGenerationSkill
         job.State = CalculationJobState.InputGenerated;
 
         CalculationExecutionContext context =
-            _programAdapter.BuildExecutionContext(job, request.Spec);
+            adapter.BuildExecutionContext(job, request.Spec);
 
         result.Succeeded = true;
         result.Job = job;
@@ -117,7 +117,7 @@ public sealed class GaussianInputGenerationSkill
         return result;
     }
 
-    /// <summary>检查技能是否可用。</summary>
+    /// <summary>检查技能可用性。</summary>
     public override Task<bool> HealthAsync(
         CancellationToken cancellationToken = default)
     {

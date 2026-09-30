@@ -12,6 +12,7 @@ public sealed class SinglePointCalculationService : ISinglePointCalculationServi
 {
     private readonly ICalculationWorkspace _workspace;
     private readonly IComputeBackend _computeBackend;
+    private readonly IQuantumProgramAdapterRegistry _adapterRegistry;
     private readonly ICalculationRepository _repository;
     private readonly ISinglePointWorkflowEngine _workflowEngine;
 
@@ -19,6 +20,7 @@ public sealed class SinglePointCalculationService : ISinglePointCalculationServi
     public SinglePointCalculationService(
         ICalculationWorkspace workspace,
         IComputeBackend computeBackend,
+        IQuantumProgramAdapterRegistry adapterRegistry,
         ICalculationRepository repository,
         ISinglePointWorkflowEngine workflowEngine)
     {
@@ -30,6 +32,11 @@ public sealed class SinglePointCalculationService : ISinglePointCalculationServi
         if (computeBackend == null)
         {
             throw new ArgumentNullException(nameof(computeBackend));
+        }
+
+        if (adapterRegistry == null)
+        {
+            throw new ArgumentNullException(nameof(adapterRegistry));
         }
 
         if (repository == null)
@@ -44,6 +51,7 @@ public sealed class SinglePointCalculationService : ISinglePointCalculationServi
 
         _workspace = workspace;
         _computeBackend = computeBackend;
+        _adapterRegistry = adapterRegistry;
         _repository = repository;
         _workflowEngine = workflowEngine;
     }
@@ -89,10 +97,20 @@ public sealed class SinglePointCalculationService : ISinglePointCalculationServi
                 return result;
             }
 
+            IQuantumProgramAdapter? adapter =
+                _adapterRegistry.Resolve(spec);
+
+            if (adapter == null)
+            {
+                result.Succeeded = false;
+                result.Error = "没有可处理 " + spec.Program + " 的计算程序适配器。";
+                return result;
+            }
+
             string jobId = "job-" + Guid.NewGuid().ToString("N");
             await _workspace.EnsureJobWorkspaceAsync(jobId, cancellationToken);
 
-            string inputFileName = jobId + ".gjf";
+            string inputFileName = adapter.GetInputFileName(jobId);
             string inputPath = Path.Combine(
                 _workspace.GetInputDirectory(jobId),
                 inputFileName);

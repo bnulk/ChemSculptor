@@ -1,24 +1,26 @@
 using ChemSculptor.Compute;
 using ChemSculptor.Domain;
-using ChemSculptor.Skills.Common;
 
-namespace ChemSculptor.Skills.Gaussian.GaussianSinglePointWorkflowExtraction;
+namespace ChemSculptor.Skills.Common.CalculationWorkflow;
 
-/// <summary>工作流中的 Gaussian 单点结果提取节点。</summary>
-public sealed class GaussianSinglePointWorkflowExtractionSkill : ISkill
+/// <summary>
+/// 通用计算结果提取技能。
+/// 具体输出格式由程序适配器负责。
+/// </summary>
+public sealed class CalculationResultExtractionWorkflowSkill : ISkill
 {
-    private readonly IQuantumProgramAdapter _programAdapter;
+    private readonly IQuantumProgramAdapterRegistry _adapterRegistry;
     private readonly ICalculationRepository _repository;
     private readonly List<string> _capabilities;
 
-    /// <summary>创建工作流结果提取技能。</summary>
-    public GaussianSinglePointWorkflowExtractionSkill(
-        IQuantumProgramAdapter programAdapter,
+    /// <summary>创建通用结果提取技能。</summary>
+    public CalculationResultExtractionWorkflowSkill(
+        IQuantumProgramAdapterRegistry adapterRegistry,
         ICalculationRepository repository)
     {
-        if (programAdapter == null)
+        if (adapterRegistry == null)
         {
-            throw new ArgumentNullException(nameof(programAdapter));
+            throw new ArgumentNullException(nameof(adapterRegistry));
         }
 
         if (repository == null)
@@ -26,18 +28,17 @@ public sealed class GaussianSinglePointWorkflowExtractionSkill : ISkill
             throw new ArgumentNullException(nameof(repository));
         }
 
-        _programAdapter = programAdapter;
+        _adapterRegistry = adapterRegistry;
         _repository = repository;
         _capabilities = new List<string>();
-        _capabilities.Add("calculation.result-extraction");
+        _capabilities.Add("calculation.extract-result");
         _capabilities.Add("workflow.calculation");
-        _capabilities.Add("gaussian.result");
     }
 
     /// <summary>技能标识。</summary>
     public string Name
     {
-        get { return CalculationSkillIds.GaussianSinglePointWorkflowExtraction; }
+        get { return CalculationSkillIds.CalculationResultExtraction; }
     }
 
     /// <summary>技能版本。</summary>
@@ -72,9 +73,20 @@ public sealed class GaussianSinglePointWorkflowExtractionSkill : ISkill
             SkillJson.Deserialize<CalculationSubmissionSkillResult>(
                 submissionJson);
 
+        IQuantumProgramAdapter? adapter =
+            _adapterRegistry.Resolve(submission.Job.Spec);
+
+        if (adapter == null)
+        {
+            throw new InvalidOperationException(
+                "没有可处理 " +
+                submission.Job.Spec.Program +
+                " 的计算程序适配器。");
+        }
+
         CalculationJob job = submission.Job;
         CalculationResult result =
-            await _programAdapter.ParseOutputAsync(
+            await adapter.ParseOutputAsync(
                 job.OutputFilePath,
                 cancellationToken);
 

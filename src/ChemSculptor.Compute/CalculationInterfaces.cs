@@ -21,6 +21,9 @@ public interface IQuantumProgramAdapter
         string outputPath,
         CancellationToken cancellationToken = default);
 
+    /// <summary>获取当前程序使用的输入文件名称。</summary>
+    string GetInputFileName(string jobId);
+
     /// <summary>构建执行上下文。</summary>
     CalculationExecutionContext BuildExecutionContext(
         CalculationJob job,

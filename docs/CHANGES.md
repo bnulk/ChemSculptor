@@ -5,6 +5,125 @@
 
 ---
 
+## v0.26.0（2026-09-30）：工作流节点全面通用化
+
+### 版本
+
+- 当前版本：`0.26.0`
+- 日期：2026-09-30
+- 版本类型：架构约束强化
+
+### 改动目的
+
+确立并执行永久原则：
+
+```text
+所有工作流节点必须使用通用能力名称。
+具体计算程序只能作为适配器实现，不得进入工作流定义。
+```
+
+### 工作流技能
+
+旧名称：
+
+```text
+gaussian.input-generation
+calculation.submit
+calculation.wait
+gaussian.single-point-workflow-extraction
+calculation.workflow-validation
+calculation.workflow-processing-plan
+```
+
+新名称：
+
+```text
+calculation.prepare-input
+calculation.submit
+calculation.wait
+calculation.extract-result
+calculation.workflow-validation
+calculation.workflow-processing-plan
+```
+
+### 实现调整
+
+新增通用技能：
+
+```text
+CalculationInputPreparationSkill
+CalculationResultExtractionWorkflowSkill
+```
+
+新增程序适配器注册表：
+
+```text
+IQuantumProgramAdapterRegistry
+QuantumProgramAdapterRegistry
+```
+
+具体程序适配器只负责：
+
+```text
+输入文件名称
+输入文件格式
+命令行参数
+环境变量
+输出解析
+输出翻译
+```
+
+通用流程只负责：
+
+```text
+准备输入
+提交
+等待
+提取结果
+验证
+生成处理方案
+```
+
+### 删除的程序专用工作流技能
+
+```text
+GaussianInputGenerationSkill
+GaussianSinglePointWorkflowExtractionSkill
+gaussian.input-generation
+gaussian.single-point-workflow-extraction
+```
+
+`SinglePointCalculationService` 不再自行使用 `.gjf`。输入文件名由
+`IQuantumProgramAdapter.GetInputFileName` 提供。
+
+### 永久编码约定
+
+在 `docs/Coding-Conventions.md` 中新增“通用流程与具体程序分离”规则。
+
+以后通用流程层中出现具体程序名称、扩展名、关键词、环境变量或输出规则，
+视为架构违规。
+
+### 验证
+
+- Release 全解决方案构建：0 警告 0 错误
+- 测试：32/32 通过
+- 实际工作流技能：
+
+```text
+calculation.prepare-input
+calculation.submit
+calculation.wait
+calculation.extract-result
+calculation.workflow-validation
+calculation.workflow-processing-plan
+```
+
+- 实际计算状态：`Validated`
+- 实际能量：`-76.3801013836 Hartree`
+- 实际验证：`Passed`
+
+---
+
 ## v0.25.0（2026-09-29）：声明式工作流接管单点计算
 
 ### 版本
