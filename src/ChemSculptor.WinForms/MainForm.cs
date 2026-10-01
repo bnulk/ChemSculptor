@@ -1,6 +1,9 @@
 using System.Net.Http.Json;
 using System.Text;
 using System.Text.Json;
+using ChemSculptor.WinForms.Models.Requests;
+using ChemSculptor.WinForms.Models.Responses;
+using ChemSculptor.WinForms.Models.Ui;
 
 namespace ChemSculptor.WinForms;
 

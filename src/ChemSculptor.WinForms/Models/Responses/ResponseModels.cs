@@ -1,42 +1,4 @@
-namespace ChemSculptor.WinForms;
-
-/// <summary>会话中的一条消息。</summary>
-public sealed class ChatMessage
-{
-    public string Role { get; set; } = string.Empty;
-
-    public string Text { get; set; } = string.Empty;
-
-    public DateTimeOffset Timestamp { get; set; } = DateTimeOffset.Now;
-}
-
-/// <summary>一个本地会话。</summary>
-public sealed class ChatSession
-{
-    public string Id { get; set; } = string.Empty;
-
-    public string Title { get; set; } = string.Empty;
-
-    public List<ChatMessage> Messages { get; set; } = new List<ChatMessage>();
-
-    public override string ToString()
-    {
-        return Title;
-    }
-}
-
-/// <summary>发送给服务器的智能体原始消息。</summary>
-public sealed class AgentMessageRequestDto
-{
-    /// <summary>客户端会话标识。</summary>
-    public string SessionId { get; set; } = string.Empty;
-
-    /// <summary>用户原始自然语言文本。</summary>
-    public string Text { get; set; } = string.Empty;
-
-    /// <summary>当前选择的坐标文本。</summary>
-    public string CoordinateText { get; set; } = string.Empty;
-}
+namespace ChemSculptor.WinForms.Models.Responses;
 
 /// <summary>服务器处理智能体消息后的响应。</summary>
 public sealed class AgentMessageResultDto
@@ -61,27 +23,6 @@ public sealed class AgentMessageResultDto
 
     /// <summary>诊断信息。</summary>
     public List<string> Diagnostics { get; set; } = new List<string>();
-}
-
-/// <summary>客户端跟踪的单个计算作业。</summary>
-public sealed class CalculationJobItem
-{
-    /// <summary>作业标识。</summary>
-    public string JobId { get; set; } = string.Empty;
-
-    /// <summary>当前状态。</summary>
-    public string State { get; set; } = "Running";
-
-    /// <summary>是否已经结束。</summary>
-    public bool IsFinished { get; set; }
-
-    /// <summary>已格式化的结果文本。</summary>
-    public string? ResultText { get; set; }
-
-    public override string ToString()
-    {
-        return JobId + "    [" + State + "]";
-    }
 }
 
 /// <summary>计算状态响应。</summary>

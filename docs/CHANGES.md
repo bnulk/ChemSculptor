@@ -5,6 +5,76 @@
 
 ---
 
+## v0.27.1（2026-10-01）：WinForms 客户端模型分层
+
+### 版本
+
+- 当前版本：`0.27.1`
+- 日期：2026-10-01
+- 版本类型：结构调整
+
+### 改动目的
+
+把 WinForms 客户端模型从单个 `ClientModels.cs` 按用途拆成三个子目录，
+让界面状态、请求协议和响应协议的边界在目录和命名空间中都清晰可见。
+
+### 新结构
+
+```text
+src/ChemSculptor.WinForms/Models/
+├── Ui/
+│   └── UiModels.cs
+├── Requests/
+│   └── RequestModels.cs
+└── Responses/
+    └── ResponseModels.cs
+```
+
+对应命名空间：
+
+```text
+ChemSculptor.WinForms.Models.Ui
+ChemSculptor.WinForms.Models.Requests
+ChemSculptor.WinForms.Models.Responses
+```
+
+### 分类内容
+
+```text
+UiModels.cs
+  ChatMessage
+  ChatSession
+  CalculationJobItem
+
+RequestModels.cs
+  AgentMessageRequestDto
+
+ResponseModels.cs
+  AgentMessageResultDto
+  CalculationStatusDto
+  CalculationResultDto
+  CalculationValidationDto
+  CalculationValidationCheckDto
+  CalculationDiagnosticDto
+  CalculationArtifactManifestDto
+  CalculationArtifactFileDto
+```
+
+### 行为
+
+- 字段和属性没有改变。
+- HTTP 请求与响应格式没有改变。
+- WinForms 界面和运行逻辑没有改变。
+- `ClientModels.cs` 已删除，内容分别移入三个新文件。
+- `MainForm.cs` 只增加三个命名空间引用。
+
+### 验证
+
+- Release 全解决方案构建：0 警告 0 错误
+- 测试：35/35 通过
+
+---
+
 ## v0.27.0（2026-10-01）：计算产物清单与结果备份
 
 ### 版本
