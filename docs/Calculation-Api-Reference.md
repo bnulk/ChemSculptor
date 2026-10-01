@@ -1,6 +1,6 @@
 # 单点计算 API 参考
 
-> 适用版本：`v0.23.0` 之后
+> 适用版本：`v0.27.0` 之后
 > API 前缀：`/calculations`
 > 设计原则：Api 只做 HTTP 适配，业务统一交给 `ISinglePointCalculationService`
 
@@ -14,6 +14,8 @@
 | `GET` | `/calculations/{jobId}` | 查询作业状态 |
 | `GET` | `/calculations/{jobId}/status` | 查询作业状态 |
 | `GET` | `/calculations/{jobId}/result` | 查询规范化结果 |
+| `GET` | `/calculations/{jobId}/artifacts` | 查询可下载的计算文件清单 |
+| `GET` | `/calculations/{jobId}/artifacts/{fileName}` | 下载单个计算文件 |
 | `GET` | `/calculations/{jobId}/validation` | 查询验证报告 |
 | `POST` | `/calculations/{jobId}/cancel` | 取消运行中的作业 |
 
@@ -155,13 +157,76 @@ GET /calculations/{jobId}/result
   "charge": 0,
   "multiplicity": 1,
   "outputFilePath": "C:\\...\\run\\output.log",
-  "diagnostics": []
+  "diagnostics": [],
+  "artifacts": [
+    {
+      "fileName": "output.log",
+      "relativePath": "output.log",
+      "length": 22485,
+      "kind": "PrimaryOutput",
+      "mediaType": "text/plain; charset=utf-8",
+      "sha256": "...",
+      "canUseForRestart": false,
+      "downloadPath": "/calculations/job-.../artifacts/output.log"
+    }
+  ]
 }
 ```
 
 ---
 
-## 5. 查询验证报告
+## 5. 查询和下载计算文件
+
+查询清单：
+
+```http
+GET /calculations/{jobId}/artifacts
+```
+
+响应：
+
+```json
+{
+  "jobId": "job-...",
+  "files": [
+    {
+      "fileName": "job-....fchk",
+      "relativePath": "job-....fchk",
+      "length": 96413,
+      "kind": "RestartState",
+      "mediaType": "application/octet-stream",
+      "sha256": "...",
+      "canUseForRestart": true,
+      "downloadPath": "/calculations/job-.../artifacts/job-....fchk"
+    }
+  ]
+}
+```
+
+`kind` 是通用用途，不包含具体程序名称：
+
+```text
+Input
+PrimaryOutput
+SupportingOutput
+RestartState
+Other
+```
+
+逐个下载：
+
+```http
+GET /calculations/{jobId}/artifacts/{fileName}
+```
+
+服务器优先使用 `results/result.json` 中保存的清单，并验证相对路径不会离开计算
+运行目录。客户端只需要按清单下载，不需要判断 `.log`、`.gjf` 或 `.fchk` 的含义。
+
+如果作业还没有可下载文件，返回 HTTP 409。
+
+---
+
+## 6. 查询验证报告
 
 ```http
 GET /calculations/{jobId}/validation
@@ -230,7 +295,7 @@ Required + ProgramOutput
 
 ---
 
-## 6. 取消作业
+## 7. 取消作业
 
 ```http
 POST /calculations/{jobId}/cancel
@@ -263,7 +328,7 @@ Running
 
 ---
 
-## 7. HTTP 状态码约定
+## 8. HTTP 状态码约定
 
 ```text
 202
@@ -280,12 +345,13 @@ Running
 
 409
   结果或验证尚未就绪
+  当前作业没有可下载文件
   或者当前作业状态不能取消
 ```
 
 ---
 
-## 8. 服务调用关系
+## 9. 服务调用关系
 
 Api 端点不直接操作 Gaussian、文件或进程。
 

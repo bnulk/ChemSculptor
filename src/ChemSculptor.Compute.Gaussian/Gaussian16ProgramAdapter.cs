@@ -119,6 +119,29 @@ public sealed class Gaussian16ProgramAdapter : IQuantumProgramAdapter
         return jobId + ".gjf";
     }
 
+    /// <summary>获取 Gaussian 允许下载的文件规则。</summary>
+    public IReadOnlyList<CalculationArtifactPattern> GetArtifactPatterns()
+    {
+        List<CalculationArtifactPattern> patterns =
+            new List<CalculationArtifactPattern>();
+        patterns.Add(CreateArtifactPattern(
+            "output.log",
+            CalculationArtifactKind.PrimaryOutput,
+            "text/plain; charset=utf-8",
+            false));
+        patterns.Add(CreateArtifactPattern(
+            "*.gjf",
+            CalculationArtifactKind.Input,
+            "text/plain; charset=utf-8",
+            false));
+        patterns.Add(CreateArtifactPattern(
+            "*.fchk",
+            CalculationArtifactKind.RestartState,
+            "application/octet-stream",
+            true));
+        return patterns;
+    }
+
     /// <summary>检查检查点文件并调用 formchk 生成 fchk。</summary>
     public async Task PostProcessAsync(
         CalculationJob job,
@@ -299,5 +322,19 @@ public sealed class Gaussian16ProgramAdapter : IQuantumProgramAdapter
         }
 
         return latestPath;
+    }
+
+    private static CalculationArtifactPattern CreateArtifactPattern(
+        string filePattern,
+        CalculationArtifactKind kind,
+        string mediaType,
+        bool canUseForRestart)
+    {
+        CalculationArtifactPattern pattern = new CalculationArtifactPattern();
+        pattern.FilePattern = filePattern;
+        pattern.Kind = kind;
+        pattern.MediaType = mediaType;
+        pattern.CanUseForRestart = canUseForRestart;
+        return pattern;
     }
 }

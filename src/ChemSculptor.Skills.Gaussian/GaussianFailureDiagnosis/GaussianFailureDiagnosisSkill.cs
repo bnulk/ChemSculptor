@@ -10,7 +10,8 @@ namespace ChemSculptor.Skills.Gaussian.GaussianFailureDiagnosis;
 public sealed class GaussianFailureDiagnosisSkill : ISkill
 {
     /// <summary>技能标识。</summary>
-    public const string NameValue = CalculationSkillIds.GaussianFailureDiagnosis;
+    public const string NameValue =
+        ChemSculptor.Skills.Gaussian.GaussianSkillIds.FailureDiagnosis;
 
     private readonly List<string> _capabilities;
 

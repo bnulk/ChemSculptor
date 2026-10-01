@@ -5,6 +5,234 @@
 
 ---
 
+## v0.27.0（2026-10-01）：计算产物清单与结果备份
+
+### 版本
+
+- 当前版本：`0.27.0`
+- 日期：2026-10-01
+- 版本类型：功能新增
+
+### 改动目的
+
+单点计算结束后，服务器不仅需要返回能量和验证报告，还需要明确告诉客户端：
+
+```text
+这次计算由哪个程序完成
+产生了哪些文件
+每个文件是什么用途
+哪些文件可以用于以后恢复或继续计算
+```
+
+这样，客户端“保存”按钮只需要下载服务器给出的清单，不需要理解某个计算程序的
+文件扩展名，也不需要在将来为每种计算程序分别修改客户端。
+
+### 结果模型
+
+`CalculationResult` 新增：
+
+```text
+Artifacts
+```
+
+每一项是 `CalculationArtifactDescriptor`，主要字段：
+
+```text
+FileName
+  文件名称
+
+RelativePath
+  相对于计算运行目录的路径
+
+Kind
+  产物用途
+
+MediaType
+  下载时使用的媒体类型
+
+Length
+  文件字节数
+
+Sha256
+  文件内容摘要
+
+CanUseForRestart
+  是否可以用于恢复或继续计算
+```
+
+产物用途使用通用枚举：
+
+```text
+Input
+PrimaryOutput
+SupportingOutput
+RestartState
+Other
+```
+
+这些名称不包含 Gaussian、ORCA 或其他程序名称。
+
+### 适配器职责
+
+`IQuantumProgramAdapter` 的产物接口由简单的文件模式改为：
+
+```text
+GetArtifactPatterns
+```
+
+每个模式说明：
+
+```text
+文件模式
+通用用途
+媒体类型
+是否可用于恢复
+```
+
+Gaussian 适配器声明：
+
+```text
+output.log  → PrimaryOutput
+*.gjf       → Input
+*.fchk      → RestartState，可用于恢复或继续计算
+```
+
+通用流程仍然不包含 `.gjf`、`.fchk` 或具体程序名称。
+
+同时把原先放在通用 `ChemSculptor.Compute` 中的 `gaussian.*` 技能标识移入
+`ChemSculptor.Skills.Gaussian`。技能 ID 和运行行为保持不变，只修正代码归属。
+
+### 通用产物收集器
+
+新增：
+
+```text
+CalculationArtifactCollector
+```
+
+它负责：
+
+```text
+根据适配器规则枚举运行目录文件
+生成相对路径
+记录文件长度
+计算 SHA-256 摘要
+合并映射到同一文件的重复规则
+防止 result.json 中的相对路径穿越运行目录
+```
+
+### 结果提取
+
+`CalculationResultExtractionWorkflowSkill` 在解析完成并补齐通用字段后：
+
+```text
+读取适配器的产物规则
+  ↓
+扫描运行目录
+  ↓
+生成产物描述
+  ↓
+写入 result.json
+```
+
+因此 `result.json` 同时记录科学结果和备份清单。
+
+### Gaussian 后处理
+
+Gaussian 正常结束后，适配器检查 `.chk`，调用 `formchk` 生成 `.fchk`。
+
+如果 `formchk` 失败：
+
+```text
+记录 Warning 诊断
+不阻止计算结果、结果提取和验证继续完成
+```
+
+### API
+
+新增：
+
+```text
+GET /calculations/{jobId}/artifacts
+GET /calculations/{jobId}/artifacts/{fileName}
+```
+
+第一个接口返回文件清单，第二个接口下载单个文件。
+
+`GET /calculations/{jobId}/result` 也返回 `artifacts` 列表。
+
+下载接口优先读取 `result.json` 中的产物描述；只有旧结果没有清单时，才根据
+适配器规则重新扫描运行目录。
+
+### WinForms
+
+客户端“保存”按钮改为：
+
+```text
+选择目标目录
+  ↓
+GET /calculations/{jobId}/artifacts
+  ↓
+逐个下载服务器清单中的文件
+```
+
+客户端不压缩文件，不判断具体扩展名，也不解析计算输出。
+
+### 结果示例
+
+真实水分子计算中的 `result.json` 片段：
+
+```json
+{
+  "program": "Gaussian 16",
+  "artifacts": [
+    {
+      "fileName": "job-....fchk",
+      "kind": "RestartState",
+      "sha256": "...",
+      "canUseForRestart": true
+    },
+    {
+      "fileName": "job-....gjf",
+      "kind": "Input",
+      "sha256": "...",
+      "canUseForRestart": false
+    },
+    {
+      "fileName": "output.log",
+      "kind": "PrimaryOutput",
+      "sha256": "...",
+      "canUseForRestart": false
+    }
+  ]
+}
+```
+
+### 验证
+
+- Release 全解决方案构建：0 警告 0 错误
+- 测试：35/35 通过
+- 真实 Gaussian 水分子单点计算：`Validated`
+- 最终能量：`-76.3801013836 Hartree`
+- `result.json` 包含 `Gaussian 16` 和三个产物描述
+- `/artifacts` 返回 `.fchk`、`.gjf`、`output.log`
+- 下载 `output.log` 后重新计算 SHA-256，与清单记录一致
+
+### 当前边界
+
+`.fchk` 已标记为可用于恢复或继续计算，但真正“从备份启动后续计算”的服务尚未实现。
+当前先保证：
+
+```text
+知道使用的是什么程序
+知道有哪些文件
+知道每个文件是什么
+可以验证备份文件没有变化
+以后具备实现恢复流程的数据基础
+```
+
+---
+
 ## v0.26.0（2026-09-30）：工作流节点全面通用化
 
 ### 版本

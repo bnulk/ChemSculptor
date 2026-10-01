@@ -25,6 +25,12 @@ public interface IQuantumProgramAdapter
     string GetInputFileName(string jobId);
 
     /// <summary>
+    /// 获取当前程序允许下载的产物规则。
+    /// 规则包含文件匹配模式以及通用层可理解的用途信息。
+    /// </summary>
+    IReadOnlyList<CalculationArtifactPattern> GetArtifactPatterns();
+
+    /// <summary>
     /// 计算正常结束后执行程序专用后处理。
     /// 通用工作流只调用该入口，不包含程序专用规则。
     /// </summary>
@@ -304,6 +310,11 @@ public interface ISinglePointCalculationService
 
     /// <summary>取消计算作业。</summary>
     Task<bool> CancelAsync(
+        string jobId,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>查询计算作业产物清单。</summary>
+    Task<CalculationArtifactBundle?> GetArtifactsAsync(
         string jobId,
         CancellationToken cancellationToken = default);
 }

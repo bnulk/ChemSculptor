@@ -225,6 +225,89 @@ public sealed class SinglePointCalculationService : ISinglePointCalculationServi
         return true;
     }
 
+    /// <summary>查询计算作业允许下载的产物。</summary>
+    public async Task<CalculationArtifactBundle?> GetArtifactsAsync(
+        string jobId,
+        CancellationToken cancellationToken = default)
+    {
+        CalculationJob? job = await _repository.GetJobAsync(
+            jobId,
+            cancellationToken);
+
+        if (job == null)
+        {
+            return null;
+        }
+
+        CalculationArtifactBundle bundle = new CalculationArtifactBundle();
+        bundle.JobId = job.JobId;
+
+        if (string.IsNullOrWhiteSpace(job.RunDirectory)
+            || !Directory.Exists(job.RunDirectory))
+        {
+            return bundle;
+        }
+
+        CalculationResult? savedResult =
+            await _repository.GetResultAsync(jobId, cancellationToken);
+        List<CalculationArtifactDescriptor> descriptors =
+            new List<CalculationArtifactDescriptor>();
+
+        if (savedResult != null
+            && savedResult.Artifacts != null
+            && savedResult.Artifacts.Count > 0)
+        {
+            descriptors.AddRange(savedResult.Artifacts);
+        }
+        else
+        {
+            IQuantumProgramAdapter? adapter =
+                _adapterRegistry.Resolve(job.Spec);
+
+            if (adapter == null)
+            {
+                return bundle;
+            }
+
+            IReadOnlyList<CalculationArtifactPattern> patterns =
+                adapter.GetArtifactPatterns();
+            descriptors = CalculationArtifactCollector.Collect(
+                job.RunDirectory,
+                patterns);
+        }
+
+        for (int index = 0; index < descriptors.Count; index++)
+        {
+            CalculationArtifactDescriptor descriptor = descriptors[index];
+            string fullPath;
+            bool resolved = CalculationArtifactCollector.TryResolveFullPath(
+                job.RunDirectory,
+                descriptor.RelativePath,
+                out fullPath);
+
+            if (!resolved)
+            {
+                continue;
+            }
+
+            FileInfo fileInfo = new FileInfo(fullPath);
+
+            CalculationArtifactFile artifact =
+                new CalculationArtifactFile();
+            artifact.FileName = descriptor.FileName;
+            artifact.RelativePath = descriptor.RelativePath;
+            artifact.FullPath = fullPath;
+            artifact.Length = fileInfo.Length;
+            artifact.Kind = descriptor.Kind;
+            artifact.MediaType = descriptor.MediaType;
+            artifact.Sha256 = descriptor.Sha256;
+            artifact.CanUseForRestart = descriptor.CanUseForRestart;
+            bundle.Files.Add(artifact);
+        }
+
+        return bundle;
+    }
+
     private static string ApplyOverrides(
         CalculationSpec spec,
         List<CalculationParameter> overrides)

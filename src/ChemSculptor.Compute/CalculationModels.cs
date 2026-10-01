@@ -393,6 +393,79 @@ public sealed class CalculationResult
 
     /// <summary>诊断信息。</summary>
     public List<CalculationDiagnostic> Diagnostics { get; set; } = new List<CalculationDiagnostic>();
+
+    /// <summary>
+    /// 本次计算形成的产物清单。
+    /// 清单随 result.json 一起保存，供下载、备份和后续恢复使用。
+    /// </summary>
+    public List<CalculationArtifactDescriptor> Artifacts { get; set; } =
+        new List<CalculationArtifactDescriptor>();
+}
+
+/// <summary>计算产物在后续处理中的用途。</summary>
+public enum CalculationArtifactKind
+{
+    /// <summary>计算程序使用的输入文件。</summary>
+    Input,
+
+    /// <summary>计算程序产生的主要输出。</summary>
+    PrimaryOutput,
+
+    /// <summary>辅助输出或中间结果。</summary>
+    SupportingOutput,
+
+    /// <summary>可用于恢复或继续计算的状态文件。</summary>
+    RestartState,
+
+    /// <summary>其他文件。</summary>
+    Other
+}
+
+/// <summary>
+/// 适配器声明的产物匹配规则。
+/// 通用层只认识这些规则和用途，不直接理解具体程序的扩展名。
+/// </summary>
+public sealed class CalculationArtifactPattern
+{
+    /// <summary>文件名或通配符模式。</summary>
+    public string FilePattern { get; set; } = string.Empty;
+
+    /// <summary>产物用途。</summary>
+    public CalculationArtifactKind Kind { get; set; } = CalculationArtifactKind.Other;
+
+    /// <summary>传输时使用的媒体类型。</summary>
+    public string MediaType { get; set; } = "application/octet-stream";
+
+    /// <summary>是否可以用于恢复或继续计算。</summary>
+    public bool CanUseForRestart { get; set; }
+}
+
+/// <summary>
+/// 一条已落盘的产物描述。
+/// 使用相对路径，避免把服务器本机目录结构写入可迁移的结果文件。
+/// </summary>
+public sealed class CalculationArtifactDescriptor
+{
+    /// <summary>文件名称。</summary>
+    public string FileName { get; set; } = string.Empty;
+
+    /// <summary>相对于计算运行目录的路径。</summary>
+    public string RelativePath { get; set; } = string.Empty;
+
+    /// <summary>产物用途。</summary>
+    public CalculationArtifactKind Kind { get; set; } = CalculationArtifactKind.Other;
+
+    /// <summary>传输时使用的媒体类型。</summary>
+    public string MediaType { get; set; } = "application/octet-stream";
+
+    /// <summary>文件字节数。</summary>
+    public long Length { get; set; }
+
+    /// <summary>文件的 SHA-256 摘要。</summary>
+    public string Sha256 { get; set; } = string.Empty;
+
+    /// <summary>是否可以用于恢复或继续计算。</summary>
+    public bool CanUseForRestart { get; set; }
 }
 
 /// <summary>单点计算服务提交结果。</summary>
@@ -412,6 +485,45 @@ public sealed class SinglePointCalculationSubmissionResult
 
     /// <summary>诊断信息。</summary>
     public List<string> Diagnostics { get; set; } = new List<string>();
+}
+
+/// <summary>一个可下载的计算产物。</summary>
+public sealed class CalculationArtifactFile
+{
+    /// <summary>文件名称。</summary>
+    public string FileName { get; set; } = string.Empty;
+
+    /// <summary>相对于计算运行目录的路径。</summary>
+    public string RelativePath { get; set; } = string.Empty;
+
+    /// <summary>服务器上的完整路径。</summary>
+    public string FullPath { get; set; } = string.Empty;
+
+    /// <summary>文件字节数。</summary>
+    public long Length { get; set; }
+
+    /// <summary>产物用途。</summary>
+    public CalculationArtifactKind Kind { get; set; } = CalculationArtifactKind.Other;
+
+    /// <summary>传输时使用的媒体类型。</summary>
+    public string MediaType { get; set; } = "application/octet-stream";
+
+    /// <summary>文件的 SHA-256 摘要。</summary>
+    public string Sha256 { get; set; } = string.Empty;
+
+    /// <summary>是否可以用于恢复或继续计算。</summary>
+    public bool CanUseForRestart { get; set; }
+}
+
+/// <summary>一次计算作业的产物清单。</summary>
+public sealed class CalculationArtifactBundle
+{
+    /// <summary>作业标识。</summary>
+    public string JobId { get; set; } = string.Empty;
+
+    /// <summary>产物文件。</summary>
+    public List<CalculationArtifactFile> Files { get; set; } =
+        new List<CalculationArtifactFile>();
 }
 
 /// <summary>

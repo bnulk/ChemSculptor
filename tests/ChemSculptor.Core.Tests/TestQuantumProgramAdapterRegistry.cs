@@ -53,6 +53,30 @@ internal sealed class TestQuantumProgramAdapter : IQuantumProgramAdapter
         return jobId + ".inp";
     }
 
+    public IReadOnlyList<CalculationArtifactPattern> GetArtifactPatterns()
+    {
+        List<CalculationArtifactPattern> patterns =
+            new List<CalculationArtifactPattern>();
+
+        CalculationArtifactPattern outputPattern =
+            new CalculationArtifactPattern();
+        outputPattern.FilePattern = "output.log";
+        outputPattern.Kind = CalculationArtifactKind.PrimaryOutput;
+        outputPattern.MediaType = "text/plain; charset=utf-8";
+        outputPattern.CanUseForRestart = false;
+        patterns.Add(outputPattern);
+
+        CalculationArtifactPattern inputPattern =
+            new CalculationArtifactPattern();
+        inputPattern.FilePattern = "*.inp";
+        inputPattern.Kind = CalculationArtifactKind.Input;
+        inputPattern.MediaType = "text/plain; charset=utf-8";
+        inputPattern.CanUseForRestart = false;
+        patterns.Add(inputPattern);
+
+        return patterns;
+    }
+
     public Task PostProcessAsync(
         CalculationJob job,
         CancellationToken cancellationToken = default)

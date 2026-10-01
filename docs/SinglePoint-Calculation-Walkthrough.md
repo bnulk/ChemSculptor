@@ -748,6 +748,8 @@ GET /calculations/{jobId}/status
 GET /calculations/{jobId}
 GET /calculations/{jobId}/result
 GET /calculations/{jobId}/validation
+GET /calculations/{jobId}/artifacts
+GET /calculations/{jobId}/artifacts/{fileName}
 POST /calculations/{jobId}/cancel
 ```
 
@@ -825,6 +827,7 @@ AgentMessageResultDto? result =
 ├── run\
 │   ├── <jobId>.gjf
 │   ├── <jobId>.chk
+│   ├── <jobId>.fchk
 │   ├── output.log
 │   ├── stdout.log
 │   └── stderr.log
@@ -840,10 +843,11 @@ Gaussian 执行时还会在工作目录中产生临时输入和检查点文件�
 output.log    Gaussian 主输出
 <jobId>.gjf   实际执行使用的输入副本
 <jobId>.chk   Gaussian 检查点文件
+<jobId>.fchk  formchk 转换后的格式化检查点，可用于后续计算
 stdout.log    子进程标准输出
 stderr.log    子进程标准错误
 manifest.json 作业状态、路径和诊断
-result.json   能量、程序、方法、基组和规范化诊断
+result.json   能量、程序、方法、基组、规范化诊断和可备份文件清单
 processing-plan.json          智能体生成的通用处理方案
 validation.json               结构化结果验证报告
 ```
@@ -857,7 +861,14 @@ validation.json               结构化结果验证报告
   "normalTermination": true,
   "program": "Gaussian 16",
   "method": "CAM-B3LYP",
-  "basis": "6-31G*"
+  "basis": "6-31G*",
+  "artifacts": [
+    {
+      "fileName": "output.log",
+      "kind": "PrimaryOutput",
+      "sha256": "..."
+    }
+  ]
 }
 ```
 

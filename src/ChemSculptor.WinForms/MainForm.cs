@@ -34,6 +34,7 @@ public sealed class MainForm : Form
     private ChatSession? _activeSession;
     private string? _selectedFilePath;
     private string? _latestResultText;
+    private string _latestArtifactJobId = string.Empty;
     private string _activeCalculationId = string.Empty;
     private bool _polling;
     private int _sessionCounter;
@@ -59,8 +60,9 @@ public sealed class MainForm : Form
         _selectFileButton.AutoSize = true;
 
         _saveResultButton = new Button();
-        _saveResultButton.Text = "保存结果";
+        _saveResultButton.Text = "保存";
         _saveResultButton.AutoSize = true;
+        _saveResultButton.Enabled = false;
 
         _fileLabel = new Label();
         _fileLabel.Text = "未选择文件";
@@ -227,9 +229,9 @@ public sealed class MainForm : Form
     }
 
     /// <summary>保存最近结果事件。</summary>
-    private void OnSaveResultClick(object? sender, EventArgs e)
+    private async void OnSaveResultClick(object? sender, EventArgs e)
     {
-        SaveResult();
+        await SaveArtifactsAsync();
     }
 
     /// <summary>发送自然语言文本事件。</summary>
@@ -609,6 +611,15 @@ public sealed class MainForm : Form
 
         calculation.IsFinished = true;
 
+        if (!string.Equals(
+            calculation.State,
+            "Canceled",
+            StringComparison.OrdinalIgnoreCase))
+        {
+            _latestArtifactJobId = calculation.JobId;
+            _saveResultButton.Enabled = true;
+        }
+
         if (string.Equals(
             _activeCalculationId,
             calculation.JobId,
@@ -776,28 +787,99 @@ public sealed class MainForm : Form
         return builder.ToString().TrimEnd();
     }
 
-    /// <summary>把最近一次任务结果保存为用户选择的 txt 文件。</summary>
-    private void SaveResult()
+    /// <summary>从服务器下载最近一次计算的 log、fchk 和 gjf 文件。</summary>
+    private async Task SaveArtifactsAsync()
     {
-        if (string.IsNullOrWhiteSpace(_latestResultText))
+        if (string.IsNullOrWhiteSpace(_latestArtifactJobId))
         {
-            MessageBox.Show(this, "当前还没有已就绪的任务结果。", "ChemSculptor");
+            MessageBox.Show(this, "当前还没有已完成的计算作业。", "ChemSculptor");
             return;
         }
 
-        SaveFileDialog dialog = new SaveFileDialog();
-        dialog.Title = "保存结果 txt";
-        dialog.FileName = "job-result-" + DateTime.Now.ToString("yyyyMMdd-HHmmss") + ".txt";
-        dialog.Filter = "文本文件 (*.txt)|*.txt";
+        FolderBrowserDialog dialog = new FolderBrowserDialog();
+        dialog.Description = "选择保存计算文件的文件夹";
+        dialog.UseDescriptionForTitle = true;
 
         DialogResult result = dialog.ShowDialog(this);
-        if (result == DialogResult.OK)
+        if (result != DialogResult.OK)
         {
-            File.WriteAllText(dialog.FileName, _latestResultText);
-            AppendMessage("hint", "结果已保存到 " + dialog.FileName);
+            dialog.Dispose();
+            return;
         }
 
+        string targetDirectory = dialog.SelectedPath;
         dialog.Dispose();
+
+        try
+        {
+            HttpResponseMessage manifestResponse =
+                await _http.GetAsync(
+                    Endpoint(
+                        "/calculations/" +
+                        _latestArtifactJobId +
+                        "/artifacts"));
+
+            if (!manifestResponse.IsSuccessStatusCode)
+            {
+                string errorText =
+                    await manifestResponse.Content.ReadAsStringAsync();
+                AppendMessage("error", "读取计算文件清单失败：" + errorText);
+                return;
+            }
+
+            CalculationArtifactManifestDto? manifest =
+                await manifestResponse.Content
+                    .ReadFromJsonAsync<CalculationArtifactManifestDto>();
+
+            if (manifest == null || manifest.Files.Count == 0)
+            {
+                AppendMessage("error", "服务器没有返回可下载的计算文件。");
+                return;
+            }
+
+            int savedCount = 0;
+
+            for (int index = 0; index < manifest.Files.Count; index++)
+            {
+                CalculationArtifactFileDto file = manifest.Files[index];
+                HttpResponseMessage fileResponse =
+                    await _http.GetAsync(Endpoint(file.DownloadPath));
+
+                if (!fileResponse.IsSuccessStatusCode)
+                {
+                    AppendMessage(
+                        "error",
+                        "下载失败：" + file.FileName);
+                    continue;
+                }
+
+                string targetPath = Path.Combine(
+                    targetDirectory,
+                    Path.GetFileName(file.FileName));
+
+                using (FileStream output = new FileStream(
+                    targetPath,
+                    FileMode.Create,
+                    FileAccess.Write,
+                    FileShare.None))
+                {
+                    await fileResponse.Content.CopyToAsync(output);
+                }
+
+                savedCount++;
+                AppendMessage("hint", "已保存：" + targetPath);
+            }
+
+            AppendMessage(
+                "system",
+                "计算文件下载完成，共保存 " +
+                savedCount.ToString() +
+                " 个文件。");
+        }
+        catch (Exception ex)
+        {
+            AppendMessage("error", "保存计算文件失败：" + ex.Message);
+        }
     }
 
     /// <summary>检查是否已选择有效文件，并返回其路径。</summary>
