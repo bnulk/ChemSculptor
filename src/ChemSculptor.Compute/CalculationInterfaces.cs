@@ -24,6 +24,14 @@ public interface IQuantumProgramAdapter
     /// <summary>获取当前程序使用的输入文件名称。</summary>
     string GetInputFileName(string jobId);
 
+    /// <summary>
+    /// 计算正常结束后执行程序专用后处理。
+    /// 通用工作流只调用该入口，不包含程序专用规则。
+    /// </summary>
+    Task PostProcessAsync(
+        CalculationJob job,
+        CancellationToken cancellationToken = default);
+
     /// <summary>构建执行上下文。</summary>
     CalculationExecutionContext BuildExecutionContext(
         CalculationJob job,

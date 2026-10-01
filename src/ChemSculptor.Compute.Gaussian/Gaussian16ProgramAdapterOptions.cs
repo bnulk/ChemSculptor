@@ -8,6 +8,9 @@ public sealed class Gaussian16ProgramAdapterOptions
     /// <summary>可执行文件名称或完整路径。</summary>
     public string ExecutablePath { get; set; } = "g16";
 
+    /// <summary>formchk 可执行文件名称或完整路径。</summary>
+    public string FormChkExecutablePath { get; set; } = "formchk";
+
     /// <summary>Gaussian 可执行文件目录，会作为 GAUSS_EXEDIR 传给子进程。</summary>
     public string ExecutableDirectory { get; set; } = string.Empty;
 
@@ -25,6 +28,7 @@ public sealed class Gaussian16ProgramAdapterOptions
     {
         Gaussian16ProgramAdapterOptions options = new Gaussian16ProgramAdapterOptions();
         options.ExecutablePath = "g16";
+        options.FormChkExecutablePath = "formchk";
         options.Memory = Gaussian16ProgramAdapter.DefaultMemory;
         options.ProcessorCount = CalculationDefaults.DefaultProcessorCount;
 

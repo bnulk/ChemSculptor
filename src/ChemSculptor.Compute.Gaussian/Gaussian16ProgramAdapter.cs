@@ -1,5 +1,6 @@
 using ChemSculptor.Compute;
 using ChemSculptor.InputProcessor.GeometryIntake;
+using System.Diagnostics;
 
 namespace ChemSculptor.Compute.Gaussian;
 
@@ -118,6 +119,74 @@ public sealed class Gaussian16ProgramAdapter : IQuantumProgramAdapter
         return jobId + ".gjf";
     }
 
+    /// <summary>检查检查点文件并调用 formchk 生成 fchk。</summary>
+    public async Task PostProcessAsync(
+        CalculationJob job,
+        CancellationToken cancellationToken = default)
+    {
+        if (job == null)
+        {
+            throw new ArgumentNullException(nameof(job));
+        }
+
+        if (string.IsNullOrWhiteSpace(job.RunDirectory)
+            || !Directory.Exists(job.RunDirectory))
+        {
+            return;
+        }
+
+        string checkpointPath = FindLatestCheckpoint(job.RunDirectory);
+        if (checkpointPath.Length == 0)
+        {
+            return;
+        }
+
+        string formattedCheckpointPath =
+            Path.ChangeExtension(checkpointPath, ".fchk");
+
+        ProcessStartInfo startInfo = new ProcessStartInfo();
+        startInfo.FileName = _options.FormChkExecutablePath;
+        startInfo.WorkingDirectory = job.RunDirectory;
+        startInfo.UseShellExecute = false;
+        startInfo.RedirectStandardOutput = true;
+        startInfo.RedirectStandardError = true;
+        startInfo.CreateNoWindow = true;
+        startInfo.ArgumentList.Add(Path.GetFileName(checkpointPath));
+        startInfo.ArgumentList.Add(Path.GetFileName(formattedCheckpointPath));
+
+        using (Process process = new Process())
+        {
+            process.StartInfo = startInfo;
+            process.Start();
+
+            Task<string> standardOutputTask =
+                process.StandardOutput.ReadToEndAsync(cancellationToken);
+            Task<string> standardErrorTask =
+                process.StandardError.ReadToEndAsync(cancellationToken);
+
+            await process.WaitForExitAsync(cancellationToken);
+
+            string standardOutput = await standardOutputTask;
+            string standardError = await standardErrorTask;
+
+            if (process.ExitCode != 0)
+            {
+                throw new InvalidOperationException(
+                    "formchk 失败，退出码 " +
+                    process.ExitCode.ToString() +
+                    "。标准错误：" +
+                    standardError);
+            }
+
+            if (!File.Exists(formattedCheckpointPath))
+            {
+                throw new InvalidOperationException(
+                    "formchk 已结束，但没有生成 fchk 文件：" +
+                    formattedCheckpointPath);
+            }
+        }
+    }
+
     /// <summary>
     /// 构建 Gaussian 16 的本机执行上下文。
     /// 默认调用 PATH 中的 g16，并把输入文件作为第一个参数、输出文件作为第二个参数。
@@ -202,5 +271,33 @@ public sealed class Gaussian16ProgramAdapter : IQuantumProgramAdapter
             _processingPlanTranslator.ToProgramPlan(gaussianPlan);
 
         return Task.FromResult(programPlan);
+    }
+
+    private static string FindLatestCheckpoint(string runDirectory)
+    {
+        string[] checkpointFiles =
+            Directory.GetFiles(runDirectory, "*.chk", SearchOption.TopDirectoryOnly);
+
+        if (checkpointFiles.Length == 0)
+        {
+            return string.Empty;
+        }
+
+        string latestPath = checkpointFiles[0];
+        DateTime latestWriteTime = File.GetLastWriteTimeUtc(latestPath);
+
+        for (int index = 1; index < checkpointFiles.Length; index++)
+        {
+            DateTime writeTime =
+                File.GetLastWriteTimeUtc(checkpointFiles[index]);
+
+            if (writeTime > latestWriteTime)
+            {
+                latestPath = checkpointFiles[index];
+                latestWriteTime = writeTime;
+            }
+        }
+
+        return latestPath;
     }
 }

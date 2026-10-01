@@ -9,17 +9,24 @@ public sealed class CalculationWaitSkill : ISkill
     private const int PollingIntervalMilliseconds = 500;
 
     private readonly IComputeBackend _computeBackend;
+    private readonly IQuantumProgramAdapterRegistry _adapterRegistry;
     private readonly ICalculationRepository _repository;
     private readonly List<string> _capabilities;
 
     /// <summary>创建等待技能。</summary>
     public CalculationWaitSkill(
         IComputeBackend computeBackend,
+        IQuantumProgramAdapterRegistry adapterRegistry,
         ICalculationRepository repository)
     {
         if (computeBackend == null)
         {
             throw new ArgumentNullException(nameof(computeBackend));
+        }
+
+        if (adapterRegistry == null)
+        {
+            throw new ArgumentNullException(nameof(adapterRegistry));
         }
 
         if (repository == null)
@@ -28,6 +35,7 @@ public sealed class CalculationWaitSkill : ISkill
         }
 
         _computeBackend = computeBackend;
+        _adapterRegistry = adapterRegistry;
         _repository = repository;
         _capabilities = new List<string>();
         _capabilities.Add("calculation.wait");
@@ -90,6 +98,32 @@ public sealed class CalculationWaitSkill : ISkill
 
         submission.Job.State = state;
         submission.Job.CompletedAt = DateTimeOffset.UtcNow;
+
+        if (state == CalculationJobState.Completed)
+        {
+            IQuantumProgramAdapter? adapter =
+                _adapterRegistry.Resolve(submission.Job.Spec);
+
+            if (adapter != null)
+            {
+                try
+                {
+                    await adapter.PostProcessAsync(
+                        submission.Job,
+                        cancellationToken);
+                }
+                catch (Exception ex)
+                {
+                    CalculationDiagnostic diagnostic =
+                        new CalculationDiagnostic();
+                    diagnostic.Severity = CalculationDiagnosticSeverity.Warning;
+                    diagnostic.Code = "calculation.post_processing_failed";
+                    diagnostic.Message = ex.Message;
+                    submission.Job.Diagnostics.Add(diagnostic);
+                }
+            }
+        }
+
         await _repository.SaveJobAsync(submission.Job, cancellationToken);
 
         CalculationWaitSkillResult result = new CalculationWaitSkillResult();

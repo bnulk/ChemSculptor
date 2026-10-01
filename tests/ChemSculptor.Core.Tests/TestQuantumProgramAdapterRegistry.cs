@@ -53,6 +53,13 @@ internal sealed class TestQuantumProgramAdapter : IQuantumProgramAdapter
         return jobId + ".inp";
     }
 
+    public Task PostProcessAsync(
+        CalculationJob job,
+        CancellationToken cancellationToken = default)
+    {
+        return Task.CompletedTask;
+    }
+
     public CalculationExecutionContext BuildExecutionContext(
         CalculationJob job,
         CalculationSpec spec)
