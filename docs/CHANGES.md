@@ -72,6 +72,7 @@ ResponseModels.cs
 
 - Release 全解决方案构建：0 警告 0 错误
 - 测试：35/35 通过
+- 新增教程：`docs/WinForms-Client-Models-Guide.md`
 
 ---
 
