@@ -1,3 +1,5 @@
+using System.Globalization;
+
 namespace ChemSculptor.Compute;
 
 /// <summary>
@@ -18,8 +20,11 @@ public static class CalculationDefaults
     /// <summary>默认电荷。</summary>
     public const int DefaultCharge = 0;
 
-    /// <summary>默认自旋多重度。</summary>
-    public const int DefaultMultiplicity = 1;
+    /// <summary>电子数为偶数时使用的默认自旋多重度。</summary>
+    public const int EvenElectronMultiplicity = 1;
+
+    /// <summary>电子数为奇数时使用的默认自旋多重度。</summary>
+    public const int OddElectronMultiplicity = 2;
 
     /// <summary>默认并行核数。</summary>
     public const int DefaultProcessorCount = 4;
@@ -36,7 +41,8 @@ public static class CalculationDefaults
         spec.Method = DefaultMethod;
         spec.Basis = DefaultBasis;
         spec.Charge = DefaultCharge;
-        spec.Multiplicity = DefaultMultiplicity;
+        // 0 表示尚未解析几何，尚未计算总电子数。
+        spec.Multiplicity = 0;
         spec.Solvent = string.Empty;
         spec.ExtraOptions = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
         spec.Parameters = new List<CalculationParameter>();
@@ -95,13 +101,92 @@ public static class CalculationDefaults
             spec,
             "multiplicity",
             "自旋多重度",
-            DefaultMultiplicity.ToString(),
-            DefaultMultiplicity.ToString(),
+            "0",
+            "0",
             CalculationRiskLevel.Blocking,
             true,
-            "多重度改变可能改变电子态，需要用户明确确认。");
+            "未显式指定时，由总电子数决定：偶数使用 1，奇数使用 2。");
 
         return spec;
+    }
+
+    /// <summary>根据总电子数返回默认自旋多重度。</summary>
+    public static int GetDefaultMultiplicityFromElectronCount(
+        int electronCount)
+    {
+        if (electronCount < 0)
+        {
+            throw new ArgumentOutOfRangeException(
+                nameof(electronCount),
+                "电子数不能小于 0。");
+        }
+
+        if (electronCount % 2 == 0)
+        {
+            return EvenElectronMultiplicity;
+        }
+
+        return OddElectronMultiplicity;
+    }
+
+    /// <summary>
+    /// 在多重度仍为默认值时，根据总电子数写入默认多重度。
+    /// 用户或智能体已经指定的值不会被覆盖。
+    /// </summary>
+    public static bool ApplyDefaultMultiplicityFromElectronCount(
+        CalculationSpec spec,
+        int electronCount)
+    {
+        if (spec == null)
+        {
+            throw new ArgumentNullException(nameof(spec));
+        }
+
+        CalculationParameter? parameter =
+            FindParameter(spec, "multiplicity");
+
+        if (parameter != null
+            && parameter.Source != ParameterSource.Default)
+        {
+            return false;
+        }
+
+        int multiplicity =
+            GetDefaultMultiplicityFromElectronCount(electronCount);
+        spec.Multiplicity = multiplicity;
+
+        if (parameter != null)
+        {
+            parameter.CurrentValue =
+                multiplicity.ToString(CultureInfo.InvariantCulture);
+            parameter.DefaultValue =
+                multiplicity.ToString(CultureInfo.InvariantCulture);
+            parameter.Source = ParameterSource.System;
+            parameter.Description =
+                "根据总电子数自动确定：偶数电子使用 1，奇数电子使用 2。";
+        }
+
+        return true;
+    }
+
+    private static CalculationParameter? FindParameter(
+        CalculationSpec spec,
+        string name)
+    {
+        for (int index = 0; index < spec.Parameters.Count; index++)
+        {
+            CalculationParameter parameter = spec.Parameters[index];
+
+            if (string.Equals(
+                parameter.Name,
+                name,
+                StringComparison.OrdinalIgnoreCase))
+            {
+                return parameter;
+            }
+        }
+
+        return null;
     }
 
     private static void AddParameter(

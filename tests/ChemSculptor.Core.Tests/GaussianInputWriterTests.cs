@@ -24,6 +24,9 @@ public class GaussianInputWriterTests
         try
         {
             CalculationSpec spec = CalculationDefaults.CreateDefaultSinglePoint();
+            CalculationDefaults.ApplyDefaultMultiplicityFromElectronCount(
+                spec,
+                10);
             CanonicalGeometry geometry = CreateWaterGeometry();
 
             GaussianInputOptions options = new GaussianInputOptions();
@@ -70,6 +73,9 @@ public class GaussianInputWriterTests
         try
         {
             CalculationSpec spec = CalculationDefaults.CreateDefaultSinglePoint();
+            CalculationDefaults.ApplyDefaultMultiplicityFromElectronCount(
+                spec,
+                10);
             spec.TaskType = CalculationTaskType.Optimization;
 
             CanonicalGeometry geometry = CreateWaterGeometry();

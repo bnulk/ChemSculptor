@@ -1,5 +1,6 @@
 using ChemSculptor.Compute;
 using ChemSculptor.InputProcessor;
+using ChemSculptor.InputProcessor.Chemistry;
 using ChemSculptor.InputProcessor.GeometryIntake;
 
 namespace ChemSculptor.Skills.Common.CalculationWorkflow;
@@ -85,6 +86,24 @@ public sealed class CalculationInputPreparationSkill
             result.Diagnostics = new List<string>(molecularGeometry.Diagnostics);
             return result;
         }
+
+        int electronCount;
+        string electronCountError;
+
+        if (!ElectronCountCalculator.TryCalculate(
+            molecularGeometry.Atoms,
+            request.Spec.Charge,
+            out electronCount,
+            out electronCountError))
+        {
+            result.Succeeded = false;
+            result.Error = electronCountError;
+            return result;
+        }
+
+        CalculationDefaults.ApplyDefaultMultiplicityFromElectronCount(
+            request.Spec,
+            electronCount);
 
         CanonicalGeometry canonicalGeometry =
             CanonicalGeometryMapper.FromMolecularGeometry(
