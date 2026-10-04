@@ -8,6 +8,7 @@
     <Project Path="src/ChemSculptor.Conversation/ChemSculptor.Conversation.csproj" />
     <Project Path="src/ChemSculptor.Core/ChemSculptor.Core.csproj" />
     <Project Path="src/ChemSculptor.Domain/ChemSculptor.Domain.csproj" />
+    <Project Path="src/ChemSculptor.FundamentalConstants/ChemSculptor.FundamentalConstants.csproj" />
     <Project Path="src/ChemSculptor.InputProcessor/ChemSculptor.InputProcessor.csproj" />
     <Project Path="src/ChemSculptor.Skills.Common/ChemSculptor.Skills.Common.csproj" />
     <Project Path="src/ChemSculptor.Skills.Gaussian/ChemSculptor.Skills.Gaussian.csproj" />

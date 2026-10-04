@@ -5,6 +5,145 @@
 
 ---
 
+## v0.28.0（2026-10-04）：基本常数与元素数据项目
+
+### 版本
+
+- 当前版本：`0.28.0`
+- 日期：2026-10-04
+- 版本类型：功能新增
+
+### 改动目的
+
+把旧程序中的 `PhysConst`、`Atoms` 和 `Atom` 整理为可复用的基础数据项目，
+同时区分物理常数、单位换算、元素数据和元素结构。
+
+### 新增项目
+
+```text
+src/ChemSculptor.FundamentalConstants/
+├── Physics/
+│   └── PhysicalConstants.cs
+├── Units/
+│   └── UnitConversions.cs
+└── Chemistry/
+    └── Elements/
+        ├── AtomicMassKind.cs
+        ├── ChemicalElement.cs
+        └── ElementCatalog.cs
+```
+
+包含：
+
+```text
+Physics.PhysicalConstants
+Units.UnitConversions
+Chemistry.Elements.ChemicalElement
+Chemistry.Elements.ElementCatalog
+Chemistry.Elements.AtomicMassKind
+```
+
+### 主要调整
+
+```text
+SI 定义常数使用当前定义值
+其他物理常数采用 CODATA 2022 值
+单位换算与物理常数分离
+元素符号统一使用规范大小写
+元素查询改为明确的 TryGet 形式
+未知元素不再静默返回虚拟元素
+元素质量继续保留旧程序迁移值
+元素质量增加定义类型和来源字段
+```
+
+### 元素数据范围
+
+```text
+0   X   Dummy
+1   H
+...
+54  Xe
+```
+
+当前原子质量不是标准原子量全集，也不是同位素质量数据库。后续需要精确同位素质量时，
+应建立独立的同位素数据模型。
+
+### 测试
+
+新增测试覆盖：
+
+```text
+物理常数关系
+常用单位换算
+元素符号查询
+原子序数查询
+未知元素处理
+元素目录范围
+```
+
+### 验证
+
+- Release 全解决方案构建：0 警告 0 错误
+- 测试：41/41 通过
+
+### 文档
+
+新增：
+
+```text
+docs/Fundamental-Constants-Guide.md
+```
+
+---
+
+## v0.27.2（2026-10-03）：异常处理框架文档
+
+### 版本
+
+- 当前版本：`0.27.2`
+- 日期：2026-10-03
+- 版本类型：设计文档
+
+### 改动目的
+
+在实现异常诊断与修正子工作流之前，先固定异常处理的结构、边界、审批原则、
+重算血缘和扩展方式，避免后续每加入一种异常都修改主工作流。
+
+### 新增内容
+
+新增：
+
+```text
+docs/Anomaly-Handling-Framework.md
+```
+
+文档包含：
+
+```text
+执行异常与科学异常的分类
+两条独立处理路线
+核心模型
+通用修正意图
+审批策略
+派生作业与血缘
+预算和停止条件
+通用技能规划
+存储结构
+新异常扩展步骤
+分阶段实施建议
+```
+
+### 当前状态
+
+本次只增加设计文档，不实现异常处理代码。
+
+### 验证
+
+- 本次不涉及代码构建和测试
+- 未修改现有运行逻辑
+
+---
+
 ## v0.27.1（2026-10-01）：WinForms 客户端模型分层
 
 ### 版本
