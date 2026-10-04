@@ -20,6 +20,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\ChemSculptor.Core\ChemSculptor.Core.csproj" />
+    <ProjectReference Include="..\..\src\ChemSculptor.Anomaly\ChemSculptor.Anomaly.csproj" />
     <ProjectReference Include="..\..\src\ChemSculptor.Domain\ChemSculptor.Domain.csproj" />
     <ProjectReference Include="..\..\src\ChemSculptor.FundamentalConstants\ChemSculptor.FundamentalConstants.csproj" />
     <ProjectReference Include="..\..\src\ChemSculptor.Compute\ChemSculptor.Compute.csproj" />

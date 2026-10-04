@@ -1,6 +1,6 @@
 # ChemSculptor 异常处理框架
 
-> 状态：设计框架，尚未进入代码实现  
+> 状态：已建立通用项目骨架，尚未接入主工作流
 > 适用方向：执行异常、资源异常、数值算法异常、科学合理性异常  
 > 目标：以小型、清晰、可扩展的方式逐步加入异常诊断与修正子工作流
 
@@ -530,11 +530,12 @@ jobs/<newJobId>/
 
 ## 12. 推荐模块位置
 
-第一阶段不新增项目，按现有工程组织：
+当前已经建立通用异常项目：
 
 ```text
-ChemSculptor.Compute/Anomaly
+ChemSculptor.Anomaly
   通用异常模型和接口
+  异常提供器注册表
 
 ChemSculptor.Skills.Common/AnomalyWorkflow
   通用异常处理技能
@@ -552,8 +553,9 @@ ChemSculptor.WinForms
   显示异常说明和审批请求
 ```
 
-只有异常体系发展得足够大后，才考虑提取新的
-`ChemSculptor.Anomaly` 项目。
+`ChemSculptor.Anomaly` 不负责具体计算程序，也不直接负责工作流调度。
+通用异常 Skill 先在通用技能项目中实现，规模足够大后再考虑独立为
+`ChemSculptor.Skills.Anomaly`。
 
 ---
 

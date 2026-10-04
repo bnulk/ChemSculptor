@@ -5,6 +5,104 @@
 
 ---
 
+## v0.30.0（2026-10-04）：异常处理项目骨架
+
+### 版本
+
+- 当前版本：`0.30.0`
+- 日期：2026-10-04
+- 版本类型：架构项目
+
+### 改动目的
+
+异常处理会持续增加，因此先建立独立、通用、可扩展的项目骨架。主工作流暂时不接入，
+后续每一种异常通过注册和 Skill 模块扩展。
+
+### 新增项目
+
+```text
+src/ChemSculptor.Anomaly/
+```
+
+### 项目结构
+
+```text
+src/ChemSculptor.Anomaly/
+├── ChemSculptor.Anomaly.csproj
+├── Abstractions/
+│   ├── IAnomalyDetector.cs
+│   ├── IAnomalyDiagnoser.cs
+│   ├── ICorrectionPlanner.cs
+│   ├── IApprovalPolicy.cs
+│   └── IRecoveryValidator.cs
+├── Models/
+│   ├── AnomalyCategory.cs
+│   ├── AnomalySeverity.cs
+│   ├── AnomalyDescriptor.cs
+│   ├── AnomalyEvidence.cs
+│   ├── AnomalyFinding.cs
+│   ├── AnomalyAssessment.cs
+│   ├── AnomalyContext.cs
+│   ├── DiagnosisReport.cs
+│   ├── CorrectionModels.cs
+│   ├── ApprovalModels.cs
+│   └── RecoveryModels.cs
+└── Registry/
+    ├── IAnomalyProviderRegistry.cs
+    └── AnomalyProviderRegistry.cs
+```
+
+### 当前边界
+
+项目当前只定义：
+
+```text
+执行异常与科学异常分类
+异常证据和发现
+异常评估
+诊断报告
+修正候选和计划
+审批决定
+恢复尝试和恢复结果
+检测器、诊断器、修正规划器、审批策略和恢复验证器接口
+异常提供器注册表
+```
+
+当前还没有：
+
+```text
+异常工作流 Skill
+氧气波函数稳定性异常
+Gaussian 稳定性检查
+审批策略实现
+派生重算实现
+案例记忆
+```
+
+### 测试
+
+新增注册表测试：
+
+```text
+异常检测器可以注册并列出
+重复异常代码不会被静默覆盖
+```
+
+### 验证
+
+- Release 全解决方案构建：0 警告 0 错误
+- 测试：50/50 通过
+
+### 文档
+
+更新：
+
+```text
+docs/Anomaly-Handling-Framework.md
+```
+
+---
+
 ## v0.29.0（2026-10-04）：按电子数自动确定默认多重度
 
 ### 版本
