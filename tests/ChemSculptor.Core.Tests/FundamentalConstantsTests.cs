@@ -88,4 +88,16 @@ public class FundamentalConstantsTests
         Assert.Equal(0, ElementCatalog.All[0].AtomicNumber);
         Assert.Equal(54, ElementCatalog.All[54].AtomicNumber);
     }
+
+    /// <summary>验证元素列表下标与原子序数始终相同。</summary>
+    [Fact]
+    public void CatalogIndexMatchesAtomicNumber()
+    {
+        for (int index = 0; index < ElementCatalog.All.Count; index++)
+        {
+            Assert.Equal(
+                index,
+                ElementCatalog.All[index].AtomicNumber);
+        }
+    }
 }

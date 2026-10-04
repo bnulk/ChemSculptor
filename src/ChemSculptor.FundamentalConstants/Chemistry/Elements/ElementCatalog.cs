@@ -70,11 +70,8 @@ public static class ElementCatalog
     private static readonly ReadOnlyCollection<ChemicalElement> ElementList =
         Array.AsReadOnly(ElementArray);
 
-    private static readonly Dictionary<string, ChemicalElement> ElementsBySymbol =
+    private static readonly Dictionary<string, int> SymbolToAtomicNumber =
         CreateSymbolIndex();
-
-    private static readonly Dictionary<int, ChemicalElement> ElementsByNumber =
-        CreateNumberIndex();
 
     /// <summary>按原子序数排列的元素只读列表。</summary>
     public static IReadOnlyList<ChemicalElement> All
@@ -93,7 +90,17 @@ public static class ElementCatalog
             return false;
         }
 
-        return ElementsBySymbol.TryGetValue(symbol.Trim(), out element);
+        int atomicNumber;
+
+        if (!SymbolToAtomicNumber.TryGetValue(
+            symbol.Trim(),
+            out atomicNumber))
+        {
+            element = default(ChemicalElement);
+            return false;
+        }
+
+        return TryGetByAtomicNumber(atomicNumber, out element);
     }
 
     /// <summary>尝试按原子序数查找元素。</summary>
@@ -101,33 +108,35 @@ public static class ElementCatalog
         int atomicNumber,
         out ChemicalElement element)
     {
-        return ElementsByNumber.TryGetValue(atomicNumber, out element);
+        if (atomicNumber < 0
+            || atomicNumber >= ElementArray.Length)
+        {
+            element = default(ChemicalElement);
+            return false;
+        }
+
+        ChemicalElement candidate = ElementArray[atomicNumber];
+
+        if (candidate.AtomicNumber != atomicNumber)
+        {
+            element = default(ChemicalElement);
+            return false;
+        }
+
+        element = candidate;
+        return true;
     }
 
-    private static Dictionary<string, ChemicalElement> CreateSymbolIndex()
+    private static Dictionary<string, int> CreateSymbolIndex()
     {
-        Dictionary<string, ChemicalElement> index =
-            new Dictionary<string, ChemicalElement>(
+        Dictionary<string, int> index =
+            new Dictionary<string, int>(
                 StringComparer.OrdinalIgnoreCase);
 
         for (int position = 0; position < ElementArray.Length; position++)
         {
             ChemicalElement element = ElementArray[position];
-            index.Add(element.Symbol, element);
-        }
-
-        return index;
-    }
-
-    private static Dictionary<int, ChemicalElement> CreateNumberIndex()
-    {
-        Dictionary<int, ChemicalElement> index =
-            new Dictionary<int, ChemicalElement>();
-
-        for (int position = 0; position < ElementArray.Length; position++)
-        {
-            ChemicalElement element = ElementArray[position];
-            index.Add(element.AtomicNumber, element);
+            index.Add(element.Symbol, element.AtomicNumber);
         }
 
         return index;

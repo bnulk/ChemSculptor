@@ -304,6 +304,36 @@ bool found = ElementCatalog.TryGetByAtomicNumber(
     out element);
 ```
 
+这里的原子序数查询不需要第二本字典，因为元素数据已经按原子序数排列：
+
+```text
+ElementArray[0]  → 原子序数 0
+ElementArray[1]  → 原子序数 1
+ElementArray[8]  → 原子序数 8
+```
+
+因此内部可以直接访问：
+
+```text
+ElementArray[atomicNumber]
+```
+
+符号查询仍然需要一本索引，但它只保存：
+
+```text
+"O" → 8
+```
+
+得到原子序数 8 后，再通过数组取得氧元素。这样元素数据只有一份，不会在符号字典中重复保存整个 `ChemicalElement`。
+
+数组下标与原子序数相同必须作为一个严格约束，并由测试检查：
+
+```text
+ElementArray[n].AtomicNumber == n
+```
+
+如果以后允许缺号、乱序或从其他来源分段加载元素，才需要重新考虑使用原子序数词典。
+
 未知元素不会再返回“成功并给出 0”，而是返回 `false`。
 
 这比旧代码更安全，因为调用者可以明确区分：
@@ -472,13 +502,14 @@ Bohr 到 Angstrom 的换算
 按原子序数查询
 未知元素返回失败
 元素目录覆盖 0 到 54
+元素数组下标与原子序数一致
 ```
 
 当前验证结果：
 
 ```text
 Release 构建：0 警告，0 错误
-测试：41/41 通过
+测试：42/42 通过
 ```
 
 ---
