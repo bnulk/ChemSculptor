@@ -31,6 +31,7 @@
     <ProjectReference Include="..\..\src\ChemSculptor.Skills.Common\ChemSculptor.Skills.Common.csproj" />
     <ProjectReference Include="..\..\src\ChemSculptor.Skills.Gaussian\ChemSculptor.Skills.Gaussian.csproj" />
     <ProjectReference Include="..\..\src\ChemSculptor.Skills.Orca\ChemSculptor.Skills.Orca.csproj" />
+    <ProjectReference Include="..\..\src\ChemSculptor.ScientificData\ChemSculptor.ScientificData.csproj" />
   </ItemGroup>
 
 </Project>

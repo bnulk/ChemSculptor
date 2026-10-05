@@ -101,6 +101,35 @@ AcceptanceSummary
 报告生成
 ```
 
+### 科学数据文件仓储
+
+新增：
+
+```text
+IScientificDataRepository
+ScientificDataRepositoryOptions
+FileScientificDataRepository
+```
+
+每项 `ScientificResult` 保存为一个独立 JSON 文件：
+
+```text
+<scientific-data-root>/
+  <resultId>.json
+```
+
+仓储只认识科学数据模型，不读取作业、程序输出或异常记录。以后报告层只通过
+`IScientificDataRepository` 读取材料。
+
+当前已实现：
+
+```text
+保存科学成果
+按标识读取科学成果
+列出全部科学成果
+JSON 字符串枚举持久化
+```
+
 ### 配套教程
 
 新增：
