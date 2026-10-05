@@ -116,6 +116,9 @@ public enum ScientificPropertyKind
 /// <summary>科学成果从点集导出的物理量类别。</summary>
 public enum ScientificObservableKind
 {
+    /// <summary>单点计算得到的能量。</summary>
+    SinglePointEnergy,
+
     /// <summary>能量差。</summary>
     EnergyDifference,
 

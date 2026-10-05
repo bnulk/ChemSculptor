@@ -130,6 +130,46 @@ FileScientificDataRepository
 JSON 字符串枚举持久化
 ```
 
+### 计算层到科学数据提取
+
+新增项目：
+
+```text
+ChemSculptor.ScientificData.Extraction
+```
+
+该项目负责把计算作业、通用计算结果、计算验证、稳定性检查、修正计划和派生
+作业翻译为：
+
+```text
+ScientificResult
+  CalculationPoint
+  CalculationPointRelation
+  ScientificObservable
+```
+
+核心服务：
+
+```text
+IScientificResultExtractor
+ScientificResultExtractor
+
+IScientificDataRecorder
+ScientificDataRecorder
+```
+
+依赖方向：
+
+```text
+计算和异常处理
+  -> ScientificData.Extraction
+  -> ScientificData
+  -> 报告层
+```
+
+`ChemSculptor.ScientificData` 仍然不依赖计算程序。报告层以后只读取
+`IScientificDataRepository`。
+
 ### 配套教程
 
 新增：
