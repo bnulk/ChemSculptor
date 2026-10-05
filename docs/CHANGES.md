@@ -5,6 +5,131 @@
 
 ---
 
+## v0.38.0（2026-10-05）：默认基态与显式电子态目标
+
+### 版本
+
+- 当前版本：`0.38.0`
+- 日期：2026-10-05
+- 版本类型：功能新增
+
+### 改动目的
+
+默认把一般单点任务解释为寻找基态，避免同一自旋态内的稳定性修正频繁暂停。
+当用户明确指定特定自旋态或激发态时，系统记录目标并限制自动修改范围。
+
+### 通用模型
+
+新增：
+
+```text
+ElectronicStateObjective
+```
+
+取值：
+
+```text
+Unknown
+GroundState
+TargetSpinState
+TargetExcitedState
+```
+
+`CalculationSpec`、`CalculationRequest`、`InterpretedTask` 和
+`ConversationIntent` 增加：
+
+```text
+ElectronicStateObjective
+TargetMultiplicity
+TargetStateLabel
+```
+
+### 会话解析
+
+默认：
+
+```text
+单点计算
+  → GroundState
+```
+
+明确指定自旋态：
+
+```text
+三重态单点计算
+  → TargetSpinState
+  → TargetMultiplicity = 3
+```
+
+明确指定激发态：
+
+```text
+S1 激发态单点计算
+  → TargetExcitedState
+  → TargetStateLabel = S1
+```
+
+当前阶段只登记激发态目标，Agent 返回“尚未实现激发态计算”。
+
+### 修正规划
+
+```text
+GroundState
+  波函数优化或切换更低自旋态
+  自动预授权，不暂停
+
+TargetSpinState
+  只允许同一自旋态内修正
+  不同自旋态方案不自动生成
+
+TargetExcitedState
+  不自动切换参考态
+```
+
+自动预授权的计划写入 `AnomalyRecord` 后，状态为：
+
+```text
+ReadyForRecovery
+```
+
+### 验证
+
+- Release 全解决方案构建：0 警告 0 错误
+- 测试：74/74 通过
+- 默认 O2 单点计算：
+
+```text
+目标：GroundState
+最低本征值电子态：Triplet
+修正意图：spin-multiplicity.change
+RequiresApproval：false
+多重度：1 → 3
+异常记录状态：ReadyForRecovery
+```
+
+- 指定单重态 O2：
+
+```text
+目标：TargetSpinState
+目标多重度：1
+稳定性检查：Finding
+PlanCreated：false
+说明：当前任务指定了特定自旋态，不能自动修改自旋多重度
+```
+
+### 当前边界
+
+尚未实现：
+
+```text
+TD-DFT 等激发态计算
+激发态根跟踪
+修正方案到具体程序输入的翻译
+自动创建修正重算作业
+```
+
+---
+
 ## v0.37.0（2026-10-05）：波函数稳定性修正方案
 
 ### 版本

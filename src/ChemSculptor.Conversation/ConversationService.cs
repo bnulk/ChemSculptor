@@ -59,6 +59,12 @@ public sealed class ConversationService : IConversationService
         intent.WorkflowId = interpretedTask.WorkflowId;
         intent.IsSupported = interpretedTask.IsSupported;
         intent.Confidence = interpretedTask.Confidence;
+        intent.ElectronicStateObjective =
+            interpretedTask.ElectronicStateObjective;
+        intent.TargetMultiplicity =
+            interpretedTask.TargetMultiplicity;
+        intent.TargetStateLabel =
+            interpretedTask.TargetStateLabel;
         intent.Diagnostics = new List<string>(interpretedTask.Diagnostics);
 
         ConversationReply reply = new ConversationReply();
@@ -67,6 +73,27 @@ public sealed class ConversationService : IConversationService
         if (intent.IsSupported)
         {
             reply.ReplyMessage = "已识别任务类型：单点计算。";
+
+            if (intent.ElectronicStateObjective
+                == ElectronicStateObjective.TargetSpinState)
+            {
+                reply.ReplyMessage =
+                    reply.ReplyMessage +
+                    " 电子态目标：自旋多重度 " +
+                    intent.TargetMultiplicity.GetValueOrDefault().ToString(
+                        System.Globalization.CultureInfo.InvariantCulture) +
+                    "。";
+            }
+            else if (intent.ElectronicStateObjective
+                == ElectronicStateObjective.TargetExcitedState)
+            {
+                reply.ReplyMessage =
+                    reply.ReplyMessage +
+                    " 电子态目标：激发态 " +
+                    intent.TargetStateLabel +
+                    "（当前阶段尚未实现）。";
+            }
+
             reply.ReplyType = ConversationReplyType.TaskAccepted;
         }
         else

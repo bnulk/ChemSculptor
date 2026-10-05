@@ -24,7 +24,60 @@ public class ConversationServiceTests
 
         Assert.True(reply.Intent.IsSupported);
         Assert.Equal(CalculationTaskType.SinglePoint, reply.Intent.TaskType);
+        Assert.Equal(
+            ElectronicStateObjective.GroundState,
+            reply.Intent.ElectronicStateObjective);
         Assert.Contains("单点计算", reply.ReplyMessage);
+    }
+
+    /// <summary>验证明确指定三重态时记录目标自旋多重度。</summary>
+    [Fact]
+    public async Task TripletSinglePointMessageIsRecognized()
+    {
+        RuleBasedTaskInterpreter interpreter =
+            new RuleBasedTaskInterpreter();
+        InMemoryConversationRepository repository =
+            new InMemoryConversationRepository();
+        ConversationService service =
+            new ConversationService(interpreter, repository);
+
+        ConversationRequest request = new ConversationRequest();
+        request.SessionId = "session-triplet";
+        request.Text = "三重态单点计算";
+
+        ConversationReply reply =
+            await service.HandleMessageAsync(request);
+
+        Assert.True(reply.Intent.IsSupported);
+        Assert.Equal(
+            ElectronicStateObjective.TargetSpinState,
+            reply.Intent.ElectronicStateObjective);
+        Assert.Equal(3, reply.Intent.TargetMultiplicity);
+    }
+
+    /// <summary>验证激发态目标可以被识别为暂未实现的框架状态。</summary>
+    [Fact]
+    public async Task ExcitedStateSinglePointMessageIsMarked()
+    {
+        RuleBasedTaskInterpreter interpreter =
+            new RuleBasedTaskInterpreter();
+        InMemoryConversationRepository repository =
+            new InMemoryConversationRepository();
+        ConversationService service =
+            new ConversationService(interpreter, repository);
+
+        ConversationRequest request = new ConversationRequest();
+        request.SessionId = "session-excited";
+        request.Text = "S1 激发态单点计算";
+
+        ConversationReply reply =
+            await service.HandleMessageAsync(request);
+
+        Assert.True(reply.Intent.IsSupported);
+        Assert.Equal(
+            ElectronicStateObjective.TargetExcitedState,
+            reply.Intent.ElectronicStateObjective);
+        Assert.Equal("S1", reply.Intent.TargetStateLabel);
     }
 
     /// <summary>验证未知任务被拒绝。</summary>

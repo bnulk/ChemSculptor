@@ -161,6 +161,10 @@ public sealed class GaussianWavefunctionStabilityCheckSkill
                         cancellationToken);
                 existingResult.CurrentMultiplicity =
                     context.Job!.Spec.Multiplicity;
+                existingResult.ElectronicStateObjective =
+                    context.Job.Spec.ElectronicStateObjective;
+                existingResult.TargetMultiplicity =
+                    context.Job.Spec.TargetMultiplicity;
                 ApplyStabilityResult(checkResult, existingResult);
                 checkResult.CompletedAt = DateTimeOffset.UtcNow;
                 return checkResult;
@@ -335,6 +339,10 @@ public sealed class GaussianWavefunctionStabilityCheckSkill
                 cancellationToken);
         stabilityResult.CurrentMultiplicity =
             originalJob.Spec.Multiplicity;
+        stabilityResult.ElectronicStateObjective =
+            originalJob.Spec.ElectronicStateObjective;
+        stabilityResult.TargetMultiplicity =
+            originalJob.Spec.TargetMultiplicity;
         ApplyStabilityResult(checkResult, stabilityResult);
         checkResult.CompletedAt = DateTimeOffset.UtcNow;
         return checkResult;

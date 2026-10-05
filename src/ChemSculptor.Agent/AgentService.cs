@@ -50,10 +50,26 @@ public sealed class AgentService : IAgentService
             return notImplemented;
         }
 
+        if (conversationReply.Intent.ElectronicStateObjective
+            == ElectronicStateObjective.TargetExcitedState)
+        {
+            AgentResult excitedStateNotImplemented = new AgentResult();
+            excitedStateNotImplemented.IsSupported = false;
+            excitedStateNotImplemented.Error =
+                "已识别激发态目标，但当前阶段尚未实现激发态计算。";
+            return excitedStateNotImplemented;
+        }
+
         CalculationRequest calculationRequest = new CalculationRequest();
         calculationRequest.SessionId = request.SessionId;
         calculationRequest.Goal = request.Text;
         calculationRequest.CoordinateText = request.CoordinateText;
+        calculationRequest.ElectronicStateObjective =
+            conversationReply.Intent.ElectronicStateObjective;
+        calculationRequest.TargetMultiplicity =
+            conversationReply.Intent.TargetMultiplicity;
+        calculationRequest.TargetStateLabel =
+            conversationReply.Intent.TargetStateLabel;
 
         SinglePointCalculationSubmissionResult submission =
             await _singlePointService.SubmitAsync(

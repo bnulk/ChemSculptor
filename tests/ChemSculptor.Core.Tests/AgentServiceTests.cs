@@ -70,6 +70,72 @@ public class AgentServiceTests
         }
     }
 
+    /// <summary>验证激发态目标在当前阶段被明确拒绝。</summary>
+    [Fact]
+    public async Task ExcitedStateMessageIsNotImplemented()
+    {
+        string root = CreateTemporaryRoot();
+
+        try
+        {
+            RecordingWorkflowEngine workflowEngine;
+            AgentService service =
+                CreateAgentService(root, out workflowEngine);
+
+            AgentRequest request = new AgentRequest();
+            request.SessionId = "session-excited";
+            request.Text = "S1 激发态单点计算";
+            request.CoordinateText = "O 0.0 0.0 0.0";
+
+            AgentResult result =
+                await service.HandleMessageAsync(request);
+
+            Assert.False(result.IsSupported);
+            Assert.Contains("尚未实现激发态计算", result.Error);
+        }
+        finally
+        {
+            DeleteTemporaryRoot(root);
+        }
+    }
+
+    /// <summary>验证指定自旋态会写入计算方案。</summary>
+    [Fact]
+    public async Task TargetSpinStateIsAppliedToSpec()
+    {
+        string root = CreateTemporaryRoot();
+
+        try
+        {
+            RecordingWorkflowEngine workflowEngine;
+            AgentService service =
+                CreateAgentService(root, out workflowEngine);
+
+            AgentRequest request = new AgentRequest();
+            request.SessionId = "session-triplet";
+            request.Text = "三重态单点计算";
+            request.CoordinateText =
+                "O 0.000000 0.000000 0.117300\n" +
+                "H 0.000000 0.757200 -0.469200\n" +
+                "H 0.000000 -0.757200 -0.469200";
+
+            AgentResult result =
+                await service.HandleMessageAsync(request);
+
+            Assert.True(result.IsSupported);
+            Assert.Equal(
+                ElectronicStateObjective.TargetSpinState,
+                workflowEngine.LastJob.Spec.ElectronicStateObjective);
+            Assert.Equal(
+                3,
+                workflowEngine.LastJob.Spec.Multiplicity);
+        }
+        finally
+        {
+            DeleteTemporaryRoot(root);
+        }
+    }
+
     private static AgentService CreateAgentService(
         string root,
         out RecordingWorkflowEngine workflowEngine)
@@ -167,6 +233,9 @@ public class AgentServiceTests
     {
         public string StartedJobId { get; private set; } = string.Empty;
 
+        public CalculationJob LastJob { get; private set; } =
+            new CalculationJob();
+
         public Task<WorkflowRun> StartAsync(
             WorkflowDefinition definition,
             IReadOnlyDictionary<string, string> inputs,
@@ -174,6 +243,7 @@ public class AgentServiceTests
             CancellationToken cancellationToken = default)
         {
             StartedJobId = job.JobId;
+            LastJob = job;
 
             WorkflowRun run = new WorkflowRun();
             run.Id = definition.Id;

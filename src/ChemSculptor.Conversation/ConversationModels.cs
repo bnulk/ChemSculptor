@@ -134,6 +134,16 @@ public sealed class ConversationIntent
     /// <summary>解释置信度。</summary>
     public double Confidence { get; set; }
 
+    /// <summary>电子态研究目标。</summary>
+    public ElectronicStateObjective ElectronicStateObjective { get; set; } =
+        ElectronicStateObjective.GroundState;
+
+    /// <summary>指定自旋多重度；未指定时为空。</summary>
+    public int? TargetMultiplicity { get; set; }
+
+    /// <summary>指定激发态标签；未指定时为空。</summary>
+    public string TargetStateLabel { get; set; } = string.Empty;
+
     /// <summary>解释诊断信息。</summary>
     public List<string> Diagnostics { get; set; } = new List<string>();
 }

@@ -147,7 +147,9 @@ public sealed class WavefunctionStabilityCorrectionPlanningSkill
         if (record != null)
         {
             record.CorrectionPlans.Add(plan);
-            record.Status = AnomalyRecordStatus.AwaitingApproval;
+            record.Status = option.RequiresApproval
+                ? AnomalyRecordStatus.AwaitingApproval
+                : AnomalyRecordStatus.ReadyForRecovery;
             await _repository.SaveAsync(record, cancellationToken);
         }
 

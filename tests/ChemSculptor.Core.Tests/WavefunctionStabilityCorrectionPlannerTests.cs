@@ -1,5 +1,6 @@
 using ChemSculptor.Anomaly.Models;
 using ChemSculptor.Anomaly.Planning;
+using ChemSculptor.Compute;
 
 namespace ChemSculptor.Core.Tests;
 
@@ -32,6 +33,7 @@ public class WavefunctionStabilityCorrectionPlannerTests
         Assert.Equal("1", option.Changes[0].OldValue);
         Assert.Equal("3", option.Changes[0].NewValue);
         Assert.Equal(CorrectionRiskLevel.High, option.RiskLevel);
+        Assert.False(option.RequiresApproval);
         Assert.Contains("修改", message);
     }
 
@@ -57,6 +59,31 @@ public class WavefunctionStabilityCorrectionPlannerTests
             CorrectionIntentCodes.WavefunctionOptimization,
             option.IntentCode);
         Assert.Equal(CorrectionRiskLevel.Medium, option.RiskLevel);
+        Assert.False(option.RequiresApproval);
+    }
+
+    /// <summary>验证指定自旋态任务不会自动切换多重度。</summary>
+    [Fact]
+    public void RejectsAutomaticSpinChangeForTargetSpinState()
+    {
+        WavefunctionStabilityResult stability =
+            CreateStabilityResult(currentMultiplicity: 1);
+        stability.ElectronicStateObjective =
+            ElectronicStateObjective.TargetSpinState;
+        stability.TargetMultiplicity = 1;
+        WavefunctionStabilityCorrectionPlanner planner =
+            new WavefunctionStabilityCorrectionPlanner();
+        CorrectionOption? option;
+        string message;
+
+        bool created = planner.TryCreatePlan(
+            stability,
+            out option,
+            out message);
+
+        Assert.False(created);
+        Assert.Null(option);
+        Assert.Contains("不能自动修改", message);
     }
 
     /// <summary>验证没有负本征值时不会生成降低能量方案。</summary>
@@ -87,6 +114,8 @@ public class WavefunctionStabilityCorrectionPlannerTests
         WavefunctionStabilityResult stability =
             new WavefunctionStabilityResult();
         stability.CurrentMultiplicity = currentMultiplicity;
+        stability.ElectronicStateObjective =
+            ElectronicStateObjective.GroundState;
 
         WavefunctionStabilityEigenvector triplet =
             new WavefunctionStabilityEigenvector();

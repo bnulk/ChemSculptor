@@ -15,6 +15,9 @@ public enum AnomalyRecordStatus
     /// <summary>正在等待审批。</summary>
     AwaitingApproval,
 
+    /// <summary>方案已获预授权，可以进入恢复执行。</summary>
+    ReadyForRecovery,
+
     /// <summary>正在执行恢复作业。</summary>
     Recovering,
 

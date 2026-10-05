@@ -538,6 +538,7 @@ Method       = CAM-B3LYP
 Basis        = 6-31G*
 Charge       = 0
 Multiplicity = 解析几何后按电子数确定
+ElectronicStateObjective = GroundState
 ProcessorCount = 4
 SCF 迭代上限 = 200
 ```
@@ -553,6 +554,10 @@ SCF 迭代上限 = 200
 
 如果用户已经显式指定多重度，该规则不会覆盖用户值。当前阶段客户端不传电荷和
 多重度，后续要修改时仍由服务器端参数交互和审批完成。
+
+默认电子态目标是基态。自然语言中出现“单重态”“三重态”等描述时，会话层会
+转换为 `TargetSpinState`；出现“激发态”“S1”等描述时，会登记为
+`TargetExcitedState`，当前阶段不执行该任务。
 
 ---
 

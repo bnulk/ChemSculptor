@@ -81,6 +81,16 @@ public sealed class SinglePointCalculationService : ISinglePointCalculationServi
         try
         {
             CalculationSpec spec = CalculationDefaults.CreateDefaultSinglePoint();
+            string electronicStateError =
+                ApplyElectronicStateIntent(spec, request);
+
+            if (electronicStateError.Length > 0)
+            {
+                result.Succeeded = false;
+                result.Error = electronicStateError;
+                return result;
+            }
+
             string overrideError = ApplyOverrides(spec, request.Overrides);
 
             if (overrideError.Length > 0)
@@ -324,6 +334,48 @@ public sealed class SinglePointCalculationService : ISinglePointCalculationServi
             {
                 return "不支持的计算参数覆盖：" + parameter.Name;
             }
+        }
+
+        return string.Empty;
+    }
+
+    private static string ApplyElectronicStateIntent(
+        CalculationSpec spec,
+        CalculationRequest request)
+    {
+        spec.ElectronicStateObjective =
+            request.ElectronicStateObjective;
+        spec.TargetMultiplicity = request.TargetMultiplicity;
+        spec.TargetStateLabel = request.TargetStateLabel;
+
+        if (request.ElectronicStateObjective
+            == ElectronicStateObjective.Unknown)
+        {
+            spec.ElectronicStateObjective =
+                ElectronicStateObjective.GroundState;
+        }
+
+        if (request.ElectronicStateObjective
+            == ElectronicStateObjective.TargetExcitedState)
+        {
+            return "当前阶段尚未实现激发态计算。";
+        }
+
+        if (request.ElectronicStateObjective
+            == ElectronicStateObjective.TargetSpinState)
+        {
+            if (!request.TargetMultiplicity.HasValue
+                || request.TargetMultiplicity.Value <= 0)
+            {
+                return "指定自旋态任务缺少有效的目标自旋多重度。";
+            }
+
+            spec.Multiplicity = request.TargetMultiplicity.Value;
+            UpdateParameter(
+                spec,
+                "multiplicity",
+                spec.Multiplicity.ToString(
+                    System.Globalization.CultureInfo.InvariantCulture));
         }
 
         return string.Empty;

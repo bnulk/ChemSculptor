@@ -1,4 +1,5 @@
 using ChemSculptor.Anomaly.Models;
+using ChemSculptor.Compute;
 
 namespace ChemSculptor.Anomaly.Planning;
 
@@ -50,9 +51,26 @@ public sealed class WavefunctionStabilityCorrectionPlanner
         }
         else
         {
+            if (stabilityResult.ElectronicStateObjective
+                == ElectronicStateObjective.TargetSpinState)
+            {
+                message =
+                    "当前任务指定了特定自旋态，不能自动修改自旋多重度。";
+                return false;
+            }
+
+            if (stabilityResult.ElectronicStateObjective
+                == ElectronicStateObjective.TargetExcitedState)
+            {
+                message =
+                    "当前任务指定了激发态目标，不能自动修改自旋多重度。";
+                return false;
+            }
+
             option = CreateSpinMultiplicityChangeOption(
                 selectedEigenvector,
-                stabilityResult.CurrentMultiplicity);
+                stabilityResult.CurrentMultiplicity,
+                requiresApproval: false);
         }
 
         message = option.Description;
@@ -97,7 +115,7 @@ public sealed class WavefunctionStabilityCorrectionPlanner
             "稳定性矩阵最低本征值对应的电子态与当前自旋多重度相同，" +
             "应执行同一自旋态下的波函数优化。";
         option.RiskLevel = CorrectionRiskLevel.Medium;
-        option.RequiresApproval = true;
+        option.RequiresApproval = false;
         option.CanUseForRestart = true;
 
         CorrectionChange change = new CorrectionChange();
@@ -118,7 +136,8 @@ public sealed class WavefunctionStabilityCorrectionPlanner
 
     private static CorrectionOption CreateSpinMultiplicityChangeOption(
         WavefunctionStabilityEigenvector eigenvector,
-        int currentMultiplicity)
+        int currentMultiplicity,
+        bool requiresApproval)
     {
         CorrectionOption option = new CorrectionOption();
         option.Id = "change-spin-multiplicity";
@@ -128,7 +147,7 @@ public sealed class WavefunctionStabilityCorrectionPlanner
             "稳定性矩阵最低本征值对应的电子态与当前自旋多重度不同，" +
             "应修改体系自旋多重度。";
         option.RiskLevel = CorrectionRiskLevel.High;
-        option.RequiresApproval = true;
+        option.RequiresApproval = requiresApproval;
         option.CanUseForRestart = true;
 
         CorrectionChange change = new CorrectionChange();

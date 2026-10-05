@@ -232,6 +232,16 @@ public sealed class CalculationSpec
     /// <summary>自旋多重度。</summary>
     public int Multiplicity { get; set; }
 
+    /// <summary>电子态研究目标。</summary>
+    public ElectronicStateObjective ElectronicStateObjective { get; set; } =
+        ElectronicStateObjective.GroundState;
+
+    /// <summary>指定自旋态目标的多重度；未指定时为空。</summary>
+    public int? TargetMultiplicity { get; set; }
+
+    /// <summary>指定激发态标签，例如 S1 或 T1；未指定时为空。</summary>
+    public string TargetStateLabel { get; set; } = string.Empty;
+
     /// <summary>溶剂模型；为空表示气相。</summary>
     public string Solvent { get; set; } = string.Empty;
 
@@ -256,6 +266,16 @@ public sealed class CalculationRequest
 
     /// <summary>用户自然语言目标。</summary>
     public string Goal { get; set; } = string.Empty;
+
+    /// <summary>电子态研究目标；默认寻找基态。</summary>
+    public ElectronicStateObjective ElectronicStateObjective { get; set; } =
+        ElectronicStateObjective.GroundState;
+
+    /// <summary>指定自旋态目标的多重度；未指定时为空。</summary>
+    public int? TargetMultiplicity { get; set; }
+
+    /// <summary>指定激发态标签，例如 S1 或 T1；未指定时为空。</summary>
+    public string TargetStateLabel { get; set; } = string.Empty;
 
     /// <summary>本次计算使用的分子坐标文本。</summary>
     public string CoordinateText { get; set; } = string.Empty;

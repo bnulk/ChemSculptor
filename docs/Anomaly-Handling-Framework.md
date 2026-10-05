@@ -721,8 +721,22 @@ Transitions
   → spin-multiplicity.change
 ```
 
+规划器同时遵守电子态研究目标：
+
+```text
+GroundState
+  允许自动寻找更低、更稳定的自旋态
+
+TargetSpinState
+  只能在同一目标自旋态内修正
+  不自动切换自旋多重度
+
+TargetExcitedState
+  当前只登记目标，不执行激发态计算或自动切换参考态
+```
+
 生成的 `CorrectionPlan` 写入 `AnomalyRecord`，记录状态变为
-`AwaitingApproval`。当前阶段只生成方案，不执行修正。
+`ReadyForRecovery` 或 `AwaitingApproval`。当前阶段只生成方案，不执行修正。
 
 ### 11.2 异常记录聚合
 

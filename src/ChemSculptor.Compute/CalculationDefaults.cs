@@ -46,6 +46,9 @@ public static class CalculationDefaults
         spec.Charge = DefaultCharge;
         // 0 表示尚未解析几何，尚未计算总电子数。
         spec.Multiplicity = 0;
+        spec.ElectronicStateObjective = ElectronicStateObjective.GroundState;
+        spec.TargetMultiplicity = null;
+        spec.TargetStateLabel = string.Empty;
         spec.Solvent = string.Empty;
         spec.ExtraOptions = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
         spec.ExtraOptions[CalculationOptionKeys.ScfIterationLimit] =
@@ -121,6 +124,16 @@ public static class CalculationDefaults
             CalculationRiskLevel.Blocking,
             true,
             "未显式指定时，由总电子数决定：偶数使用 1，奇数使用 2。");
+
+        AddParameter(
+            spec,
+            "electronic-state-objective",
+            "电子态目标",
+            ElectronicStateObjective.GroundState.ToString(),
+            ElectronicStateObjective.GroundState.ToString(),
+            CalculationRiskLevel.Info,
+            false,
+            "默认寻找当前方法下的最低能量稳定电子态。");
 
         return spec;
     }
