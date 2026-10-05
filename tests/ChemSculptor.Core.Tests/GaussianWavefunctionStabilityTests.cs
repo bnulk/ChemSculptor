@@ -1,5 +1,6 @@
 using ChemSculptor.Anomaly.Models;
 using ChemSculptor.Anomaly.Registry;
+using ChemSculptor.Anomaly.Storage;
 using ChemSculptor.Compute;
 using ChemSculptor.Compute.Gaussian.Anomaly.WavefunctionStability;
 using ChemSculptor.Domain;
@@ -72,6 +73,37 @@ public class GaussianWavefunctionStabilityTests
         }
     }
 
+    /// <summary>验证稳定性优化后已稳定时仍保留最初的不稳定发现。</summary>
+    [Fact]
+    public async Task KeepsInitialInstabilityAfterOptimizationReportsStable()
+    {
+        string root = CreateTemporaryRoot();
+        string path = Path.Combine(root, "optimized.log");
+
+        try
+        {
+            string text =
+                "The wavefunction has an RHF -> UHF instability.\n" +
+                "The wavefunction is stable under the perturbations considered.";
+            await File.WriteAllTextAsync(path, text);
+
+            GaussianWavefunctionStabilityParser parser =
+                new GaussianWavefunctionStabilityParser();
+            WavefunctionStabilityResult result =
+                await parser.ParseAsync(path);
+
+            Assert.Equal(
+                WavefunctionStabilityStatus.Unstable,
+                result.Status);
+            Assert.Equal("RHF-to-UHF", result.InstabilityKind);
+            Assert.Equal(2, result.Evidence.Count);
+        }
+        finally
+        {
+            DeleteTemporaryRoot(root);
+        }
+    }
+
     /// <summary>验证没有识别结论时返回可区分的状态。</summary>
     [Fact]
     public async Task ReturnsInconclusiveWhenStatementIsMissing()
@@ -112,8 +144,7 @@ public class GaussianWavefunctionStabilityTests
                 "The wavefunction is unstable with respect to internal perturbations.");
 
             GaussianWavefunctionStabilityCheckSkill check =
-                new GaussianWavefunctionStabilityCheckSkill(
-                    new GaussianWavefunctionStabilityParser());
+                CreateCheckSkill(root, new RecordingComputeBackend());
             AnomalyContext context = CreateGaussianContext(path);
 
             AnomalyCheckResult checkResult =
@@ -156,8 +187,7 @@ public class GaussianWavefunctionStabilityTests
                 "The wavefunction is stable under the perturbations considered.");
 
             GaussianWavefunctionStabilityCheckSkill check =
-                new GaussianWavefunctionStabilityCheckSkill(
-                    new GaussianWavefunctionStabilityParser());
+                CreateCheckSkill(root, new RecordingComputeBackend());
             AnomalyContext context = CreateGaussianContext(path);
 
             AnomalyCheckResult result =
@@ -176,16 +206,26 @@ public class GaussianWavefunctionStabilityTests
     [Fact]
     public async Task CheckReturnsSkippedWithoutOutput()
     {
-        GaussianWavefunctionStabilityCheckSkill check =
-            new GaussianWavefunctionStabilityCheckSkill(
-                new GaussianWavefunctionStabilityParser());
-        AnomalyContext context = CreateGaussianContext(string.Empty);
+        string root = CreateTemporaryRoot();
 
-        AnomalyCheckResult result =
-            await check.CheckAsync(context);
+        try
+        {
+            GaussianWavefunctionStabilityCheckSkill check =
+                CreateCheckSkill(
+                    root,
+                    new RecordingComputeBackend());
+            AnomalyContext context = CreateGaussianContext(string.Empty);
 
-        Assert.Equal(AnomalyCheckStatus.Skipped, result.Status);
-        Assert.Contains("没有可用", result.SkippedReason);
+            AnomalyCheckResult result =
+                await check.CheckAsync(context);
+
+            Assert.Equal(AnomalyCheckStatus.Skipped, result.Status);
+            Assert.Contains("没有可用", result.SkippedReason);
+        }
+        finally
+        {
+            DeleteTemporaryRoot(root);
+        }
     }
 
     /// <summary>验证无法判断时返回 Inconclusive。</summary>
@@ -200,8 +240,7 @@ public class GaussianWavefunctionStabilityTests
             await File.WriteAllTextAsync(path, "No stability conclusion.");
 
             GaussianWavefunctionStabilityCheckSkill check =
-                new GaussianWavefunctionStabilityCheckSkill(
-                    new GaussianWavefunctionStabilityParser());
+                CreateCheckSkill(root, new RecordingComputeBackend());
             AnomalyContext context = CreateGaussianContext(path);
 
             AnomalyCheckResult result =
@@ -232,13 +271,25 @@ public class GaussianWavefunctionStabilityTests
 
             AnomalyProviderRegistry registry =
                 new AnomalyProviderRegistry();
+            RecordingComputeBackend backend =
+                new RecordingComputeBackend();
+            CalculationWorkspaceOptions workspaceOptions =
+                new CalculationWorkspaceOptions();
+            workspaceOptions.RootDirectory = Path.Combine(
+                root,
+                "generic-workspace");
+            WorkspaceManager workspace =
+                new WorkspaceManager(workspaceOptions);
+            FileAnomalyRepository repository =
+                new FileAnomalyRepository(workspace);
             GaussianWavefunctionStabilityCheckSkill gaussianCheck =
-                new GaussianWavefunctionStabilityCheckSkill(
-                    new GaussianWavefunctionStabilityParser());
+                CreateCheckSkill(workspace, backend);
             registry.RegisterCheck(gaussianCheck);
 
             WavefunctionStabilityCheckSkill genericSkill =
-                new WavefunctionStabilityCheckSkill(registry);
+                new WavefunctionStabilityCheckSkill(
+                    registry,
+                    repository);
             AnomalyCheckRequest request = new AnomalyCheckRequest();
             request.CheckCode =
                 CommonAnomalyCheckCodes.WavefunctionStability;
@@ -271,11 +322,201 @@ public class GaussianWavefunctionStabilityTests
             Assert.Equal(
                 GaussianSkillIds.WavefunctionStabilityCheck,
                 checkResult.ImplementationId);
+            Assert.False(
+                string.IsNullOrWhiteSpace(checkResult.AnomalyRecordId));
+
+            AnomalyRecord? record =
+                await repository.GetAsync(
+                    request.Context.Job!.JobId,
+                    checkResult.AnomalyRecordId);
+
+            Assert.NotNull(record);
+            Assert.Equal(AnomalyRecordStatus.Open, record.Status);
+            Assert.Single(record.Checks);
         }
         finally
         {
             DeleteTemporaryRoot(root);
         }
+    }
+
+    /// <summary>验证没有现成输出时会执行派生稳定性检查作业。</summary>
+    [Fact]
+    public async Task CheckRunsAuxiliaryJobWhenOutputIsMissing()
+    {
+        string root = CreateTemporaryRoot();
+        string sourcePath = Path.Combine(root, "original.gjf");
+
+        try
+        {
+            string sourceText =
+                "%chk=original.chk\n" +
+                "%mem=4GB\n" +
+                "%nprocshared=4\n" +
+                "\n" +
+                "#p CAM-B3LYP/6-31G* SP\n" +
+                "\n" +
+                "water single point\n" +
+                "\n" +
+                "0 1\n" +
+                "O 0.0 0.0 0.0\n" +
+                "H 0.0 0.0 1.0\n" +
+                "H 0.0 1.0 0.0\n";
+            await File.WriteAllTextAsync(sourcePath, sourceText);
+            string sourceCheckpointPath =
+                Path.ChangeExtension(sourcePath, ".chk");
+            await File.WriteAllBytesAsync(
+                sourceCheckpointPath,
+                new byte[] { 1, 2, 3, 4 });
+
+            CalculationWorkspaceOptions workspaceOptions =
+                new CalculationWorkspaceOptions();
+            workspaceOptions.RootDirectory = Path.Combine(
+                root,
+                "workspace");
+            WorkspaceManager workspace =
+                new WorkspaceManager(workspaceOptions);
+
+            RecordingComputeBackend backend =
+                new RecordingComputeBackend();
+            GaussianWavefunctionStabilityCheckSkill check =
+                CreateCheckSkill(
+                    workspace,
+                    backend);
+
+            CalculationJob originalJob = new CalculationJob();
+            originalJob.JobId = "job-original";
+            originalJob.InputFilePath = sourcePath;
+            originalJob.SourceInputFilePath = sourcePath;
+            originalJob.Spec =
+                CalculationDefaults.CreateDefaultSinglePoint();
+
+            AnomalyContext context = new AnomalyContext();
+            context.Job = originalJob;
+
+            AnomalyCheckResult result =
+                await check.CheckAsync(context);
+
+            Assert.Equal(AnomalyCheckStatus.Finding, result.Status);
+            Assert.False(string.IsNullOrWhiteSpace(result.AuxiliaryJobId));
+            Assert.Equal(
+                result.AuxiliaryJobId,
+                backend.SubmittedJobId);
+
+            string auxiliaryInputPath = Path.Combine(
+                workspace.GetRunDirectory(result.AuxiliaryJobId),
+                result.AuxiliaryJobId + ".gjf");
+            string auxiliaryInput =
+                await File.ReadAllTextAsync(auxiliaryInputPath);
+
+            Assert.Contains(
+                "guess=read geom=check stable",
+                auxiliaryInput);
+            Assert.DoesNotContain(" SP", auxiliaryInput);
+            Assert.DoesNotContain(
+                "O 0.0 0.0 0.0",
+                auxiliaryInput);
+            Assert.Contains(
+                "%chk=" + result.AuxiliaryJobId + ".chk",
+                auxiliaryInput);
+
+            string auxiliaryCheckpointPath = Path.Combine(
+                workspace.GetRunDirectory(result.AuxiliaryJobId),
+                result.AuxiliaryJobId + ".chk");
+
+            Assert.True(File.Exists(auxiliaryCheckpointPath));
+        }
+        finally
+        {
+            DeleteTemporaryRoot(root);
+        }
+    }
+
+    /// <summary>验证 ONIOM 输入进入检查节点后返回 Skipped。</summary>
+    [Fact]
+    public async Task CheckSkipsOniomInput()
+    {
+        string root = CreateTemporaryRoot();
+        string sourcePath = Path.Combine(root, "oniom.gjf");
+
+        try
+        {
+            string sourceText =
+                "%chk=oniom.chk\n" +
+                "%mem=4GB\n" +
+                "%nprocshared=4\n" +
+                "\n" +
+                "#p CAM-B3LYP/6-31G* ONIOM(UB3LYP/6-31G*:UFF) SP\n" +
+                "\n" +
+                "oniom single point\n" +
+                "\n" +
+                "0 1\n" +
+                "O 0.0 0.0 0.0\n";
+            await File.WriteAllTextAsync(sourcePath, sourceText);
+            await File.WriteAllBytesAsync(
+                Path.ChangeExtension(sourcePath, ".chk"),
+                new byte[] { 1, 2, 3, 4 });
+
+            CalculationWorkspaceOptions workspaceOptions =
+                new CalculationWorkspaceOptions();
+            workspaceOptions.RootDirectory = Path.Combine(
+                root,
+                "workspace");
+            WorkspaceManager workspace =
+                new WorkspaceManager(workspaceOptions);
+
+            GaussianWavefunctionStabilityCheckSkill check =
+                CreateCheckSkill(
+                    workspace,
+                    new RecordingComputeBackend());
+
+            CalculationJob originalJob = new CalculationJob();
+            originalJob.JobId = "job-oniom";
+            originalJob.InputFilePath = sourcePath;
+            originalJob.SourceInputFilePath = sourcePath;
+            originalJob.Spec =
+                CalculationDefaults.CreateDefaultSinglePoint();
+
+            AnomalyContext context = new AnomalyContext();
+            context.Job = originalJob;
+
+            AnomalyCheckResult result =
+                await check.CheckAsync(context);
+
+            Assert.Equal(AnomalyCheckStatus.Skipped, result.Status);
+            Assert.Contains("ONIOM", result.SkippedReason);
+        }
+        finally
+        {
+            DeleteTemporaryRoot(root);
+        }
+    }
+
+    private static GaussianWavefunctionStabilityCheckSkill CreateCheckSkill(
+        string root,
+        RecordingComputeBackend backend)
+    {
+        CalculationWorkspaceOptions options =
+            new CalculationWorkspaceOptions();
+        options.RootDirectory = Path.Combine(root, "workspace");
+        WorkspaceManager workspace = new WorkspaceManager(options);
+        return CreateCheckSkill(workspace, backend);
+    }
+
+    private static GaussianWavefunctionStabilityCheckSkill CreateCheckSkill(
+        WorkspaceManager workspace,
+        RecordingComputeBackend backend)
+    {
+        FileCalculationRepository repository =
+            new FileCalculationRepository(workspace);
+
+        return new GaussianWavefunctionStabilityCheckSkill(
+            new GaussianWavefunctionStabilityParser(),
+            new GaussianWavefunctionStabilityInputWriter(),
+            workspace,
+            backend,
+            new TestQuantumProgramAdapterRegistry(),
+            repository);
     }
 
     private static AnomalyContext CreateGaussianContext(string outputPath)
@@ -313,6 +554,51 @@ public class GaussianWavefunctionStabilityTests
         if (Directory.Exists(root))
         {
             Directory.Delete(root, true);
+        }
+    }
+
+    private sealed class RecordingComputeBackend : IComputeBackend
+    {
+        public string SubmittedJobId { get; private set; } = string.Empty;
+
+        public string Name
+        {
+            get { return "recording"; }
+        }
+
+        public Task<string> SubmitAsync(
+            CalculationJob job,
+            CalculationExecutionContext context,
+            CancellationToken cancellationToken = default)
+        {
+            SubmittedJobId = job.JobId;
+            File.WriteAllText(
+                job.OutputFilePath,
+                "The wavefunction is unstable with respect to internal perturbations.");
+            return Task.FromResult(job.JobId);
+        }
+
+        public Task<CalculationJobState> GetStatusAsync(
+            CalculationJob job,
+            CancellationToken cancellationToken = default)
+        {
+            return Task.FromResult(
+                CalculationJobState.Completed);
+        }
+
+        public Task FetchArtifactsAsync(
+            CalculationJob job,
+            string localDirectory,
+            CancellationToken cancellationToken = default)
+        {
+            return Task.CompletedTask;
+        }
+
+        public Task CancelAsync(
+            CalculationJob job,
+            CancellationToken cancellationToken = default)
+        {
+            return Task.CompletedTask;
         }
     }
 }

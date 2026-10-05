@@ -27,6 +27,8 @@ public static class GaussianSkillServiceRegistration
             services);
         ServiceCollectionServiceExtensions.AddSingleton<
             GaussianWavefunctionStabilityParser>(services);
+        ServiceCollectionServiceExtensions.AddSingleton<
+            GaussianWavefunctionStabilityInputWriter>(services);
 
         Gaussian16ProgramAdapterOptions options =
             Gaussian16ProgramAdapterOptions.CreateDefault();

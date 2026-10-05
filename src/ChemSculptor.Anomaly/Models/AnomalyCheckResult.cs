@@ -9,6 +9,9 @@ public sealed class AnomalyCheckResult
     /// <summary>产生本次结果的具体实现标识。</summary>
     public string ImplementationId { get; set; } = string.Empty;
 
+    /// <summary>保存本次检查的异常处理记录标识。</summary>
+    public string AnomalyRecordId { get; set; } = string.Empty;
+
     /// <summary>检查显示名称。</summary>
     public string DisplayName { get; set; } = string.Empty;
 

@@ -1,5 +1,6 @@
 using ChemSculptor.Anomaly.Abstractions;
 using ChemSculptor.Anomaly.Models;
+using ChemSculptor.Compute;
 using ChemSculptor.Compute.Gaussian;
 using ChemSculptor.Compute.Gaussian.Anomaly.WavefunctionStability;
 using ChemSculptor.Skills.Common;
@@ -8,28 +9,70 @@ namespace ChemSculptor.Skills.Gaussian.Anomaly.WavefunctionStability;
 
 /// <summary>
 /// Gaussian 波函数稳定性检查。
-/// 当前阶段读取已经生成的稳定性检查输出，不负责创建辅助作业。
+/// 优先读取已有输出；没有输出时创建并执行辅助稳定性检查作业。
 /// </summary>
 public sealed class GaussianWavefunctionStabilityCheckSkill
     : JsonSkill<AnomalyCheckRequest, AnomalyCheckResult>,
       IAnomalyCheck
 {
+    private const int PollingIntervalMilliseconds = 500;
+
     private static readonly AnomalyCheckDescriptor DescriptorValue =
         CreateDescriptor();
 
     private readonly GaussianWavefunctionStabilityParser _parser;
+    private readonly GaussianWavefunctionStabilityInputWriter _inputWriter;
+    private readonly ICalculationWorkspace _workspace;
+    private readonly IComputeBackend _computeBackend;
+    private readonly IQuantumProgramAdapterRegistry _adapterRegistry;
+    private readonly ICalculationRepository _repository;
     private readonly List<string> _capabilities;
 
     /// <summary>创建稳定性检查。</summary>
     public GaussianWavefunctionStabilityCheckSkill(
-        GaussianWavefunctionStabilityParser parser)
+        GaussianWavefunctionStabilityParser parser,
+        GaussianWavefunctionStabilityInputWriter inputWriter,
+        ICalculationWorkspace workspace,
+        IComputeBackend computeBackend,
+        IQuantumProgramAdapterRegistry adapterRegistry,
+        ICalculationRepository repository)
     {
         if (parser == null)
         {
             throw new ArgumentNullException(nameof(parser));
         }
 
+        if (inputWriter == null)
+        {
+            throw new ArgumentNullException(nameof(inputWriter));
+        }
+
+        if (workspace == null)
+        {
+            throw new ArgumentNullException(nameof(workspace));
+        }
+
+        if (computeBackend == null)
+        {
+            throw new ArgumentNullException(nameof(computeBackend));
+        }
+
+        if (adapterRegistry == null)
+        {
+            throw new ArgumentNullException(nameof(adapterRegistry));
+        }
+
+        if (repository == null)
+        {
+            throw new ArgumentNullException(nameof(repository));
+        }
+
         _parser = parser;
+        _inputWriter = inputWriter;
+        _workspace = workspace;
+        _computeBackend = computeBackend;
+        _adapterRegistry = adapterRegistry;
+        _repository = repository;
         _capabilities = new List<string>();
         _capabilities.Add(AnomalySkillIds.CheckWavefunctionStability);
         _capabilities.Add("gaussian.wavefunction-stability");
@@ -76,17 +119,13 @@ public sealed class GaussianWavefunctionStabilityCheckSkill
             return false;
         }
 
-        string? outputPath;
-
-        if (!context.Metadata.TryGetValue(
-            AnomalyContextKeys.WavefunctionStabilityOutputPath,
-            out outputPath))
+        string? outputPath = GetExistingOutputPath(context);
+        if (!string.IsNullOrWhiteSpace(outputPath))
         {
-            return false;
+            return true;
         }
 
-        return !string.IsNullOrWhiteSpace(outputPath)
-            && File.Exists(outputPath);
+        return ResolveOriginalInputPath(context.Job).Length > 0;
     }
 
     /// <summary>解析稳定性输出并生成统一检查结果。</summary>
@@ -101,17 +140,203 @@ public sealed class GaussianWavefunctionStabilityCheckSkill
         {
             checkResult.Status = AnomalyCheckStatus.Skipped;
             checkResult.SkippedReason =
-                "没有可用的波函数稳定性检查输出。";
+                "没有可用于波函数稳定性检查的输入或输出。";
             checkResult.Summary = checkResult.SkippedReason;
             checkResult.CompletedAt = DateTimeOffset.UtcNow;
             return checkResult;
         }
 
-        string outputPath =
-            context.Metadata[AnomalyContextKeys.WavefunctionStabilityOutputPath];
-        WavefunctionStabilityResult stabilityResult =
-            await _parser.ParseAsync(outputPath, cancellationToken);
+        try
+        {
+            string? outputPath = GetExistingOutputPath(context);
 
+            if (!string.IsNullOrWhiteSpace(outputPath))
+            {
+                WavefunctionStabilityResult existingResult =
+                    await _parser.ParseAsync(
+                        outputPath,
+                        cancellationToken);
+                ApplyStabilityResult(checkResult, existingResult);
+                checkResult.CompletedAt = DateTimeOffset.UtcNow;
+                return checkResult;
+            }
+
+            return await RunAuxiliaryCheckAsync(
+                context,
+                checkResult,
+                cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            checkResult.Status = AnomalyCheckStatus.ExecutionFailed;
+            checkResult.Summary =
+                "波函数稳定性检查执行失败：" + ex.Message;
+            checkResult.CompletedAt = DateTimeOffset.UtcNow;
+            return checkResult;
+        }
+    }
+
+    private async Task<AnomalyCheckResult> RunAuxiliaryCheckAsync(
+        AnomalyContext context,
+        AnomalyCheckResult checkResult,
+        CancellationToken cancellationToken)
+    {
+        CalculationJob originalJob = context.Job!;
+        string sourceInputPath =
+            ResolveOriginalInputPath(originalJob);
+        string sourceCheckpointPath =
+            ResolveOriginalCheckpointPath(originalJob);
+
+        if (sourceCheckpointPath.Length == 0)
+        {
+            checkResult.Status = AnomalyCheckStatus.ExecutionFailed;
+            checkResult.Summary = "没有找到原始计算的 Gaussian 检查点文件。";
+            checkResult.CompletedAt = DateTimeOffset.UtcNow;
+            return checkResult;
+        }
+
+        string stabilityJobId =
+            originalJob.JobId +
+            "-stability-" +
+            Guid.NewGuid().ToString("N").Substring(0, 8);
+
+        await _workspace.EnsureJobWorkspaceAsync(
+            stabilityJobId,
+            cancellationToken);
+
+        string inputFileName = stabilityJobId + ".gjf";
+        string inputPath = Path.Combine(
+            _workspace.GetInputDirectory(stabilityJobId),
+            inputFileName);
+        string runInputPath = Path.Combine(
+            _workspace.GetRunDirectory(stabilityJobId),
+            inputFileName);
+        string outputPath =
+            _workspace.GetJobOutputPath(stabilityJobId);
+        string checkpointFileName = stabilityJobId + ".chk";
+        string runCheckpointPath = Path.Combine(
+            _workspace.GetRunDirectory(stabilityJobId),
+            checkpointFileName);
+
+        GaussianWavefunctionStabilityInputWriteResult writeResult =
+            await _inputWriter.WriteAsync(
+                sourceInputPath,
+                inputPath,
+                checkpointFileName,
+                cancellationToken);
+
+        if (!writeResult.IsSupported)
+        {
+            checkResult.Status = AnomalyCheckStatus.Skipped;
+            checkResult.Summary = writeResult.Message;
+            checkResult.SkippedReason = writeResult.Message;
+            checkResult.CompletedAt = DateTimeOffset.UtcNow;
+            return checkResult;
+        }
+
+        if (!writeResult.Succeeded)
+        {
+            checkResult.Status = AnomalyCheckStatus.ExecutionFailed;
+            checkResult.Summary = writeResult.Message;
+            checkResult.CompletedAt = DateTimeOffset.UtcNow;
+            return checkResult;
+        }
+
+        File.Copy(inputPath, runInputPath, true);
+        File.Copy(
+            sourceCheckpointPath,
+            runCheckpointPath,
+            true);
+
+        CalculationJob stabilityJob = new CalculationJob();
+        stabilityJob.JobId = stabilityJobId;
+        stabilityJob.TaskId = originalJob.TaskId;
+        stabilityJob.SessionId = originalJob.SessionId;
+        stabilityJob.WorkflowId = originalJob.WorkflowId;
+        stabilityJob.GeometryId = originalJob.GeometryId;
+        stabilityJob.Goal = "波函数稳定性检查";
+        stabilityJob.Spec = originalJob.Spec;
+        stabilityJob.State = CalculationJobState.Running;
+        stabilityJob.WorkspaceDirectory =
+            _workspace.GetJobDirectory(stabilityJobId);
+        stabilityJob.RunDirectory =
+            _workspace.GetRunDirectory(stabilityJobId);
+        stabilityJob.SourceInputFilePath = inputPath;
+        stabilityJob.InputFilePath = runInputPath;
+        stabilityJob.OutputFilePath = outputPath;
+        stabilityJob.StartedAt = DateTimeOffset.UtcNow;
+
+        IQuantumProgramAdapter? adapter =
+            _adapterRegistry.Resolve(stabilityJob.Spec);
+
+        if (adapter == null)
+        {
+            checkResult.Status = AnomalyCheckStatus.ExecutionFailed;
+            checkResult.Summary = "没有可处理当前计算方案的适配器。";
+            checkResult.CompletedAt = DateTimeOffset.UtcNow;
+            return checkResult;
+        }
+
+        CalculationExecutionContext executionContext =
+            adapter.BuildExecutionContext(
+                stabilityJob,
+                stabilityJob.Spec);
+
+        await _repository.SaveJobAsync(
+            stabilityJob,
+            cancellationToken);
+        await _computeBackend.SubmitAsync(
+            stabilityJob,
+            executionContext,
+            cancellationToken);
+
+        CalculationJobState state = CalculationJobState.Running;
+
+        while (!IsTerminalState(state))
+        {
+            state = await _computeBackend.GetStatusAsync(
+                stabilityJob,
+                cancellationToken);
+
+            if (!IsTerminalState(state))
+            {
+                await Task.Delay(
+                    PollingIntervalMilliseconds,
+                    cancellationToken);
+            }
+        }
+
+        stabilityJob.State = state;
+        stabilityJob.CompletedAt = DateTimeOffset.UtcNow;
+        await _repository.SaveJobAsync(
+            stabilityJob,
+            cancellationToken);
+
+        checkResult.AuxiliaryJobId = stabilityJobId;
+
+        if (state != CalculationJobState.Completed)
+        {
+            checkResult.Status = AnomalyCheckStatus.ExecutionFailed;
+            checkResult.Summary =
+                "稳定性检查作业没有正常完成，最终状态：" +
+                state.ToString();
+            checkResult.CompletedAt = DateTimeOffset.UtcNow;
+            return checkResult;
+        }
+
+        WavefunctionStabilityResult stabilityResult =
+            await _parser.ParseAsync(
+                outputPath,
+                cancellationToken);
+        ApplyStabilityResult(checkResult, stabilityResult);
+        checkResult.CompletedAt = DateTimeOffset.UtcNow;
+        return checkResult;
+    }
+
+    private static void ApplyStabilityResult(
+        AnomalyCheckResult checkResult,
+        WavefunctionStabilityResult stabilityResult)
+    {
         checkResult.Evidence = new List<AnomalyEvidence>(
             stabilityResult.Evidence);
         checkResult.Summary = stabilityResult.Summary;
@@ -119,23 +344,20 @@ public sealed class GaussianWavefunctionStabilityCheckSkill
         if (stabilityResult.Status == WavefunctionStabilityStatus.Stable)
         {
             checkResult.Status = AnomalyCheckStatus.Passed;
-            checkResult.CompletedAt = DateTimeOffset.UtcNow;
-            return checkResult;
+            return;
         }
 
         if (stabilityResult.Status == WavefunctionStabilityStatus.NotPerformed)
         {
             checkResult.Status = AnomalyCheckStatus.Skipped;
             checkResult.SkippedReason = stabilityResult.Summary;
-            checkResult.CompletedAt = DateTimeOffset.UtcNow;
-            return checkResult;
+            return;
         }
 
         if (stabilityResult.Status == WavefunctionStabilityStatus.Inconclusive)
         {
             checkResult.Status = AnomalyCheckStatus.Inconclusive;
-            checkResult.CompletedAt = DateTimeOffset.UtcNow;
-            return checkResult;
+            return;
         }
 
         AnomalyFinding finding = new AnomalyFinding();
@@ -148,14 +370,114 @@ public sealed class GaussianWavefunctionStabilityCheckSkill
         finding.RequiresScientificJudgment = true;
         finding.Evidence = new List<AnomalyEvidence>(
             stabilityResult.Evidence);
-        finding.Details["outputPath"] = outputPath;
+        finding.Details["outputPath"] =
+            stabilityResult.OutputFilePath;
         finding.Details["instabilityKind"] =
             stabilityResult.InstabilityKind;
         checkResult.Status = AnomalyCheckStatus.Finding;
         checkResult.Findings.Add(finding);
-        checkResult.CompletedAt = DateTimeOffset.UtcNow;
+    }
 
-        return checkResult;
+    private static string GetExistingOutputPath(AnomalyContext context)
+    {
+        string? outputPath;
+
+        if (!context.Metadata.TryGetValue(
+            AnomalyContextKeys.WavefunctionStabilityOutputPath,
+            out outputPath))
+        {
+            return string.Empty;
+        }
+
+        if (string.IsNullOrWhiteSpace(outputPath)
+            || !File.Exists(outputPath))
+        {
+            return string.Empty;
+        }
+
+        return outputPath;
+    }
+
+    private static string ResolveOriginalInputPath(CalculationJob job)
+    {
+        if (File.Exists(job.InputFilePath))
+        {
+            return job.InputFilePath;
+        }
+
+        if (File.Exists(job.SourceInputFilePath))
+        {
+            return job.SourceInputFilePath;
+        }
+
+        return string.Empty;
+    }
+
+    private static string ResolveOriginalCheckpointPath(
+        CalculationJob job)
+    {
+        if (!string.IsNullOrWhiteSpace(job.InputFilePath))
+        {
+            string checkpointPath =
+                Path.ChangeExtension(job.InputFilePath, ".chk");
+
+            if (File.Exists(checkpointPath))
+            {
+                return checkpointPath;
+            }
+        }
+
+        if (!string.IsNullOrWhiteSpace(job.SourceInputFilePath))
+        {
+            string checkpointPath =
+                Path.ChangeExtension(job.SourceInputFilePath, ".chk");
+
+            if (File.Exists(checkpointPath))
+            {
+                return checkpointPath;
+            }
+        }
+
+        if (string.IsNullOrWhiteSpace(job.RunDirectory)
+            || !Directory.Exists(job.RunDirectory))
+        {
+            return string.Empty;
+        }
+
+        string[] checkpointFiles = Directory.GetFiles(
+            job.RunDirectory,
+            "*.chk",
+            SearchOption.TopDirectoryOnly);
+
+        if (checkpointFiles.Length == 0)
+        {
+            return string.Empty;
+        }
+
+        string latestPath = checkpointFiles[0];
+        DateTime latestWriteTime =
+            File.GetLastWriteTimeUtc(latestPath);
+
+        for (int index = 1; index < checkpointFiles.Length; index++)
+        {
+            DateTime writeTime =
+                File.GetLastWriteTimeUtc(checkpointFiles[index]);
+
+            if (writeTime > latestWriteTime)
+            {
+                latestPath = checkpointFiles[index];
+                latestWriteTime = writeTime;
+            }
+        }
+
+        return latestPath;
+    }
+
+    private static bool IsTerminalState(CalculationJobState state)
+    {
+        return state == CalculationJobState.Completed
+            || state == CalculationJobState.Failed
+            || state == CalculationJobState.Canceled;
     }
 
     /// <summary>执行 JSON Skill 请求。</summary>

@@ -1,6 +1,9 @@
 using ChemSculptor.Anomaly.Abstractions;
 using ChemSculptor.Anomaly.Models;
 using ChemSculptor.Anomaly.Registry;
+using ChemSculptor.Anomaly.Storage;
+using ChemSculptor.Compute;
+using ChemSculptor.Domain;
 
 namespace ChemSculptor.Skills.Common.AnomalyWorkflow;
 
@@ -9,46 +12,95 @@ namespace ChemSculptor.Skills.Common.AnomalyWorkflow;
 /// 根据计算程序选择具体实现，并统一返回 AnomalyCheckResult。
 /// </summary>
 public sealed class WavefunctionStabilityCheckSkill
-    : JsonSkill<AnomalyCheckRequest, AnomalyCheckResult>
+    : ISkill
 {
+    private const string RequestKey = "request";
+    private const string ValidationKey = "validation";
+
     private readonly IAnomalyProviderRegistry _registry;
+    private readonly IAnomalyRepository _repository;
     private readonly List<string> _capabilities;
 
     /// <summary>创建通用稳定性检查 Skill。</summary>
     public WavefunctionStabilityCheckSkill(
-        IAnomalyProviderRegistry registry)
+        IAnomalyProviderRegistry registry,
+        IAnomalyRepository repository)
     {
         if (registry == null)
         {
             throw new ArgumentNullException(nameof(registry));
         }
 
+        if (repository == null)
+        {
+            throw new ArgumentNullException(nameof(repository));
+        }
+
         _registry = registry;
+        _repository = repository;
         _capabilities = new List<string>();
         _capabilities.Add("anomaly.calculation-check");
         _capabilities.Add("anomaly.scientific-check");
     }
 
     /// <summary>技能名称。</summary>
-    public override string Name
+    public string Name
     {
         get { return AnomalySkillIds.CheckWavefunctionStability; }
     }
 
     /// <summary>技能版本。</summary>
-    public override string Version
+    public string Version
     {
         get { return "1.0.0"; }
     }
 
     /// <summary>技能能力。</summary>
-    public override IReadOnlyList<string> Capabilities
+    public IReadOnlyList<string> Capabilities
     {
         get { return _capabilities; }
     }
 
-    /// <summary>选择具体实现并执行检查。</summary>
-    protected override async Task<AnomalyCheckResult> ExecuteAsync(
+    /// <summary>执行稳定性检查并保存异常记录。</summary>
+    public async Task<TaskResult> ExecuteAsync(
+        TaskRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        AnomalyCheckRequest checkRequest =
+            DeserializeCheckRequest(request);
+        AnomalyCheckResult checkResult =
+            await ExecuteCheckAsync(
+                checkRequest,
+                cancellationToken);
+
+        if (checkRequest.Context.Job != null)
+        {
+            AnomalyRecord record =
+                CreateAnomalyRecord(
+                    checkRequest.Context,
+                    checkResult);
+            checkResult.AnomalyRecordId = record.Id;
+            await _repository.SaveAsync(
+                record,
+                cancellationToken);
+        }
+
+        TaskResult taskResult = new TaskResult();
+        taskResult.WorkflowId = request.WorkflowId;
+        taskResult.NodeId = request.NodeId;
+        taskResult.Succeeded = true;
+        taskResult.Output = SkillJson.Serialize(checkResult);
+        return taskResult;
+    }
+
+    /// <summary>当前 Skill 始终可用。</summary>
+    public Task<bool> HealthAsync(
+        CancellationToken cancellationToken = default)
+    {
+        return Task.FromResult(true);
+    }
+
+    private async Task<AnomalyCheckResult> ExecuteCheckAsync(
         AnomalyCheckRequest request,
         CancellationToken cancellationToken)
     {
@@ -95,11 +147,93 @@ public sealed class WavefunctionStabilityCheckSkill
             cancellationToken);
     }
 
-    /// <summary>当前 Skill 始终可用。</summary>
-    public override Task<bool> HealthAsync(
-        CancellationToken cancellationToken = default)
+    private static AnomalyCheckRequest DeserializeCheckRequest(
+        TaskRequest taskRequest)
     {
-        return Task.FromResult(true);
+        string? requestJson;
+
+        if (taskRequest.Inputs.TryGetValue(RequestKey, out requestJson)
+            && !string.IsNullOrWhiteSpace(requestJson))
+        {
+            return SkillJson.Deserialize<AnomalyCheckRequest>(
+                requestJson);
+        }
+
+        string? validationJson;
+
+        if (taskRequest.Inputs.TryGetValue(
+            ValidationKey,
+            out validationJson)
+            && !string.IsNullOrWhiteSpace(validationJson))
+        {
+            CalculationWorkflowValidationSkillResult validation =
+                SkillJson.Deserialize<
+                    CalculationWorkflowValidationSkillResult>(
+                    validationJson);
+            AnomalyCheckRequest request =
+                new AnomalyCheckRequest();
+            request.CheckCode =
+                CommonAnomalyCheckCodes.WavefunctionStability;
+            request.Context = new AnomalyContext();
+            request.Context.Job = validation.Job;
+            request.Context.Validation = validation.Report;
+            return request;
+        }
+
+        throw new InvalidOperationException(
+            "稳定性检查 Skill 缺少 request 或 validation 输入。");
+    }
+
+    private static AnomalyRecord CreateAnomalyRecord(
+        AnomalyContext context,
+        AnomalyCheckResult checkResult)
+    {
+        AnomalyRecord record = new AnomalyRecord();
+        record.Id = "anomaly-" + Guid.NewGuid().ToString("N");
+        record.JobId = context.Job!.JobId;
+        record.WorkflowId = context.Job.WorkflowId;
+        record.Status = MapStatus(checkResult.Status);
+        record.Checks.Add(checkResult);
+
+        if (checkResult.Findings.Count > 0)
+        {
+            AnomalyAssessment assessment = new AnomalyAssessment();
+            assessment.JobId = record.JobId;
+            assessment.WorkflowId = record.WorkflowId;
+            assessment.Findings = new List<AnomalyFinding>(
+                checkResult.Findings);
+            record.Assessment = assessment;
+        }
+
+        return record;
+    }
+
+    private static AnomalyRecordStatus MapStatus(
+        AnomalyCheckStatus status)
+    {
+        if (status == AnomalyCheckStatus.Passed)
+        {
+            return AnomalyRecordStatus.Passed;
+        }
+
+        if (status == AnomalyCheckStatus.Finding
+            || status == AnomalyCheckStatus.Inconclusive)
+        {
+            return AnomalyRecordStatus.Open;
+        }
+
+        if (status == AnomalyCheckStatus.Skipped)
+        {
+            return AnomalyRecordStatus.Closed;
+        }
+
+        if (status == AnomalyCheckStatus.ExecutionFailed
+            || status == AnomalyCheckStatus.Canceled)
+        {
+            return AnomalyRecordStatus.Failed;
+        }
+
+        return AnomalyRecordStatus.Open;
     }
 
     private static int CompareChecks(

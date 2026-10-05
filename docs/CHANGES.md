@@ -5,6 +5,146 @@
 
 ---
 
+## v0.35.0（2026-10-05）：稳定性辅助计算
+
+### 版本
+
+- 当前版本：`0.35.0`
+- 日期：2026-10-05
+- 版本类型：功能新增
+
+### 改动目的
+
+让 Gaussian 波函数稳定性检查不仅解析已有输出，还能从原始单点输入生成并执行
+辅助稳定性检查作业。
+
+### 新增输入写入器
+
+```text
+GaussianWavefunctionStabilityInputWriter
+GaussianWavefunctionStabilityInputWriteResult
+```
+
+处理过程：
+
+```text
+读取原始 Gaussian 输入
+  ↓
+检查是否为不支持的 ONIOM 输入
+  ↓
+替换 %chk 为派生作业检查点
+  ↓
+复制原始 .chk，保留原方法和基组，并在路线中增加
+guess=read geom=check stable
+  ↓
+写入新的稳定性检查输入
+```
+
+### 专用 Skill
+
+`GaussianWavefunctionStabilityCheckSkill` 现在：
+
+```text
+已有稳定性输出
+  → 直接解析
+
+没有稳定性输出
+  → 创建派生作业
+  → 复制原始 .chk
+  → 生成无坐标的稳定性检查输入
+  → 提交到 IComputeBackend
+  → 等待完成
+  → 解析输出
+  → 返回 AnomalyCheckResult
+```
+
+返回结果中通过：
+
+```text
+AuxiliaryJobId
+```
+
+记录稳定性检查派生的作业。
+
+### ONIOM
+
+原始 Gaussian 输入路线中包含 ONIOM 时，专用 Skill 返回：
+
+```text
+Status = Skipped
+SkippedReason = 当前 ONIOM 输入不支持波函数稳定性检查
+```
+
+工作流节点仍然存在，但不会尝试执行稳定性检查。
+
+### 依赖注入
+
+新增：
+
+```text
+GaussianWavefunctionStabilityInputWriter
+```
+
+并注册到 Gaussian 服务集合。
+
+### 测试
+
+新增测试覆盖：
+
+```text
+没有已有输出时执行派生稳定性检查
+派生输入使用 guess=read geom=check stable
+派生输入不再重复包含坐标
+原始 .chk 复制到派生检查目录
+辅助作业标识写入 AnomalyCheckResult
+ONIOM 输入返回 Skipped
+```
+
+### 验证
+
+- Release 全解决方案构建：0 警告 0 错误
+- 测试：65/65 通过
+
+### 工作流接入
+
+单点工作流现在固定为：
+
+```text
+validate
+  ↓
+stability-check
+  ↓
+plan
+```
+
+通用稳定性检查 Skill 会把 `AnomalyCheckResult` 保存为 `AnomalyRecord`。
+
+### 真实端到端验证
+
+中性 O2 单点计算已通过完整流程：
+
+```text
+主单点计算：Validated
+稳定性检查：Finding
+异常代码：wavefunction-instability
+不稳定类型：RHF-to-UHF
+辅助作业：正常终结
+异常记录：已写入
+```
+
+### 当前边界
+
+尚未实现：
+
+```text
+异常诊断 Skill
+修正方案 Skill
+审批和修正重算
+案例记忆
+```
+
+---
+
 ## v0.34.0（2026-10-05）：波函数稳定性检查双 Skill
 
 ### 版本

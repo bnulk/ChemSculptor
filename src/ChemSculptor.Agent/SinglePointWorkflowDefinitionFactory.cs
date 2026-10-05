@@ -1,3 +1,4 @@
+using ChemSculptor.Anomaly.Models;
 using ChemSculptor.Compute;
 using ChemSculptor.Domain;
 
@@ -52,10 +53,17 @@ public static class SinglePointWorkflowDefinitionFactory
         validate.Inputs["extraction"] = extract.Id;
         definition.Nodes.Add(validate);
 
+        WorkflowNode stabilityCheck = new WorkflowNode();
+        stabilityCheck.Id = "stability-check";
+        stabilityCheck.Skill = AnomalySkillIds.CheckWavefunctionStability;
+        stabilityCheck.DependsOn.Add(validate.Id);
+        stabilityCheck.Inputs["validation"] = validate.Id;
+        definition.Nodes.Add(stabilityCheck);
+
         WorkflowNode plan = new WorkflowNode();
         plan.Id = "plan";
         plan.Skill = CalculationSkillIds.CalculationWorkflowProcessingPlan;
-        plan.DependsOn.Add(validate.Id);
+        plan.DependsOn.Add(stabilityCheck.Id);
         plan.Inputs["validation"] = validate.Id;
         plan.Inputs["extraction"] = extract.Id;
         definition.Nodes.Add(plan);

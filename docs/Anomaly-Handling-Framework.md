@@ -641,11 +641,17 @@ CommonAnomalyCheckCodes.WavefunctionStability
 GaussianWavefunctionStabilityParser
   读取稳定性输出
 
+GaussianWavefunctionStabilityInputWriter
+  从原始 Gaussian 单点输入生成稳定性检查输入
+
 WavefunctionStabilityResult
   通用稳定性结果
 
-GaussianWavefunctionStabilityCheck
-  执行检查并返回 AnomalyCheckResult
+WavefunctionStabilityCheckSkill
+  通用检查 Skill
+
+GaussianWavefunctionStabilityCheckSkill
+  Gaussian 专用检查 Skill
 
 AnomalyCheckResult
   Passed、Finding、Skipped 或 Inconclusive
@@ -654,7 +660,45 @@ AnomalyFinding
   不稳定时包含 wavefunction-instability
 ```
 
-当前只处理已经生成的稳定性检查输出，还没有负责创建辅助计算作业。
+Gaussian 专用检查 Skill 当前支持两种路径：
+
+```text
+已有稳定性输出
+  → 直接解析
+
+没有稳定性输出
+  → 复制原始 .chk
+  → 保留原方法和基组
+  → 增加 guess=read geom=check stable
+  → 创建派生稳定性检查作业
+  → 等待结束
+  → 解析稳定性结果
+```
+
+如果原始输入包含 ONIOM 等不支持的模型，检查 Skill 返回：
+
+```text
+Status = Skipped
+SkippedReason = 当前 ONIOM 输入不支持波函数稳定性检查
+```
+
+通用稳定性检查 Skill 已经接入单点计算工作流：
+
+```text
+validate
+  ↓
+stability-check
+  ↓
+plan
+```
+
+检查输入不再重复写入坐标，而是通过 `geom=check` 从检查点读取几何。
+
+检查结果会保存为 `AnomalyRecord`。发现不稳定时，结果包含：
+
+```text
+wavefunction-instability
+```
 
 ### 11.2 异常记录聚合
 

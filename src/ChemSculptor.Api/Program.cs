@@ -1,6 +1,7 @@
 using System.Text.Json;
 using ChemSculptor.Anomaly.Abstractions;
 using ChemSculptor.Anomaly.Registry;
+using ChemSculptor.Anomaly.Storage;
 using ChemSculptor.Api.Client;
 using ChemSculptor.Agent;
 using ChemSculptor.Core;
@@ -37,6 +38,9 @@ public static class Program
         ServiceCollectionServiceExtensions.AddSingleton<
             IAnomalyProviderRegistry,
             AnomalyProviderRegistry>(builder.Services);
+        ServiceCollectionServiceExtensions.AddSingleton<
+            IAnomalyRepository,
+            FileAnomalyRepository>(builder.Services);
         ServiceCollectionServiceExtensions.AddSingleton<IWorkflowRepository, InMemoryWorkflowRepository>(builder.Services);
         ServiceCollectionServiceExtensions.AddSingleton<IRuleEngine, AllowAllRuleEngine>(builder.Services);
         ServiceCollectionServiceExtensions.AddSingleton<IValidationGate, PassThroughValidationGate>(builder.Services);

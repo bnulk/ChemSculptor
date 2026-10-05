@@ -32,7 +32,9 @@ public sealed class GaussianWavefunctionStabilityParser
             new string[] { "\r\n", "\n", "\r" },
             StringSplitOptions.None);
 
-        bool foundStabilityStatement = false;
+        bool foundStableStatement = false;
+        bool foundUnstableStatement = false;
+        string instabilityKind = string.Empty;
 
         for (int index = 0; index < lines.Length; index++)
         {
@@ -40,10 +42,7 @@ public sealed class GaussianWavefunctionStabilityParser
 
             if (IsStableStatement(line))
             {
-                foundStabilityStatement = true;
-                result.Status = WavefunctionStabilityStatus.Stable;
-                result.InstabilityKind = string.Empty;
-                result.Summary = "Gaussian 报告当前波函数稳定。";
+                foundStableStatement = true;
                 AddEvidence(
                     result,
                     "gaussian.wavefunction_stability.stable",
@@ -53,10 +52,18 @@ public sealed class GaussianWavefunctionStabilityParser
 
             if (IsUnstableStatement(line))
             {
-                foundStabilityStatement = true;
-                result.Status = WavefunctionStabilityStatus.Unstable;
-                result.InstabilityKind = ExtractInstabilityKind(line);
-                result.Summary = "Gaussian 报告当前波函数不稳定。";
+                foundUnstableStatement = true;
+                string currentKind = ExtractInstabilityKind(line);
+
+                if (string.IsNullOrWhiteSpace(instabilityKind)
+                    || string.Equals(
+                        instabilityKind,
+                        "unknown",
+                        StringComparison.OrdinalIgnoreCase))
+                {
+                    instabilityKind = currentKind;
+                }
+
                 AddEvidence(
                     result,
                     "gaussian.wavefunction_stability.unstable",
@@ -64,7 +71,23 @@ public sealed class GaussianWavefunctionStabilityParser
             }
         }
 
-        if (!foundStabilityStatement)
+        if (foundUnstableStatement)
+        {
+            result.Status = WavefunctionStabilityStatus.Unstable;
+            result.InstabilityKind = instabilityKind;
+            result.Summary =
+                "Gaussian 报告初始波函数不稳定；后续稳定性优化可能已找到稳定解。";
+            return result;
+        }
+
+        if (foundStableStatement)
+        {
+            result.Status = WavefunctionStabilityStatus.Stable;
+            result.Summary = "Gaussian 报告当前波函数稳定。";
+            return result;
+        }
+
+        if (!foundStableStatement && !foundUnstableStatement)
         {
             result.Status = WavefunctionStabilityStatus.Inconclusive;
             result.Summary =
@@ -87,6 +110,12 @@ public sealed class GaussianWavefunctionStabilityParser
             "wavefunction is unstable",
             StringComparison.OrdinalIgnoreCase) >= 0
             || line.IndexOf(
+                "wavefunction has",
+                StringComparison.OrdinalIgnoreCase) >= 0
+                && line.IndexOf(
+                    "instability",
+                    StringComparison.OrdinalIgnoreCase) >= 0
+            || line.IndexOf(
                 "internal instability",
                 StringComparison.OrdinalIgnoreCase) >= 0
             || line.IndexOf(
@@ -96,6 +125,13 @@ public sealed class GaussianWavefunctionStabilityParser
 
     private static string ExtractInstabilityKind(string line)
     {
+        if (line.IndexOf(
+            "RHF -> UHF",
+            StringComparison.OrdinalIgnoreCase) >= 0)
+        {
+            return "RHF-to-UHF";
+        }
+
         if (line.IndexOf(
             "internal",
             StringComparison.OrdinalIgnoreCase) >= 0)
