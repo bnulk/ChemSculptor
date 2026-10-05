@@ -24,12 +24,15 @@ public class SinglePointWorkflowDefinitionFactoryTests
             FindNode(definition, "recovery-job");
         WorkflowNode? recoveryExecution =
             FindNode(definition, "recovery-execution");
+        WorkflowNode? recoveryStabilityCheck =
+            FindNode(definition, "recovery-stability-check");
         WorkflowNode? plan = FindNode(definition, "plan");
 
         Assert.NotNull(stabilityCheck);
         Assert.NotNull(correctionPlan);
         Assert.NotNull(recoveryJob);
         Assert.NotNull(recoveryExecution);
+        Assert.NotNull(recoveryStabilityCheck);
         Assert.NotNull(plan);
         Assert.Equal(
             AnomalySkillIds.CheckWavefunctionStability,
@@ -51,8 +54,14 @@ public class SinglePointWorkflowDefinitionFactoryTests
         Assert.Contains(
             "recovery-job",
             recoveryExecution.DependsOn);
+        Assert.Equal(
+            AnomalySkillIds.CheckWavefunctionStability,
+            recoveryStabilityCheck.Skill);
         Assert.Contains(
             "recovery-execution",
+            recoveryStabilityCheck.DependsOn);
+        Assert.Contains(
+            "recovery-stability-check",
             plan.DependsOn);
     }
 

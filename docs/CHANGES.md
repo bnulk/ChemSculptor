@@ -5,6 +5,228 @@
 
 ---
 
+## v0.41.0（2026-10-05）：科学计算点数据结构
+
+### 版本
+
+- 当前版本：`0.41.0`
+- 日期：2026-10-05
+- 版本类型：功能新增
+
+### 改动目的
+
+建立“计算点”作为科学数据的基本单位。一个计算点表示确定几何、电子态和计算
+模型下的一个科学数据单位。工作流以后产生或更新计算点，后续科研工作只消费
+已经接受的计算点。
+
+### 新增项目
+
+```text
+ChemSculptor.ScientificData
+```
+
+该项目当前只包含数据结构，不包含工作流、计算程序适配器或任何氧气实例数据。
+
+### 核心结构
+
+```text
+CalculationPoint
+  一个计算点
+
+CalculationPointSet
+  一组计算点及其关系
+
+CalculationPointRelation
+  两个计算点之间的关系
+
+ScientificObservable
+  由计算点集合导出的物理量
+
+ScientificResult
+  由点集合、点关系和导出物理量组成的科学成果
+```
+
+### 计算点的内容
+
+```text
+几何结构
+组合体系中的组分
+电子态
+计算模型
+能量、梯度、频率或其它性质
+验证记录
+来源和接受过程
+```
+
+`CalculationPointStatus` 明确区分：
+
+```text
+Candidate
+Accepted
+Rejected
+Superseded
+```
+
+派生修正作业以后可以生成一个 `Accepted` 点，并在
+`PointProvenance` 中记录：
+
+```text
+InitialJobId
+AcceptedJobId
+RootWorkflowId
+ParentPointId
+CorrectionCount
+AcceptanceSummary
+```
+
+### 设计原则
+
+```text
+工作流负责生成、验证和修正计算点
+计算点承载可复用的科学数据
+点关系描述路径、组分、反应物和产物
+导出物理量由点集计算得到
+最终报告引用已经接受的点
+```
+
+### 当前边界
+
+本次只建立数据结构。以下内容尚未实现：
+
+```text
+氧气修正点实例
+计算点到文件仓储的写入
+现有工作流自动生成计算点
+从点集计算解离能或光谱
+报告生成
+```
+
+### 配套教程
+
+新增：
+
+```text
+docs/ScientificData-Tutorial.md
+```
+
+教程按照以下顺序说明新项目：
+
+```text
+为什么需要计算点
+各数据结构的作用
+原始点和修正点的关系
+点的验证与接受
+解离能和光谱如何复用点
+工作流以后如何接入科学数据
+```
+
+---
+
+## v0.40.0（2026-10-05）：派生作业稳定性复检
+
+### 版本
+
+- 当前版本：`0.40.0`
+- 日期：2026-10-05
+- 版本类型：功能新增
+
+### 改动目的
+
+自旋多重度修正单点计算完成后，不能只根据“程序正常结束”判断修正有效。
+必须对派生作业重新执行波函数稳定性检查，确认修正后的参考态是否稳定。
+
+### 工作流变化
+
+单点工作流在派生执行后增加复检节点：
+
+```text
+recovery-execution
+  → recovery-stability-check
+  → plan
+```
+
+复检节点继续使用已有的通用 Skill：
+
+```text
+anomaly.check-wavefunction-stability
+```
+
+没有新增一套重复的稳定性检查代码。
+
+### 通用 Skill 的新输入
+
+`WavefunctionStabilityCheckSkill` 现在支持三种输入来源：
+
+```text
+request
+  显式构造的通用异常检查请求
+
+validation
+  原始单点计算工作流中的验证结果
+
+recoveryExecution
+  派生作业执行结果
+```
+
+收到 `recoveryExecution` 后，通用 Skill 从
+`RecoveryJobExecutionResult.RecoveryJob` 读取派生作业，再按计算程序选择
+对应的专用稳定性检查实现。
+
+### 派生复检过程
+
+```text
+读取派生作业和派生结果
+  ↓
+复制派生作业的 .chk
+  ↓
+保留派生计算的方法、基组和多重度
+  ↓
+增加 guess=read geom=check stable
+  ↓
+创建并执行复检辅助作业
+  ↓
+解析复检结果
+  ↓
+为派生作业保存新的 AnomalyRecord
+```
+
+复检作业是独立作业，不会覆盖派生单点计算，也不会覆盖原始异常记录。
+
+### 结果语义
+
+```text
+复检 Passed
+  → 派生自旋多重度对应的波函数稳定
+
+复检 Finding
+  → 修正后仍存在稳定性问题
+
+复检 Skipped
+  → 当前计算模型不支持稳定性检查
+```
+
+复检通过目前只写入派生作业自己的异常记录。把该结果关联回原始异常记录，
+并标记 `Resolved`，属于下一阶段的恢复结果评估。
+
+### 验证
+
+- Release 全解决方案构建：0 警告 0 错误
+- 测试：77/77 通过
+- 真实 O2 默认单点计算：
+
+```text
+原始自旋多重度：1
+原始稳定性：RHF → UHF 不稳定
+修正后自旋多重度：3
+派生单点能量：-150.274273534 Hartree
+派生复检状态：Passed
+复检摘要：Gaussian 报告当前波函数稳定
+复检证据：The wavefunction is stable under the perturbations considered
+复检辅助作业：job-aed554bf59f946229f141f8551c567c6-stability-1719d602
+```
+
+---
+
 ## v0.39.0（2026-10-05）：直接执行自旋多重度修正
 
 ### 版本

@@ -16,6 +16,7 @@ public sealed class WavefunctionStabilityCheckSkill
 {
     private const string RequestKey = "request";
     private const string ValidationKey = "validation";
+    private const string RecoveryExecutionKey = "recoveryExecution";
 
     private readonly IAnomalyProviderRegistry _registry;
     private readonly IAnomalyRepository _repository;
@@ -186,8 +187,37 @@ public sealed class WavefunctionStabilityCheckSkill
             return request;
         }
 
+        string? recoveryExecutionJson;
+
+        if (taskRequest.Inputs.TryGetValue(
+            RecoveryExecutionKey,
+            out recoveryExecutionJson)
+            && !string.IsNullOrWhiteSpace(recoveryExecutionJson))
+        {
+            RecoveryJobExecutionResult recoveryExecution =
+                SkillJson.Deserialize<RecoveryJobExecutionResult>(
+                    recoveryExecutionJson);
+
+            if (recoveryExecution.RecoveryJob == null)
+            {
+                throw new InvalidOperationException(
+                    "派生作业复检缺少可用的恢复作业。");
+            }
+
+            AnomalyCheckRequest request =
+                new AnomalyCheckRequest();
+            request.CheckCode =
+                CommonAnomalyCheckCodes.WavefunctionStability;
+            request.Context = new AnomalyContext();
+            request.Context.Job =
+                recoveryExecution.RecoveryJob;
+            request.Context.Result =
+                recoveryExecution.Result;
+            return request;
+        }
+
         throw new InvalidOperationException(
-            "稳定性检查 Skill 缺少 request 或 validation 输入。");
+            "稳定性检查 Skill 缺少 request、validation 或 recoveryExecution 输入。");
     }
 
     private static AnomalyRecord CreateAnomalyRecord(

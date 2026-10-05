@@ -758,6 +758,30 @@ RequiresApproval：false
 
 `wavefunction.optimize` 和其他未预授权的方案当前不会直接执行。
 
+派生单点计算结束后，工作流继续执行：
+
+```text
+recovery-execution
+  → recovery-stability-check
+  → plan
+```
+
+复检节点继续使用通用 Skill：
+
+```text
+anomaly.check-wavefunction-stability
+```
+
+它从 `recoveryExecution` 中读取派生作业，复制派生作业的 `.chk`，并生成：
+
+```text
+#p <method>/<basis> scfcyc=200 guess=read geom=check stable
+```
+
+复检结果写入派生作业自己的 `AnomalyRecord`，不与原始异常记录混合。
+复检通过说明修正后的参考态稳定；把该结果回写到原始记录并标记
+`Resolved`，留待恢复结果评估阶段实现。
+
 ### 11.2 异常记录聚合
 
 `AnomalyRecord` 是异常处理存储的主要聚合根，包含：
