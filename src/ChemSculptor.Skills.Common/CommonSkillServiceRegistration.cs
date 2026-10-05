@@ -58,6 +58,9 @@ public static class CommonSkillServiceRegistration
         ServiceCollectionServiceExtensions.AddSingleton<
             ISkill,
             RecoveryJobCreationSkill>(services);
+        ServiceCollectionServiceExtensions.AddSingleton<
+            ISkill,
+            RecoveryJobExecutionSkill>(services);
 
         return services;
     }

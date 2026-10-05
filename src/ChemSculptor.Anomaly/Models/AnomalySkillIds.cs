@@ -14,4 +14,8 @@ public static class AnomalySkillIds
     /// <summary>创建派生恢复作业。</summary>
     public const string CreateRecoveryJob =
         "anomaly.create-recovery-job";
+
+    /// <summary>执行派生恢复作业。</summary>
+    public const string ExecuteRecoveryJob =
+        "anomaly.execute-recovery-job";
 }

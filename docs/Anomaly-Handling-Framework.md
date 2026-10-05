@@ -736,7 +736,27 @@ TargetExcitedState
 ```
 
 生成的 `CorrectionPlan` 写入 `AnomalyRecord`，记录状态变为
-`ReadyForRecovery` 或 `AwaitingApproval`。当前阶段只生成方案，不执行修正。
+`ReadyForRecovery` 或 `AwaitingApproval`。
+
+对于默认基态任务中的自旋多重度变更，规划器给出预授权。工作流随后执行：
+
+```text
+recovery-job
+  → recovery-execution
+  → plan
+```
+
+执行节点只处理：
+
+```text
+修正意图：spin-multiplicity.change
+RequiresApproval：false
+```
+
+它把派生输入提交到通用执行后端，等待派生单点计算结束，并保存派生结果。
+如果输出没有显示正常终止，派生执行不会被标记为成功。
+
+`wavefunction.optimize` 和其他未预授权的方案当前不会直接执行。
 
 ### 11.2 异常记录聚合
 
@@ -836,6 +856,9 @@ ChemSculptor.WinForms
 
 第三阶段
   执行异常恢复，人工批准后重算
+
+  当前实现的首个直接执行分支：
+    默认基态 + 自旋多重度变更 + 已预授权
 
 第四阶段
   科学异常检测，只诊断不修正

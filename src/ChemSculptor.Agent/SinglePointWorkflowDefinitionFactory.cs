@@ -76,10 +76,20 @@ public static class SinglePointWorkflowDefinitionFactory
             stabilityCorrectionPlan.Id;
         definition.Nodes.Add(recoveryJob);
 
+        WorkflowNode recoveryExecution = new WorkflowNode();
+        recoveryExecution.Id = "recovery-execution";
+        recoveryExecution.Skill = AnomalySkillIds.ExecuteRecoveryJob;
+        recoveryExecution.DependsOn.Add(recoveryJob.Id);
+        recoveryExecution.Inputs["correctionPlan"] =
+            stabilityCorrectionPlan.Id;
+        recoveryExecution.Inputs["recoveryJob"] =
+            recoveryJob.Id;
+        definition.Nodes.Add(recoveryExecution);
+
         WorkflowNode plan = new WorkflowNode();
         plan.Id = "plan";
         plan.Skill = CalculationSkillIds.CalculationWorkflowProcessingPlan;
-        plan.DependsOn.Add(recoveryJob.Id);
+        plan.DependsOn.Add(recoveryExecution.Id);
         plan.Inputs["validation"] = validate.Id;
         plan.Inputs["extraction"] = extract.Id;
         definition.Nodes.Add(plan);

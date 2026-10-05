@@ -5,6 +5,120 @@
 
 ---
 
+## v0.39.0（2026-10-05）：直接执行自旋多重度修正
+
+### 版本
+
+- 当前版本：`0.39.0`
+- 日期：2026-10-05
+- 版本类型：功能新增
+
+### 改动目的
+
+让已经创建的自旋多重度修正派生作业真正进入计算，而不是只停留在
+“已准备、未执行”状态。对于默认基态任务，修正规划器已经给出预授权，
+因此可以直接提交修改后的单点计算。
+
+### 工作流变化
+
+单点计算工作流新增：
+
+```text
+recovery-job
+  → recovery-execution
+  → plan
+```
+
+新增通用 Skill：
+
+```text
+anomaly.execute-recovery-job
+```
+
+这个 Skill 只读取通用修正意图和派生作业，不包含 Gaussian 专用规则。
+具体输入格式、执行上下文和输出解析仍由计算程序适配器负责。
+
+### 直接执行条件
+
+当前只对同时满足以下条件的方案直接执行：
+
+```text
+修正意图：spin-multiplicity.change
+RequiresApproval：false
+派生作业已成功创建
+存在可处理该计算方案的程序适配器
+```
+
+不满足条件时，执行节点返回结构化说明并停止本次执行，不伪造计算结果。
+
+### 执行过程
+
+```text
+读取 correctionPlan
+读取 recoveryJob
+检查修正意图和预授权
+构建程序执行上下文
+保存 Running 状态
+提交到 IComputeBackend
+轮询直到 Completed、Failed 或 Canceled
+执行程序专用后处理
+解析通用 CalculationResult
+保存派生作业和派生结果
+把异常记录状态更新为 Recovering
+```
+
+### 结果语义
+
+派生进程结束不等于计算成功。
+
+```text
+Completed
+  → 继续解析输出
+  → NormalTermination = true
+       派生执行成功
+  → NormalTermination = false
+       派生执行未成功，但保存输出供诊断
+
+Failed 或 Canceled
+  → 不解析为成功结果
+```
+
+原始作业和派生作业的所有目录、输入、输出和结果继续分开保存。
+
+### 教学要点
+
+`RecoveryJobCreationSkill` 解决“准备什么输入”；
+`RecoveryJobExecutionSkill` 解决“什么时候提交、等待和保存结果”。
+
+把两者分开，可以以后增加审批流程，而不修改提交和等待代码。
+
+### 验证
+
+- Release 全解决方案构建：0 警告 0 错误
+- 测试：76/76 通过
+- 新增测试验证：
+
+```text
+预授权的 spin-multiplicity.change
+  → 提交派生作业
+  → 等待 Completed
+  → 保存作业和通用结果
+  → 异常记录进入 Recovering
+```
+
+### 当前边界
+
+以下能力仍未实现：
+
+```text
+wavefunction.optimize 的自动派生执行
+人工审批后的执行恢复
+比较原始结果和派生结果
+确认原异常是否真正解决
+```
+
+---
+
 ## v0.38.0（2026-10-05）：默认基态与显式电子态目标
 
 ### 版本

@@ -101,6 +101,7 @@ internal sealed class TestQuantumProgramAdapter : IQuantumProgramAdapter
         CancellationToken cancellationToken = default)
     {
         CalculationResult result = new CalculationResult();
+        result.NormalTermination = true;
         result.OutputFilePath = outputPath;
         return Task.FromResult(result);
     }
