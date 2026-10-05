@@ -5,6 +5,110 @@
 
 ---
 
+## v0.31.0（2026-10-04）：异常检查模型和存储
+
+### 版本
+
+- 当前版本：`0.31.0`
+- 日期：2026-10-04
+- 版本类型：功能新增
+
+### 改动目的
+
+完成异常处理第一阶段的基础模型和存储结构，为后续接入多项单点计算异常检查做准备。
+
+### 新增模型
+
+```text
+AnomalyCheckStatus
+AnomalyCheckDescriptor
+AnomalyCheckResult
+AnomalyRecordStatus
+AnomalyRecord
+CommonAnomalyCheckCodes
+```
+
+检查状态包括：
+
+```text
+NotRun
+Passed
+Finding
+Skipped
+ExecutionFailed
+Canceled
+```
+
+波函数稳定性检查的通用代码为：
+
+```text
+wavefunction-stability
+```
+
+### 存储结构
+
+新增：
+
+```text
+AnomalyStoragePaths
+IAnomalyRepository
+FileAnomalyRepository
+```
+
+每条异常记录写入：
+
+```text
+jobs/<jobId>/results/anomaly/<recordId>.json
+```
+
+记录中统一保存：
+
+```text
+异常检查
+异常评估
+诊断报告
+修正计划
+审批决定
+恢复尝试
+最终结果
+```
+
+### 跳过规则
+
+所有单点计算流程都应安排波函数稳定性检查。当前计算模型或计算程序不支持该检查时，
+流程节点仍然存在，但检查结果为 `Skipped`，并记录具体原因。
+
+ONIOM 等暂不支持波函数稳定性检查的模型不会从工作流中删除该节点。
+
+### 测试
+
+新增测试覆盖：
+
+```text
+异常记录按作业保存和读取
+跳过状态和原因可以落盘
+可以列出同一作业的多个异常记录
+非法异常记录标识不能形成路径穿越
+```
+
+### 验证
+
+- Release 全解决方案构建：0 警告 0 错误
+- 测试：53/53 通过
+
+### 当前边界
+
+本阶段只定义模型和存储，尚未：
+
+```text
+把异常检查节点接入单点计算工作流
+实现波函数稳定性检查 Skill
+实现 Gaussian 稳定性检查
+实现诊断、审批和恢复执行
+```
+
+---
+
 ## v0.30.0（2026-10-04）：异常处理项目骨架
 
 ### 版本

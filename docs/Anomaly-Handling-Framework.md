@@ -505,13 +505,21 @@ anomaly.record-case
 jobs/<jobId>/
   results/
     anomaly/
-      assessment.json
-      diagnosis.json
-      correction-plan.json
-      approval.json
-      recovery-outcome.json
+      <recordId>.json
   recovery/
     attempt-1/
+```
+
+每个异常处理记录的聚合内容包含：
+
+```text
+AnomalyAssessment
+AnomalyCheckResult
+DiagnosisReport
+CorrectionPlan
+ApprovalDecision
+RecoveryAttempt
+RecoveryOutcome
 ```
 
 派生作业继续使用原有标准目录：
@@ -525,6 +533,81 @@ jobs/<newJobId>/
 ```
 
 这样既保留原始作业，也保留每次修正尝试。
+
+### 11.1 异常检查模型
+
+单点计算完成后可以执行多项异常检查。每项检查都使用统一模型：
+
+```text
+AnomalyCheckDescriptor
+  检查代码、名称、分类、版本和要求等级
+
+AnomalyCheckResult
+  执行状态、摘要、跳过原因、证据和发现
+```
+
+检查状态：
+
+```text
+NotRun
+Passed
+Finding
+Skipped
+ExecutionFailed
+Canceled
+```
+
+其中 `Skipped` 用于：
+
+```text
+任务不要求该检查
+当前计算模型不支持该检查
+当前计算程序不支持该检查
+缺少执行该检查所需的信息
+```
+
+跳过不是“没有设计这个节点”。所有单点计算流程都应安排波函数稳定性检查；
+ONIOM 等不支持该检查的模型仍进入该节点，然后记录跳过状态和原因。
+
+当前已定义通用检查代码：
+
+```text
+CommonAnomalyCheckCodes.WavefunctionStability
+```
+
+### 11.2 异常记录聚合
+
+`AnomalyRecord` 是异常处理存储的主要聚合根，包含：
+
+```text
+作业和工作流标识
+总体状态
+检查结果
+诊断报告
+修正计划
+审批决定
+恢复尝试
+最终结果
+创建和更新时间
+```
+
+文件仓储接口：
+
+```text
+IAnomalyRepository
+```
+
+当前实现：
+
+```text
+FileAnomalyRepository
+```
+
+每条记录写入：
+
+```text
+jobs/<jobId>/results/anomaly/<recordId>.json
+```
 
 ---
 
