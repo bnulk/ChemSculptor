@@ -18,6 +18,7 @@
     <ProjectReference Include="..\ChemSculptor.Skills.Orca\ChemSculptor.Skills.Orca.csproj" />
     <ProjectReference Include="..\ChemSculptor.ScientificData.Extraction\ChemSculptor.ScientificData.Extraction.csproj" />
     <ProjectReference Include="..\ChemSculptor.ScientificData\ChemSculptor.ScientificData.csproj" />
+    <ProjectReference Include="..\ChemSculptor.ScientificSummary\ChemSculptor.ScientificSummary.csproj" />
   </ItemGroup>
 
 </Project>

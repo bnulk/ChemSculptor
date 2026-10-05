@@ -13,6 +13,7 @@
     <Project Path="src/ChemSculptor.InputProcessor/ChemSculptor.InputProcessor.csproj" />
     <Project Path="src/ChemSculptor.ScientificData/ChemSculptor.ScientificData.csproj" />
     <Project Path="src/ChemSculptor.ScientificData.Extraction/ChemSculptor.ScientificData.Extraction.csproj" />
+    <Project Path="src/ChemSculptor.ScientificSummary/ChemSculptor.ScientificSummary.csproj" />
     <Project Path="src/ChemSculptor.Skills.Common/ChemSculptor.Skills.Common.csproj" />
     <Project Path="src/ChemSculptor.Skills.Gaussian/ChemSculptor.Skills.Gaussian.csproj" />
     <Project Path="src/ChemSculptor.Skills.Orca/ChemSculptor.Skills.Orca.csproj" />

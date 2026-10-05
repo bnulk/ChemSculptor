@@ -214,6 +214,70 @@ plan
 
 今后报告生成不再读取计算作业或程序输出，只读取科学数据仓储。
 
+### 客户端摘要框架
+
+新增项目：
+
+```text
+ChemSculptor.ScientificSummary
+```
+
+该项目只引用：
+
+```text
+ChemSculptor.ScientificData
+```
+
+框架包含：
+
+```text
+ClientScientificSummary
+ClientScientificSummarySection
+
+IClientSummaryBuilder
+IClientSummarySender
+IClientSummaryService
+
+ClientSummaryService
+```
+
+`ClientSummaryService` 的流程固定为：
+
+```text
+从 IScientificDataRepository 读取 ScientificResult
+  → IClientSummaryBuilder 生成客户端摘要
+  → IClientSummarySender 发送给客户端
+```
+
+当前不包含具体摘要文字、报告模板或网络发送实现。
+
+### Api 客户端摘要接口
+
+Api 现在依赖 `ChemSculptor.ScientificSummary`，并实现：
+
+```text
+DefaultClientSummaryBuilder
+ApiClientSummarySender
+ClientSummaryEndpoints
+```
+
+新增端点：
+
+```text
+GET  /scientific-results/{resultId}/client-summary
+POST /scientific-results/{resultId}/client-summary/send/{clientId}
+GET  /clients/{clientId}/scientific-summaries
+```
+
+流程：
+
+```text
+ScientificData仓储
+  → ScientificSummary
+  → Api
+  → 客户端
+```
+
 ### 配套教程
 
 新增：

@@ -14,6 +14,8 @@ using ChemSculptor.Skills.Gaussian;
 using ChemSculptor.Skills.Orca;
 using ChemSculptor.ScientificData.Extraction;
 using ChemSculptor.ScientificData.Storage;
+using ChemSculptor.ScientificSummary;
+using ChemSculptor.ScientificSummary.Abstractions;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
@@ -72,6 +74,21 @@ public static class Program
             .AddScientificDataExtraction(
                 builder.Services,
                 scientificDataOptions);
+
+        ServiceCollectionServiceExtensions.AddSingleton<
+            IClientSummaryBuilder,
+            DefaultClientSummaryBuilder>(builder.Services);
+        ServiceCollectionServiceExtensions.AddSingleton<
+            ApiClientSummarySender>(builder.Services);
+        ServiceCollectionServiceExtensions.AddSingleton<
+            IClientSummarySender>(
+                builder.Services,
+                provider =>
+                    GetRequiredService<ApiClientSummarySender>(
+                        provider));
+        ServiceCollectionServiceExtensions.AddSingleton<
+            IClientSummaryService,
+            ClientSummaryService>(builder.Services);
 
         // 构建可运行的 Web 应用，此时还未开始监听端口。
         WebApplication app = builder.Build();
@@ -136,6 +153,7 @@ public static class Program
         GeometryEndpoints.MapGeometryEndpoints(app);
         CalculationEndpoints.MapCalculationEndpoints(app);
         AgentEndpoints.MapAgentEndpoints(app);
+        ClientSummaryEndpoints.MapClientSummaryEndpoints(app);
 
         // 启动 Kestrel 并进入请求监听循环，直到进程关闭。
         app.Run();
