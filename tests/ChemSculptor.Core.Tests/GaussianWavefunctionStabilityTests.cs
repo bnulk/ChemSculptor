@@ -1,6 +1,12 @@
 using ChemSculptor.Anomaly.Models;
+using ChemSculptor.Anomaly.Registry;
+using ChemSculptor.Compute;
 using ChemSculptor.Compute.Gaussian.Anomaly.WavefunctionStability;
+using ChemSculptor.Domain;
+using ChemSculptor.Skills.Gaussian;
 using ChemSculptor.Skills.Gaussian.Anomaly.WavefunctionStability;
+using ChemSculptor.Skills.Common;
+using ChemSculptor.Skills.Common.AnomalyWorkflow;
 
 namespace ChemSculptor.Core.Tests;
 
@@ -105,12 +111,10 @@ public class GaussianWavefunctionStabilityTests
                 path,
                 "The wavefunction is unstable with respect to internal perturbations.");
 
-            GaussianWavefunctionStabilityCheck check =
-                new GaussianWavefunctionStabilityCheck(
+            GaussianWavefunctionStabilityCheckSkill check =
+                new GaussianWavefunctionStabilityCheckSkill(
                     new GaussianWavefunctionStabilityParser());
-            AnomalyContext context = new AnomalyContext();
-            context.Metadata[
-                AnomalyContextKeys.WavefunctionStabilityOutputPath] = path;
+            AnomalyContext context = CreateGaussianContext(path);
 
             AnomalyCheckResult checkResult =
                 await check.CheckAsync(context);
@@ -151,12 +155,10 @@ public class GaussianWavefunctionStabilityTests
                 path,
                 "The wavefunction is stable under the perturbations considered.");
 
-            GaussianWavefunctionStabilityCheck check =
-                new GaussianWavefunctionStabilityCheck(
+            GaussianWavefunctionStabilityCheckSkill check =
+                new GaussianWavefunctionStabilityCheckSkill(
                     new GaussianWavefunctionStabilityParser());
-            AnomalyContext context = new AnomalyContext();
-            context.Metadata[
-                AnomalyContextKeys.WavefunctionStabilityOutputPath] = path;
+            AnomalyContext context = CreateGaussianContext(path);
 
             AnomalyCheckResult result =
                 await check.CheckAsync(context);
@@ -174,10 +176,10 @@ public class GaussianWavefunctionStabilityTests
     [Fact]
     public async Task CheckReturnsSkippedWithoutOutput()
     {
-        GaussianWavefunctionStabilityCheck check =
-            new GaussianWavefunctionStabilityCheck(
+        GaussianWavefunctionStabilityCheckSkill check =
+            new GaussianWavefunctionStabilityCheckSkill(
                 new GaussianWavefunctionStabilityParser());
-        AnomalyContext context = new AnomalyContext();
+        AnomalyContext context = CreateGaussianContext(string.Empty);
 
         AnomalyCheckResult result =
             await check.CheckAsync(context);
@@ -197,12 +199,10 @@ public class GaussianWavefunctionStabilityTests
         {
             await File.WriteAllTextAsync(path, "No stability conclusion.");
 
-            GaussianWavefunctionStabilityCheck check =
-                new GaussianWavefunctionStabilityCheck(
+            GaussianWavefunctionStabilityCheckSkill check =
+                new GaussianWavefunctionStabilityCheckSkill(
                     new GaussianWavefunctionStabilityParser());
-            AnomalyContext context = new AnomalyContext();
-            context.Metadata[
-                AnomalyContextKeys.WavefunctionStabilityOutputPath] = path;
+            AnomalyContext context = CreateGaussianContext(path);
 
             AnomalyCheckResult result =
                 await check.CheckAsync(context);
@@ -215,6 +215,86 @@ public class GaussianWavefunctionStabilityTests
         {
             DeleteTemporaryRoot(root);
         }
+    }
+
+    /// <summary>验证通用 Skill 选择 Gaussian 专用 Skill。</summary>
+    [Fact]
+    public async Task GenericSkillDispatchesToGaussianCheck()
+    {
+        string root = CreateTemporaryRoot();
+        string path = Path.Combine(root, "generic-dispatch.log");
+
+        try
+        {
+            await File.WriteAllTextAsync(
+                path,
+                "The wavefunction is unstable with respect to internal perturbations.");
+
+            AnomalyProviderRegistry registry =
+                new AnomalyProviderRegistry();
+            GaussianWavefunctionStabilityCheckSkill gaussianCheck =
+                new GaussianWavefunctionStabilityCheckSkill(
+                    new GaussianWavefunctionStabilityParser());
+            registry.RegisterCheck(gaussianCheck);
+
+            WavefunctionStabilityCheckSkill genericSkill =
+                new WavefunctionStabilityCheckSkill(registry);
+            AnomalyCheckRequest request = new AnomalyCheckRequest();
+            request.CheckCode =
+                CommonAnomalyCheckCodes.WavefunctionStability;
+            request.Context = CreateGaussianContext(path);
+
+            TaskRequest taskRequest = new TaskRequest();
+            taskRequest.WorkflowId = "workflow-generic";
+            taskRequest.NodeId = "stability-check";
+            taskRequest.Inputs[
+                JsonSkill<AnomalyCheckRequest, AnomalyCheckResult>.RequestKey] =
+                SkillJson.Serialize(request);
+
+            TaskResult taskResult =
+                await genericSkill.ExecuteAsync(taskRequest);
+
+            if (string.IsNullOrWhiteSpace(taskResult.Output))
+            {
+                throw new InvalidOperationException(
+                    "通用 Skill 没有返回检查结果。");
+            }
+
+            AnomalyCheckResult checkResult =
+                SkillJson.Deserialize<AnomalyCheckResult>(
+                    taskResult.Output);
+
+            Assert.True(taskResult.Succeeded);
+            Assert.Equal(
+                AnomalyCheckStatus.Finding,
+                checkResult.Status);
+            Assert.Equal(
+                GaussianSkillIds.WavefunctionStabilityCheck,
+                checkResult.ImplementationId);
+        }
+        finally
+        {
+            DeleteTemporaryRoot(root);
+        }
+    }
+
+    private static AnomalyContext CreateGaussianContext(string outputPath)
+    {
+        CalculationJob job = new CalculationJob();
+        job.JobId = "job-stability";
+        job.Spec = CalculationDefaults.CreateDefaultSinglePoint();
+
+        AnomalyContext context = new AnomalyContext();
+        context.Job = job;
+
+        if (!string.IsNullOrWhiteSpace(outputPath))
+        {
+            context.Metadata[
+                AnomalyContextKeys.WavefunctionStabilityOutputPath] =
+                outputPath;
+        }
+
+        return context;
     }
 
     private static string CreateTemporaryRoot()

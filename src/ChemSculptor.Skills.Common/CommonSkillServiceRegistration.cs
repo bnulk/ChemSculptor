@@ -1,6 +1,7 @@
 using ChemSculptor.Compute;
 using ChemSculptor.Domain;
 using ChemSculptor.InputProcessor;
+using ChemSculptor.Skills.Common.AnomalyWorkflow;
 using ChemSculptor.Skills.Common.CalculationWorkflow;
 using ChemSculptor.Skills.Common.CalculationResultValidation;
 using Microsoft.Extensions.DependencyInjection;
@@ -45,6 +46,9 @@ public static class CommonSkillServiceRegistration
         ServiceCollectionServiceExtensions.AddSingleton<
             ISkill,
             CalculationResultExtractionWorkflowSkill>(services);
+        ServiceCollectionServiceExtensions.AddSingleton<
+            ISkill,
+            WavefunctionStabilityCheckSkill>(services);
 
         return services;
     }

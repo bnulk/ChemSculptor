@@ -5,6 +5,123 @@
 
 ---
 
+## v0.34.0（2026-10-05）：波函数稳定性检查双 Skill
+
+### 版本
+
+- 当前版本：`0.34.0`
+- 日期：2026-10-05
+- 版本类型：功能新增
+
+### 改动目的
+
+按照“通用 Skill + 专用 Skill”原则实现波函数稳定性检查：
+
+```text
+通用 Skill
+  anomaly.check-wavefunction-stability
+
+Gaussian 专用 Skill
+  gaussian.wavefunction-stability.check
+```
+
+### 通用 Skill
+
+新增：
+
+```text
+ChemSculptor.Skills.Common.AnomalyWorkflow.WavefunctionStabilityCheckSkill
+```
+
+职责：
+
+```text
+接收通用 AnomalyCheckRequest
+通过 IAnomalyProviderRegistry 查找适用实现
+选择 Descriptor.Code = wavefunction-stability 的检查
+返回统一 AnomalyCheckResult
+没有实现时返回 Skipped 和原因
+```
+
+### Gaussian 专用 Skill
+
+新增：
+
+```text
+ChemSculptor.Skills.Gaussian.Anomaly.WavefunctionStability
+  .GaussianWavefunctionStabilityCheckSkill
+```
+
+职责：
+
+```text
+判断当前计算程序是否为 Gaussian 16
+读取波函数稳定性检查输出路径
+调用 GaussianWavefunctionStabilityParser
+返回通用 AnomalyCheckResult
+```
+
+专用 Skill 名称：
+
+```text
+gaussian.wavefunction-stability.check
+```
+
+能力包含：
+
+```text
+anomaly.check-wavefunction-stability
+gaussian.wavefunction-stability
+```
+
+### 检查标识
+
+`AnomalyCheckDescriptor` 增加：
+
+```text
+ImplementationId
+Program
+```
+
+Gaussian 实现：
+
+```text
+Code = wavefunction-stability
+ImplementationId = gaussian.wavefunction-stability.check
+Program = Gaussian 16
+```
+
+`AnomalyProviderRegistry` 使用 `ImplementationId` 区分不同程序实现，
+因此后续 ORCA 等程序可以注册同一通用检查代码。
+
+### 接入
+
+- `ChemSculptor.Api` 注册 `IAnomalyProviderRegistry`
+- 启动时把全部 `IAnomalyCheck` 注册到异常提供器注册表
+- 通用 Skill 和 Gaussian 专用 Skill 都登记到依赖注入
+
+### 测试
+
+新增测试覆盖：
+
+```text
+通用 Skill 选择 Gaussian 专用 Skill
+通用 Skill 调用专用 Skill 后返回 Finding
+返回结果包含 gaussian.wavefunction-stability.check
+```
+
+### 验证
+
+- Release 全解决方案构建：0 警告 0 错误
+- 测试：61/61 通过
+
+### 当前边界
+
+当前专用 Skill 只处理已经生成的稳定性输出，尚不创建辅助计算作业。
+单点计算工作流也尚未加入该通用检查节点。
+
+---
+
 ## v0.33.0（2026-10-05）：统一异常检查契约
 
 ### 版本

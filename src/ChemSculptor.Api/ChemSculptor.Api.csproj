@@ -8,6 +8,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\ChemSculptor.Agent\ChemSculptor.Agent.csproj" />
+    <ProjectReference Include="..\ChemSculptor.Anomaly\ChemSculptor.Anomaly.csproj" />
     <ProjectReference Include="..\ChemSculptor.Core\ChemSculptor.Core.csproj" />
     <ProjectReference Include="..\ChemSculptor.Domain\ChemSculptor.Domain.csproj" />
     <ProjectReference Include="..\ChemSculptor.InputProcessor\ChemSculptor.InputProcessor.csproj" />

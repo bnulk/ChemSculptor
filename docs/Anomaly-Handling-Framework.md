@@ -506,6 +506,26 @@ anomaly.check-wavefunction-stability
 通用 Skill 根据计算程序选择专用 Skill，并对上层返回统一的
 `AnomalyCheckResult`。
 
+当前实现：
+
+```text
+通用 Skill
+  ChemSculptor.Skills.Common.AnomalyWorkflow
+  WavefunctionStabilityCheckSkill
+
+Gaussian 专用 Skill
+  ChemSculptor.Skills.Gaussian.Anomaly.WavefunctionStability
+  GaussianWavefunctionStabilityCheckSkill
+```
+
+通用 Skill 通过 `IAnomalyProviderRegistry` 查找：
+
+```text
+Descriptor.Code = wavefunction-stability
+Descriptor.Program = Gaussian 16
+Descriptor.ImplementationId = gaussian.wavefunction-stability.check
+```
+
 具体程序模块负责提供：
 
 ```text
@@ -517,10 +537,9 @@ anomaly.check-wavefunction-stability
 ```
 
 通用检查契约是 `IAnomalyCheck`。Gaussian 稳定性检查已经返回统一的
-`AnomalyCheckResult`。后续仍应增加通用
-`anomaly.check-wavefunction-stability` Skill 和专用
-`gaussian.wavefunction-stability.check` Skill，按通用 Skill 与专用 Skill
-配对原则接入工作流。
+`AnomalyCheckResult`。通用
+`anomaly.check-wavefunction-stability` Skill 已经可以通过注册表选择
+`gaussian.wavefunction-stability.check` 专用 Skill。
 
 ---
 

@@ -1,4 +1,6 @@
 using System.Text.Json;
+using ChemSculptor.Anomaly.Abstractions;
+using ChemSculptor.Anomaly.Registry;
 using ChemSculptor.Api.Client;
 using ChemSculptor.Agent;
 using ChemSculptor.Core;
@@ -32,6 +34,9 @@ public static class Program
         // 注册服务到依赖注入容器；单例表示整个进程共用一个实例。
         ServiceCollectionServiceExtensions.AddSingleton<IEventBus, InMemoryEventBus>(builder.Services);
         ServiceCollectionServiceExtensions.AddSingleton<ISkillRegistry, SkillRegistry>(builder.Services);
+        ServiceCollectionServiceExtensions.AddSingleton<
+            IAnomalyProviderRegistry,
+            AnomalyProviderRegistry>(builder.Services);
         ServiceCollectionServiceExtensions.AddSingleton<IWorkflowRepository, InMemoryWorkflowRepository>(builder.Services);
         ServiceCollectionServiceExtensions.AddSingleton<IRuleEngine, AllowAllRuleEngine>(builder.Services);
         ServiceCollectionServiceExtensions.AddSingleton<IValidationGate, PassThroughValidationGate>(builder.Services);
@@ -60,6 +65,17 @@ public static class Program
         foreach (ISkill skill in registeredSkills)
         {
             await skillRegistry.RegisterAsync(skill);
+        }
+
+        IAnomalyProviderRegistry anomalyRegistry =
+            GetRequiredService<IAnomalyProviderRegistry>(app.Services);
+        IEnumerable<IAnomalyCheck> registeredChecks =
+            ServiceProviderServiceExtensions.GetServices<IAnomalyCheck>(
+                app.Services);
+
+        foreach (IAnomalyCheck check in registeredChecks)
+        {
+            anomalyRegistry.RegisterCheck(check);
         }
 
         // 若示例工作流文件存在，则载入并登记为 Ready 状态（不执行）。

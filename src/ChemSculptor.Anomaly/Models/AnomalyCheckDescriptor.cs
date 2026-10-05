@@ -6,6 +6,15 @@ public sealed class AnomalyCheckDescriptor
     /// <summary>检查代码。</summary>
     public string Code { get; set; } = string.Empty;
 
+    /// <summary>
+    /// 具体实现标识。
+    /// 通用检查代码可以对应多个程序实现。
+    /// </summary>
+    public string ImplementationId { get; set; } = string.Empty;
+
+    /// <summary>适用的计算程序；通用实现可以为空。</summary>
+    public string Program { get; set; } = string.Empty;
+
     /// <summary>显示名称。</summary>
     public string DisplayName { get; set; } = string.Empty;
 

@@ -7,6 +7,10 @@ public static class GaussianSkillIds
     public const string SinglePointResultExtraction =
         "gaussian.single-point-result-extraction";
 
+    /// <summary>Gaussian 波函数稳定性检查。</summary>
+    public const string WavefunctionStabilityCheck =
+        "gaussian.wavefunction-stability.check";
+
     /// <summary>Gaussian 异常诊断。</summary>
     public const string FailureDiagnosis =
         "gaussian.failure-diagnosis";

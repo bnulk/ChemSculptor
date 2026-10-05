@@ -1,6 +1,8 @@
 using ChemSculptor.Anomaly.Abstractions;
 using ChemSculptor.Anomaly.Models;
+using ChemSculptor.Compute.Gaussian;
 using ChemSculptor.Compute.Gaussian.Anomaly.WavefunctionStability;
+using ChemSculptor.Skills.Common;
 
 namespace ChemSculptor.Skills.Gaussian.Anomaly.WavefunctionStability;
 
@@ -8,16 +10,18 @@ namespace ChemSculptor.Skills.Gaussian.Anomaly.WavefunctionStability;
 /// Gaussian 波函数稳定性检查。
 /// 当前阶段读取已经生成的稳定性检查输出，不负责创建辅助作业。
 /// </summary>
-public sealed class GaussianWavefunctionStabilityCheck
-    : IAnomalyCheck
+public sealed class GaussianWavefunctionStabilityCheckSkill
+    : JsonSkill<AnomalyCheckRequest, AnomalyCheckResult>,
+      IAnomalyCheck
 {
     private static readonly AnomalyCheckDescriptor DescriptorValue =
         CreateDescriptor();
 
     private readonly GaussianWavefunctionStabilityParser _parser;
+    private readonly List<string> _capabilities;
 
     /// <summary>创建稳定性检查。</summary>
-    public GaussianWavefunctionStabilityCheck(
+    public GaussianWavefunctionStabilityCheckSkill(
         GaussianWavefunctionStabilityParser parser)
     {
         if (parser == null)
@@ -26,6 +30,27 @@ public sealed class GaussianWavefunctionStabilityCheck
         }
 
         _parser = parser;
+        _capabilities = new List<string>();
+        _capabilities.Add(AnomalySkillIds.CheckWavefunctionStability);
+        _capabilities.Add("gaussian.wavefunction-stability");
+    }
+
+    /// <summary>技能名称。</summary>
+    public override string Name
+    {
+        get { return GaussianSkillIds.WavefunctionStabilityCheck; }
+    }
+
+    /// <summary>技能版本。</summary>
+    public override string Version
+    {
+        get { return "1.0.0"; }
+    }
+
+    /// <summary>技能能力。</summary>
+    public override IReadOnlyList<string> Capabilities
+    {
+        get { return _capabilities; }
     }
 
     /// <summary>检查描述。</summary>
@@ -38,6 +63,15 @@ public sealed class GaussianWavefunctionStabilityCheck
     public bool CanCheck(AnomalyContext context)
     {
         if (context == null)
+        {
+            return false;
+        }
+
+        if (context.Job == null
+            || !string.Equals(
+                context.Job.Spec.Program,
+                Gaussian16ProgramAdapter.ProgramNameValue,
+                StringComparison.OrdinalIgnoreCase))
         {
             return false;
         }
@@ -124,10 +158,26 @@ public sealed class GaussianWavefunctionStabilityCheck
         return checkResult;
     }
 
+    /// <summary>执行 JSON Skill 请求。</summary>
+    protected override Task<AnomalyCheckResult> ExecuteAsync(
+        AnomalyCheckRequest request,
+        CancellationToken cancellationToken)
+    {
+        return CheckAsync(request.Context, cancellationToken);
+    }
+
+    /// <summary>当前检查始终可用。</summary>
+    public override Task<bool> HealthAsync(
+        CancellationToken cancellationToken = default)
+    {
+        return Task.FromResult(true);
+    }
+
     private static AnomalyCheckResult CreateBaseResult()
     {
         AnomalyCheckResult result = new AnomalyCheckResult();
         result.Code = DescriptorValue.Code;
+        result.ImplementationId = DescriptorValue.ImplementationId;
         result.DisplayName = DescriptorValue.DisplayName;
         result.Category = DescriptorValue.Category;
         result.Mechanism = DescriptorValue.Mechanism;
@@ -140,6 +190,9 @@ public sealed class GaussianWavefunctionStabilityCheck
         AnomalyCheckDescriptor descriptor =
             new AnomalyCheckDescriptor();
         descriptor.Code = CommonAnomalyCheckCodes.WavefunctionStability;
+        descriptor.ImplementationId =
+            GaussianSkillIds.WavefunctionStabilityCheck;
+        descriptor.Program = Gaussian16ProgramAdapter.ProgramNameValue;
         descriptor.DisplayName = "波函数稳定性检查";
         descriptor.Category = AnomalyCategory.Scientific;
         descriptor.Mechanism =

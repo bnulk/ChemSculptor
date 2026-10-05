@@ -1,5 +1,6 @@
 using System.Collections.Concurrent;
 using ChemSculptor.Anomaly.Abstractions;
+using ChemSculptor.Anomaly.Models;
 
 namespace ChemSculptor.Anomaly.Registry;
 
@@ -37,10 +38,12 @@ public sealed class AnomalyProviderRegistry : IAnomalyProviderRegistry
             throw new ArgumentNullException(nameof(check));
         }
 
-        if (!_checks.TryAdd(check.Descriptor.Code, check))
+        string identity = GetCheckIdentity(check.Descriptor);
+
+        if (!_checks.TryAdd(identity, check))
         {
             throw new InvalidOperationException(
-                "异常检查已经注册：" + check.Descriptor.Code);
+                "异常检查已经注册：" + identity);
         }
     }
 
@@ -108,6 +111,17 @@ public sealed class AnomalyProviderRegistry : IAnomalyProviderRegistry
     public IReadOnlyList<IAnomalyCheck> ListChecks()
     {
         return new List<IAnomalyCheck>(_checks.Values);
+    }
+
+    private static string GetCheckIdentity(
+        AnomalyCheckDescriptor descriptor)
+    {
+        if (!string.IsNullOrWhiteSpace(descriptor.ImplementationId))
+        {
+            return descriptor.ImplementationId;
+        }
+
+        return descriptor.Code;
     }
 
     /// <summary>列出全部异常诊断器。</summary>

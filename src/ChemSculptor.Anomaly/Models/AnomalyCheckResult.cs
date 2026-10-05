@@ -6,6 +6,9 @@ public sealed class AnomalyCheckResult
     /// <summary>检查代码。</summary>
     public string Code { get; set; } = string.Empty;
 
+    /// <summary>产生本次结果的具体实现标识。</summary>
+    public string ImplementationId { get; set; } = string.Empty;
+
     /// <summary>检查显示名称。</summary>
     public string DisplayName { get; set; } = string.Empty;
 
