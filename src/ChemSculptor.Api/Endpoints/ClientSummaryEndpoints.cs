@@ -20,15 +20,45 @@ public static class ClientSummaryEndpoints
             app,
             "/scientific-results/{resultId}/client-summary",
             BuildSummaryAsync);
+        EndpointRouteBuilderExtensions.MapGet(
+            app,
+            "/calculations/{jobId}/client-summary",
+            BuildSummaryByJobAsync);
         EndpointRouteBuilderExtensions.MapPost(
             app,
             "/scientific-results/{resultId}/client-summary/send/{clientId}",
             SendSummaryAsync);
+        EndpointRouteBuilderExtensions.MapPost(
+            app,
+            "/calculations/{jobId}/client-summary/send/{clientId}",
+            SendSummaryByJobAsync);
         EndpointRouteBuilderExtensions.MapGet(
             app,
             "/clients/{clientId}/scientific-summaries",
             TakeSummaries);
         return app;
+    }
+
+    private static async Task<IResult> BuildSummaryByJobAsync(
+        string jobId,
+        IScientificDataRepository repository,
+        IClientSummaryBuilder builder,
+        CancellationToken cancellationToken)
+    {
+        ScientificResult? result = ResolveResult(
+            repository,
+            jobId);
+
+        if (result == null)
+        {
+            return Results.NotFound();
+        }
+
+        ClientScientificSummary summary =
+            await builder.BuildAsync(
+                result,
+                cancellationToken);
+        return Results.Ok(summary);
     }
 
     private static async Task<IResult> BuildSummaryAsync(
@@ -79,5 +109,75 @@ public static class ClientSummaryEndpoints
         ApiClientSummarySender sender)
     {
         return Results.Ok(sender.Take(clientId));
+    }
+
+    private static async Task<IResult> SendSummaryByJobAsync(
+        string jobId,
+        string clientId,
+        IScientificDataRepository repository,
+        IClientSummaryService service,
+        CancellationToken cancellationToken)
+    {
+        ScientificResult? result = ResolveResult(
+            repository,
+            jobId);
+
+        if (result == null)
+        {
+            return Results.NotFound();
+        }
+
+        ClientScientificSummary? summary =
+            await service.BuildAndSendAsync(
+                result.Id,
+                clientId,
+                cancellationToken);
+
+        if (summary == null)
+        {
+            return Results.NotFound();
+        }
+
+        return Results.Ok(summary);
+    }
+
+    private static ScientificResult? ResolveResult(
+        IScientificDataRepository repository,
+        string jobId)
+    {
+        if (string.IsNullOrWhiteSpace(jobId))
+        {
+            return null;
+        }
+
+        IReadOnlyList<ScientificResult> results =
+            repository.List();
+
+        for (int index = 0; index < results.Count; index++)
+        {
+            ScientificResult result = results[index];
+            string? rootWorkflowId;
+
+            if (result.Metadata.TryGetValue(
+                "rootWorkflowId",
+                out rootWorkflowId)
+                && string.Equals(
+                    rootWorkflowId,
+                    jobId,
+                    StringComparison.OrdinalIgnoreCase))
+            {
+                return result;
+            }
+
+            if (string.Equals(
+                result.Id,
+                "scientific-result-" + jobId,
+                StringComparison.OrdinalIgnoreCase))
+            {
+                return result;
+            }
+        }
+
+        return null;
     }
 }

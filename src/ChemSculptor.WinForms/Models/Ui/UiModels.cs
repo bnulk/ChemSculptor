@@ -31,6 +31,9 @@ public sealed class CalculationJobItem
     /// <summary>作业标识。</summary>
     public string JobId { get; set; } = string.Empty;
 
+    /// <summary>提交任务的客户端会话标识。</summary>
+    public string ClientId { get; set; } = string.Empty;
+
     /// <summary>当前状态。</summary>
     public string State { get; set; } = "Running";
 
@@ -39,6 +42,12 @@ public sealed class CalculationJobItem
 
     /// <summary>已格式化的结果文本。</summary>
     public string? ResultText { get; set; }
+
+    /// <summary>是否正在等待服务器科学摘要。</summary>
+    public bool NeedsClientSummary { get; set; }
+
+    /// <summary>服务器返回的客户端科学摘要。</summary>
+    public string? ClientSummaryText { get; set; }
 
     public override string ToString()
     {

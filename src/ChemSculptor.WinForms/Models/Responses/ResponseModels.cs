@@ -25,6 +25,50 @@ public sealed class AgentMessageResultDto
     public List<string> Diagnostics { get; set; } = new List<string>();
 }
 
+/// <summary>服务器生成的客户端科学摘要。</summary>
+public sealed class ClientScientificSummaryDto
+{
+    /// <summary>对应的科学成果标识。</summary>
+    public string ResultId { get; set; } = string.Empty;
+
+    /// <summary>摘要标题。</summary>
+    public string Title { get; set; } = string.Empty;
+
+    /// <summary>摘要状态。</summary>
+    public string Status { get; set; } = string.Empty;
+
+    /// <summary>摘要正文。</summary>
+    public string Summary { get; set; } = string.Empty;
+
+    /// <summary>顺序化摘要段落。</summary>
+    public List<ClientScientificSummarySectionDto> Sections
+    {
+        get;
+        set;
+    } = new List<ClientScientificSummarySectionDto>();
+
+    /// <summary>附加显示信息。</summary>
+    public Dictionary<string, string> Metadata { get; set; } =
+        new Dictionary<string, string>(
+            StringComparer.OrdinalIgnoreCase);
+
+    /// <summary>生成时间。</summary>
+    public DateTimeOffset CreatedAt { get; set; } =
+        DateTimeOffset.UtcNow;
+}
+
+/// <summary>客户端科学摘要中的一个显示段落。</summary>
+public sealed class ClientScientificSummarySectionDto
+{
+    public string Id { get; set; } = string.Empty;
+
+    public string Title { get; set; } = string.Empty;
+
+    public string Text { get; set; } = string.Empty;
+
+    public int Order { get; set; }
+}
+
 /// <summary>计算状态响应。</summary>
 public sealed class CalculationStatusDto
 {

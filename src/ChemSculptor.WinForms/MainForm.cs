@@ -253,6 +253,7 @@ public sealed class MainForm : Form
     private async void OnTimerTick(object? sender, EventArgs e)
     {
         await PollActiveCalculationsAsync();
+        await PollPendingScientificSummariesAsync();
     }
 
     /// <summary>创建一个新的本地会话并选中它。</summary>
@@ -519,6 +520,7 @@ public sealed class MainForm : Form
             CalculationJobItem calculation = new CalculationJobItem();
             calculation.JobId = result.JobId;
             calculation.State = result.Status;
+            calculation.ClientId = request.SessionId;
             _calculations[calculation.JobId] = calculation;
             _activeCalculationId = calculation.JobId;
             _cancelJobButton.Enabled = true;
@@ -637,6 +639,7 @@ public sealed class MainForm : Form
             "Canceled",
             StringComparison.OrdinalIgnoreCase))
         {
+            calculation.NeedsClientSummary = false;
             calculation.ResultText = "计算已取消。";
             _latestResultText = calculation.ResultText;
             AppendMessage("system", calculation.ResultText);
@@ -676,6 +679,98 @@ public sealed class MainForm : Form
             calculation.JobId + " 计算结束：" +
             Environment.NewLine +
             calculation.ResultText);
+        calculation.NeedsClientSummary = true;
+    }
+
+    /// <summary>轮询服务器是否已经生成客户端科学摘要。</summary>
+    private async Task PollPendingScientificSummariesAsync()
+    {
+        List<CalculationJobItem> pending =
+            new List<CalculationJobItem>();
+
+        foreach (KeyValuePair<string, CalculationJobItem> pair in
+            _calculations)
+        {
+            if (pair.Value.NeedsClientSummary)
+            {
+                pending.Add(pair.Value);
+            }
+        }
+
+        for (int index = 0; index < pending.Count; index++)
+        {
+            CalculationJobItem calculation = pending[index];
+            string clientId = string.IsNullOrWhiteSpace(
+                calculation.ClientId)
+                ? "client-anonymous"
+                : calculation.ClientId;
+            HttpResponseMessage response = await _http.PostAsync(
+                Endpoint(
+                    "/calculations/" +
+                    calculation.JobId +
+                    "/client-summary/send/" +
+                    Uri.EscapeDataString(clientId)),
+                null);
+
+            if (!response.IsSuccessStatusCode)
+            {
+                continue;
+            }
+
+            ClientScientificSummaryDto? summary =
+                await response.Content
+                    .ReadFromJsonAsync<ClientScientificSummaryDto>();
+
+            if (summary == null)
+            {
+                continue;
+            }
+
+            calculation.NeedsClientSummary = false;
+            calculation.ClientSummaryText =
+                BuildClientSummaryText(summary);
+            _latestResultText = calculation.ClientSummaryText;
+            AppendMessage(
+                "system",
+                BuildClientSummaryText(summary));
+        }
+    }
+
+    /// <summary>把服务器科学摘要格式化为客户端对话文本。</summary>
+    private static string BuildClientSummaryText(
+        ClientScientificSummaryDto summary)
+    {
+        StringBuilder builder = new StringBuilder();
+        builder.AppendLine("科学摘要：" + summary.Title);
+        builder.AppendLine("状态：" + summary.Status);
+
+        if (!string.IsNullOrWhiteSpace(summary.Summary))
+        {
+            builder.AppendLine(summary.Summary);
+        }
+
+        List<ClientScientificSummarySectionDto> sections =
+            new List<ClientScientificSummarySectionDto>(
+                summary.Sections);
+        sections.Sort(CompareSummarySections);
+
+        for (int index = 0; index < sections.Count; index++)
+        {
+            ClientScientificSummarySectionDto section =
+                sections[index];
+            builder.AppendLine();
+            builder.AppendLine(section.Title + "：");
+            builder.AppendLine(section.Text);
+        }
+
+        return builder.ToString().TrimEnd();
+    }
+
+    private static int CompareSummarySections(
+        ClientScientificSummarySectionDto left,
+        ClientScientificSummarySectionDto right)
+    {
+        return left.Order.CompareTo(right.Order);
     }
 
     /// <summary>取消当前正在运行的计算。</summary>

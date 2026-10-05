@@ -267,6 +267,8 @@ ClientSummaryEndpoints
 GET  /scientific-results/{resultId}/client-summary
 POST /scientific-results/{resultId}/client-summary/send/{clientId}
 GET  /clients/{clientId}/scientific-summaries
+GET  /calculations/{jobId}/client-summary
+POST /calculations/{jobId}/client-summary/send/{clientId}
 ```
 
 流程：
@@ -277,6 +279,9 @@ ScientificData仓储
   → Api
   → 客户端
 ```
+
+WinForms 在计算作业进入终态后，会按作业号请求客户端摘要，并把服务器生成的
+科学摘要显示在对话区。客户端不读取科学数据文件。
 
 ### 配套教程
 
