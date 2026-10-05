@@ -55,6 +55,9 @@ public static class CommonSkillServiceRegistration
         ServiceCollectionServiceExtensions.AddSingleton<
             ISkill,
             WavefunctionStabilityCorrectionPlanningSkill>(services);
+        ServiceCollectionServiceExtensions.AddSingleton<
+            ISkill,
+            RecoveryJobCreationSkill>(services);
 
         return services;
     }

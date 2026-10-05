@@ -9,6 +9,9 @@ public sealed class WavefunctionStabilityCorrectionPlanningResult
     /// <summary>生成的修正计划。</summary>
     public CorrectionPlan? Plan { get; set; }
 
+    /// <summary>关联的异常处理记录标识。</summary>
+    public string AnomalyRecordId { get; set; } = string.Empty;
+
     /// <summary>结果说明。</summary>
     public string Message { get; set; } = string.Empty;
 }

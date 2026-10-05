@@ -82,6 +82,15 @@ public static class Program
             anomalyRegistry.RegisterCheck(check);
         }
 
+        IEnumerable<IRecoveryJobProvider> recoveryJobProviders =
+            ServiceProviderServiceExtensions.GetServices<
+                IRecoveryJobProvider>(app.Services);
+
+        foreach (IRecoveryJobProvider provider in recoveryJobProviders)
+        {
+            anomalyRegistry.RegisterRecoveryJobProvider(provider);
+        }
+
         // 若示例工作流文件存在，则载入并登记为 Ready 状态（不执行）。
         string samplePath = Path.Combine(Directory.GetCurrentDirectory(), "workflows", "tadf-mechanism.json");
         if (File.Exists(samplePath))

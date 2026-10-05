@@ -332,6 +332,18 @@ public sealed class CalculationJob
     /// <summary>所属工作流标识。</summary>
     public string WorkflowId { get; set; } = string.Empty;
 
+    /// <summary>父作业标识；普通作业为空。</summary>
+    public string ParentJobId { get; set; } = string.Empty;
+
+    /// <summary>根工作流标识；普通作业为空。</summary>
+    public string RootWorkflowId { get; set; } = string.Empty;
+
+    /// <summary>恢复尝试序号；普通作业为 0。</summary>
+    public int AttemptNumber { get; set; }
+
+    /// <summary>产生该派生作业的修正计划标识。</summary>
+    public string CorrectionPlanId { get; set; } = string.Empty;
+
     /// <summary>使用的几何资产标识。</summary>
     public string GeometryId { get; set; } = string.Empty;
 

@@ -10,4 +10,8 @@ public static class AnomalySkillIds
     /// <summary>生成波函数稳定性修正方案。</summary>
     public const string PlanWavefunctionStabilityCorrection =
         "anomaly.plan-wavefunction-stability-correction";
+
+    /// <summary>创建派生恢复作业。</summary>
+    public const string CreateRecoveryJob =
+        "anomaly.create-recovery-job";
 }

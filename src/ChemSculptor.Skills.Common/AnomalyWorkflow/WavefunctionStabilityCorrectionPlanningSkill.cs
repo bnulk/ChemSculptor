@@ -130,6 +130,7 @@ public sealed class WavefunctionStabilityCorrectionPlanningSkill
         plan.Option = option;
         result.PlanCreated = true;
         result.Plan = plan;
+        result.AnomalyRecordId = stabilityCheck.AnomalyRecordId;
         result.Message = message;
 
         if (string.IsNullOrWhiteSpace(stabilityCheck.JobId)

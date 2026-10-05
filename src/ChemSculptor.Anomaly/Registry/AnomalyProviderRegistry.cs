@@ -30,6 +30,10 @@ public sealed class AnomalyProviderRegistry : IAnomalyProviderRegistry
         new ConcurrentDictionary<string, IRecoveryValidator>(
             StringComparer.OrdinalIgnoreCase);
 
+    private readonly ConcurrentDictionary<string, IRecoveryJobProvider> _recoveryJobProviders =
+        new ConcurrentDictionary<string, IRecoveryJobProvider>(
+            StringComparer.OrdinalIgnoreCase);
+
     /// <summary>注册异常检查。</summary>
     public void RegisterCheck(IAnomalyCheck check)
     {
@@ -107,6 +111,22 @@ public sealed class AnomalyProviderRegistry : IAnomalyProviderRegistry
         }
     }
 
+    /// <summary>注册派生恢复作业创建器。</summary>
+    public void RegisterRecoveryJobProvider(
+        IRecoveryJobProvider provider)
+    {
+        if (provider == null)
+        {
+            throw new ArgumentNullException(nameof(provider));
+        }
+
+        if (!_recoveryJobProviders.TryAdd(provider.Program, provider))
+        {
+            throw new InvalidOperationException(
+                "派生恢复作业创建器已经注册：" + provider.Program);
+        }
+    }
+
     /// <summary>列出全部异常检查。</summary>
     public IReadOnlyList<IAnomalyCheck> ListChecks()
     {
@@ -146,5 +166,26 @@ public sealed class AnomalyProviderRegistry : IAnomalyProviderRegistry
     public IReadOnlyList<IRecoveryValidator> ListRecoveryValidators()
     {
         return new List<IRecoveryValidator>(_recoveryValidators.Values);
+    }
+
+    /// <summary>列出全部派生恢复作业创建器。</summary>
+    public IReadOnlyList<IRecoveryJobProvider> ListRecoveryJobProviders()
+    {
+        return new List<IRecoveryJobProvider>(
+            _recoveryJobProviders.Values);
+    }
+
+    /// <summary>按计算程序查找派生恢复作业创建器。</summary>
+    public IRecoveryJobProvider? ResolveRecoveryJobProvider(
+        string program)
+    {
+        if (string.IsNullOrWhiteSpace(program))
+        {
+            return null;
+        }
+
+        IRecoveryJobProvider? provider;
+        _recoveryJobProviders.TryGetValue(program, out provider);
+        return provider;
     }
 }

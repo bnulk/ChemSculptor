@@ -18,6 +18,9 @@ public enum AnomalyRecordStatus
     /// <summary>方案已获预授权，可以进入恢复执行。</summary>
     ReadyForRecovery,
 
+    /// <summary>派生恢复作业已创建，等待执行。</summary>
+    RecoveryPrepared,
+
     /// <summary>正在执行恢复作业。</summary>
     Recovering,
 
