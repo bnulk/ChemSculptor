@@ -5,6 +5,135 @@
 
 ---
 
+## v0.33.0（2026-10-05）：统一异常检查契约
+
+### 版本
+
+- 当前版本：`0.33.0`
+- 日期：2026-10-05
+- 版本类型：架构与功能调整
+
+### 改动目的
+
+把原 `IAnomalyDetector` 和只返回异常列表的检测方式提升为统一的
+`IAnomalyCheck`：
+
+```text
+执行检查
+  ↓
+返回 AnomalyCheckResult
+```
+
+这样检查可以通过、发现异常、跳过、无法判断或执行失败。
+
+### 新增接口
+
+```text
+IAnomalyCheck
+```
+
+包含：
+
+```text
+Descriptor
+CanCheck
+CheckAsync
+```
+
+检查状态增加：
+
+```text
+Inconclusive
+```
+
+当前状态为：
+
+```text
+NotRun
+Passed
+Finding
+Inconclusive
+Skipped
+ExecutionFailed
+Canceled
+```
+
+### Gaussian 稳定性检查
+
+`GaussianWavefunctionStabilityDetector` 已重构为：
+
+```text
+GaussianWavefunctionStabilityCheck
+```
+
+它现在返回：
+
+```text
+Stable
+  AnomalyCheckStatus.Passed
+
+Unstable
+  AnomalyCheckStatus.Finding
+  包含 wavefunction-instability
+
+缺少输出
+  AnomalyCheckStatus.Skipped
+  记录跳过原因
+
+无法判断
+  AnomalyCheckStatus.Inconclusive
+```
+
+原有：
+
+```text
+GaussianWavefunctionStabilityParser
+```
+
+继续负责把 Gaussian 输出翻译为通用稳定性结果。
+
+### 注册表
+
+异常提供器注册表改为注册和列出：
+
+```text
+IAnomalyCheck
+```
+
+不再注册和列出 `IAnomalyDetector`。
+
+### 测试
+
+新增或更新测试覆盖：
+
+```text
+IAnomalyCheck 注册和重复检查
+稳定输出返回 Passed
+不稳定输出返回 Finding
+缺少输出返回 Skipped
+无法判断返回 Inconclusive
+Finding 包含科学异常和证据
+```
+
+### 验证
+
+- Release 全解决方案构建：0 警告 0 错误
+- 测试：60/60 通过
+
+### 当前边界
+
+当前检查读取已经生成的 Gaussian 稳定性输出。尚未实现：
+
+```text
+创建稳定性检查辅助作业
+通用 anomaly.check-wavefunction-stability Skill
+Gaussian wavefunction-stability.check 专用 Skill
+接入单点计算工作流
+诊断、审批和修正重算
+```
+
+---
+
 ## v0.32.1（2026-10-05）：通用 Skill 与专用 Skill 配对原则
 
 ### 版本

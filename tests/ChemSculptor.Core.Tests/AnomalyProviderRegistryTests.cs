@@ -7,36 +7,36 @@ namespace ChemSculptor.Core.Tests;
 /// <summary>异常提供器注册表测试。</summary>
 public class AnomalyProviderRegistryTests
 {
-    /// <summary>验证检测器可以注册并列出。</summary>
+    /// <summary>验证检查可以注册并列出。</summary>
     [Fact]
-    public void RegistersAndListsDetector()
+    public void RegistersAndListsCheck()
     {
         AnomalyProviderRegistry registry =
             new AnomalyProviderRegistry();
-        TestAnomalyDetector detector = new TestAnomalyDetector();
+        TestAnomalyCheck check = new TestAnomalyCheck();
 
-        registry.RegisterDetector(detector);
+        registry.RegisterCheck(check);
 
-        IReadOnlyList<IAnomalyDetector> detectors =
-            registry.ListDetectors();
+        IReadOnlyList<IAnomalyCheck> checks =
+            registry.ListChecks();
 
-        Assert.Single(detectors);
-        Assert.Equal("test-anomaly", detectors[0].Descriptor.Code);
+        Assert.Single(checks);
+        Assert.Equal("test-anomaly", checks[0].Descriptor.Code);
     }
 
     /// <summary>验证重复注册不会被静默覆盖。</summary>
     [Fact]
-    public void RejectsDuplicateDetectorCode()
+    public void RejectsDuplicateCheckCode()
     {
         AnomalyProviderRegistry registry =
             new AnomalyProviderRegistry();
-        registry.RegisterDetector(new TestAnomalyDetector());
+        registry.RegisterCheck(new TestAnomalyCheck());
 
         bool exceptionThrown = false;
 
         try
         {
-            registry.RegisterDetector(new TestAnomalyDetector());
+            registry.RegisterCheck(new TestAnomalyCheck());
         }
         catch (InvalidOperationException)
         {
@@ -46,7 +46,7 @@ public class AnomalyProviderRegistryTests
         Assert.True(exceptionThrown);
     }
 
-    private sealed class TestAnomalyDetector : IAnomalyDetector
+    private sealed class TestAnomalyCheck : IAnomalyCheck
     {
         public AnomalyCheckDescriptor Descriptor
         {
@@ -63,18 +63,19 @@ public class AnomalyProviderRegistryTests
             }
         }
 
-        public bool CanDetect(AnomalyContext context)
+        public bool CanCheck(AnomalyContext context)
         {
             return true;
         }
 
-        public Task<IReadOnlyList<AnomalyFinding>> DetectAsync(
+        public Task<AnomalyCheckResult> CheckAsync(
             AnomalyContext context,
             CancellationToken cancellationToken = default)
         {
-            IReadOnlyList<AnomalyFinding> findings =
-                new List<AnomalyFinding>();
-            return Task.FromResult(findings);
+            AnomalyCheckResult result = new AnomalyCheckResult();
+            result.Code = "test-anomaly";
+            result.Status = AnomalyCheckStatus.Passed;
+            return Task.FromResult(result);
         }
     }
 }

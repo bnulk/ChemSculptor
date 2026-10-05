@@ -5,8 +5,8 @@ namespace ChemSculptor.Anomaly.Registry;
 /// <summary>异常处理提供器注册表。</summary>
 public interface IAnomalyProviderRegistry
 {
-    /// <summary>注册异常检测器。</summary>
-    void RegisterDetector(IAnomalyDetector detector);
+    /// <summary>注册异常检查。</summary>
+    void RegisterCheck(IAnomalyCheck check);
 
     /// <summary>注册异常诊断器。</summary>
     void RegisterDiagnoser(IAnomalyDiagnoser diagnoser);
@@ -20,8 +20,8 @@ public interface IAnomalyProviderRegistry
     /// <summary>注册恢复验证器。</summary>
     void RegisterRecoveryValidator(IRecoveryValidator validator);
 
-    /// <summary>列出全部异常检测器。</summary>
-    IReadOnlyList<IAnomalyDetector> ListDetectors();
+    /// <summary>列出全部异常检查。</summary>
+    IReadOnlyList<IAnomalyCheck> ListChecks();
 
     /// <summary>列出全部异常诊断器。</summary>
     IReadOnlyList<IAnomalyDiagnoser> ListDiagnosers();

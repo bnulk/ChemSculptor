@@ -5,19 +5,19 @@ using ChemSculptor.Compute.Gaussian.Anomaly.WavefunctionStability;
 namespace ChemSculptor.Skills.Gaussian.Anomaly.WavefunctionStability;
 
 /// <summary>
-/// Gaussian 波函数稳定性异常检测器。
+/// Gaussian 波函数稳定性检查。
 /// 当前阶段读取已经生成的稳定性检查输出，不负责创建辅助作业。
 /// </summary>
-public sealed class GaussianWavefunctionStabilityDetector
-    : IAnomalyDetector
+public sealed class GaussianWavefunctionStabilityCheck
+    : IAnomalyCheck
 {
     private static readonly AnomalyCheckDescriptor DescriptorValue =
         CreateDescriptor();
 
     private readonly GaussianWavefunctionStabilityParser _parser;
 
-    /// <summary>创建检测器。</summary>
-    public GaussianWavefunctionStabilityDetector(
+    /// <summary>创建稳定性检查。</summary>
+    public GaussianWavefunctionStabilityCheck(
         GaussianWavefunctionStabilityParser parser)
     {
         if (parser == null)
@@ -35,7 +35,7 @@ public sealed class GaussianWavefunctionStabilityDetector
     }
 
     /// <summary>判断是否存在可检查的稳定性输出。</summary>
-    public bool CanDetect(AnomalyContext context)
+    public bool CanCheck(AnomalyContext context)
     {
         if (context == null)
         {
@@ -55,16 +55,22 @@ public sealed class GaussianWavefunctionStabilityDetector
             && File.Exists(outputPath);
     }
 
-    /// <summary>解析稳定性输出并生成异常发现。</summary>
-    public async Task<IReadOnlyList<AnomalyFinding>> DetectAsync(
+    /// <summary>解析稳定性输出并生成统一检查结果。</summary>
+    public async Task<AnomalyCheckResult> CheckAsync(
         AnomalyContext context,
         CancellationToken cancellationToken = default)
     {
-        List<AnomalyFinding> findings = new List<AnomalyFinding>();
+        AnomalyCheckResult checkResult = CreateBaseResult();
+        checkResult.StartedAt = DateTimeOffset.UtcNow;
 
-        if (!CanDetect(context))
+        if (!CanCheck(context))
         {
-            return findings;
+            checkResult.Status = AnomalyCheckStatus.Skipped;
+            checkResult.SkippedReason =
+                "没有可用的波函数稳定性检查输出。";
+            checkResult.Summary = checkResult.SkippedReason;
+            checkResult.CompletedAt = DateTimeOffset.UtcNow;
+            return checkResult;
         }
 
         string outputPath =
@@ -72,10 +78,30 @@ public sealed class GaussianWavefunctionStabilityDetector
         WavefunctionStabilityResult stabilityResult =
             await _parser.ParseAsync(outputPath, cancellationToken);
 
-        if (stabilityResult.Status
-            != WavefunctionStabilityStatus.Unstable)
+        checkResult.Evidence = new List<AnomalyEvidence>(
+            stabilityResult.Evidence);
+        checkResult.Summary = stabilityResult.Summary;
+
+        if (stabilityResult.Status == WavefunctionStabilityStatus.Stable)
         {
-            return findings;
+            checkResult.Status = AnomalyCheckStatus.Passed;
+            checkResult.CompletedAt = DateTimeOffset.UtcNow;
+            return checkResult;
+        }
+
+        if (stabilityResult.Status == WavefunctionStabilityStatus.NotPerformed)
+        {
+            checkResult.Status = AnomalyCheckStatus.Skipped;
+            checkResult.SkippedReason = stabilityResult.Summary;
+            checkResult.CompletedAt = DateTimeOffset.UtcNow;
+            return checkResult;
+        }
+
+        if (stabilityResult.Status == WavefunctionStabilityStatus.Inconclusive)
+        {
+            checkResult.Status = AnomalyCheckStatus.Inconclusive;
+            checkResult.CompletedAt = DateTimeOffset.UtcNow;
+            return checkResult;
         }
 
         AnomalyFinding finding = new AnomalyFinding();
@@ -91,9 +117,22 @@ public sealed class GaussianWavefunctionStabilityDetector
         finding.Details["outputPath"] = outputPath;
         finding.Details["instabilityKind"] =
             stabilityResult.InstabilityKind;
-        findings.Add(finding);
+        checkResult.Status = AnomalyCheckStatus.Finding;
+        checkResult.Findings.Add(finding);
+        checkResult.CompletedAt = DateTimeOffset.UtcNow;
 
-        return findings;
+        return checkResult;
+    }
+
+    private static AnomalyCheckResult CreateBaseResult()
+    {
+        AnomalyCheckResult result = new AnomalyCheckResult();
+        result.Code = DescriptorValue.Code;
+        result.DisplayName = DescriptorValue.DisplayName;
+        result.Category = DescriptorValue.Category;
+        result.Mechanism = DescriptorValue.Mechanism;
+        result.IsRequired = DescriptorValue.IsRequired;
+        return result;
     }
 
     private static AnomalyCheckDescriptor CreateDescriptor()

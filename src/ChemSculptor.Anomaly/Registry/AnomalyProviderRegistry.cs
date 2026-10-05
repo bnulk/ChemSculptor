@@ -9,8 +9,8 @@ namespace ChemSculptor.Anomaly.Registry;
 /// </summary>
 public sealed class AnomalyProviderRegistry : IAnomalyProviderRegistry
 {
-    private readonly ConcurrentDictionary<string, IAnomalyDetector> _detectors =
-        new ConcurrentDictionary<string, IAnomalyDetector>(
+    private readonly ConcurrentDictionary<string, IAnomalyCheck> _checks =
+        new ConcurrentDictionary<string, IAnomalyCheck>(
             StringComparer.OrdinalIgnoreCase);
 
     private readonly ConcurrentDictionary<string, IAnomalyDiagnoser> _diagnosers =
@@ -29,18 +29,18 @@ public sealed class AnomalyProviderRegistry : IAnomalyProviderRegistry
         new ConcurrentDictionary<string, IRecoveryValidator>(
             StringComparer.OrdinalIgnoreCase);
 
-    /// <summary>注册异常检测器。</summary>
-    public void RegisterDetector(IAnomalyDetector detector)
+    /// <summary>注册异常检查。</summary>
+    public void RegisterCheck(IAnomalyCheck check)
     {
-        if (detector == null)
+        if (check == null)
         {
-            throw new ArgumentNullException(nameof(detector));
+            throw new ArgumentNullException(nameof(check));
         }
 
-        if (!_detectors.TryAdd(detector.Descriptor.Code, detector))
+        if (!_checks.TryAdd(check.Descriptor.Code, check))
         {
             throw new InvalidOperationException(
-                "异常检测器已经注册：" + detector.Descriptor.Code);
+                "异常检查已经注册：" + check.Descriptor.Code);
         }
     }
 
@@ -104,10 +104,10 @@ public sealed class AnomalyProviderRegistry : IAnomalyProviderRegistry
         }
     }
 
-    /// <summary>列出全部异常检测器。</summary>
-    public IReadOnlyList<IAnomalyDetector> ListDetectors()
+    /// <summary>列出全部异常检查。</summary>
+    public IReadOnlyList<IAnomalyCheck> ListChecks()
     {
-        return new List<IAnomalyDetector>(_detectors.Values);
+        return new List<IAnomalyCheck>(_checks.Values);
     }
 
     /// <summary>列出全部异常诊断器。</summary>

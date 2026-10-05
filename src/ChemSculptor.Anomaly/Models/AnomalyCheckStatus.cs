@@ -12,6 +12,9 @@ public enum AnomalyCheckStatus
     /// <summary>检查完成并发现异常。</summary>
     Finding,
 
+    /// <summary>检查已完成，但无法得出明确结论。</summary>
+    Inconclusive,
+
     /// <summary>检查不适用于当前任务或计算程序。</summary>
     Skipped,
 

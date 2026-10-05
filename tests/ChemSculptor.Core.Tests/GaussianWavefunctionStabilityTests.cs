@@ -92,9 +92,9 @@ public class GaussianWavefunctionStabilityTests
         }
     }
 
-    /// <summary>验证不稳定检查会产生科学异常发现。</summary>
+    /// <summary>验证不稳定检查会返回 Finding 和科学异常。</summary>
     [Fact]
-    public async Task DetectorCreatesScientificFinding()
+    public async Task CheckReturnsFindingForUnstableWavefunction()
     {
         string root = CreateTemporaryRoot();
         string path = Path.Combine(root, "unstable-detector.log");
@@ -105,28 +105,111 @@ public class GaussianWavefunctionStabilityTests
                 path,
                 "The wavefunction is unstable with respect to internal perturbations.");
 
-            GaussianWavefunctionStabilityDetector detector =
-                new GaussianWavefunctionStabilityDetector(
+            GaussianWavefunctionStabilityCheck check =
+                new GaussianWavefunctionStabilityCheck(
                     new GaussianWavefunctionStabilityParser());
             AnomalyContext context = new AnomalyContext();
             context.Metadata[
                 AnomalyContextKeys.WavefunctionStabilityOutputPath] = path;
 
-            IReadOnlyList<AnomalyFinding> findings =
-                await detector.DetectAsync(context);
+            AnomalyCheckResult checkResult =
+                await check.CheckAsync(context);
 
-            Assert.Single(findings);
+            Assert.Equal(
+                AnomalyCheckStatus.Finding,
+                checkResult.Status);
+            Assert.Single(checkResult.Findings);
             Assert.Equal(
                 CommonAnomalyCodes.WavefunctionInstability,
-                findings[0].Code);
+                checkResult.Findings[0].Code);
             Assert.Equal(
                 AnomalyCategory.Scientific,
-                findings[0].Category);
-            Assert.True(findings[0].RequiresScientificJudgment);
-            Assert.True(findings[0].IsBlocking);
+                checkResult.Findings[0].Category);
+            Assert.True(
+                checkResult.Findings[0].RequiresScientificJudgment);
+            Assert.True(checkResult.Findings[0].IsBlocking);
             Assert.Equal(
                 AnomalyCheckMechanism.AuxiliaryCalculation,
-                detector.Descriptor.Mechanism);
+                check.Descriptor.Mechanism);
+        }
+        finally
+        {
+            DeleteTemporaryRoot(root);
+        }
+    }
+
+    /// <summary>验证稳定输出返回 Passed。</summary>
+    [Fact]
+    public async Task CheckReturnsPassedForStableWavefunction()
+    {
+        string root = CreateTemporaryRoot();
+        string path = Path.Combine(root, "stable-check.log");
+
+        try
+        {
+            await File.WriteAllTextAsync(
+                path,
+                "The wavefunction is stable under the perturbations considered.");
+
+            GaussianWavefunctionStabilityCheck check =
+                new GaussianWavefunctionStabilityCheck(
+                    new GaussianWavefunctionStabilityParser());
+            AnomalyContext context = new AnomalyContext();
+            context.Metadata[
+                AnomalyContextKeys.WavefunctionStabilityOutputPath] = path;
+
+            AnomalyCheckResult result =
+                await check.CheckAsync(context);
+
+            Assert.Equal(AnomalyCheckStatus.Passed, result.Status);
+            Assert.Empty(result.Findings);
+        }
+        finally
+        {
+            DeleteTemporaryRoot(root);
+        }
+    }
+
+    /// <summary>验证缺少输出时返回 Skipped 和跳过原因。</summary>
+    [Fact]
+    public async Task CheckReturnsSkippedWithoutOutput()
+    {
+        GaussianWavefunctionStabilityCheck check =
+            new GaussianWavefunctionStabilityCheck(
+                new GaussianWavefunctionStabilityParser());
+        AnomalyContext context = new AnomalyContext();
+
+        AnomalyCheckResult result =
+            await check.CheckAsync(context);
+
+        Assert.Equal(AnomalyCheckStatus.Skipped, result.Status);
+        Assert.Contains("没有可用", result.SkippedReason);
+    }
+
+    /// <summary>验证无法判断时返回 Inconclusive。</summary>
+    [Fact]
+    public async Task CheckReturnsInconclusiveWithoutStatement()
+    {
+        string root = CreateTemporaryRoot();
+        string path = Path.Combine(root, "inconclusive-check.log");
+
+        try
+        {
+            await File.WriteAllTextAsync(path, "No stability conclusion.");
+
+            GaussianWavefunctionStabilityCheck check =
+                new GaussianWavefunctionStabilityCheck(
+                    new GaussianWavefunctionStabilityParser());
+            AnomalyContext context = new AnomalyContext();
+            context.Metadata[
+                AnomalyContextKeys.WavefunctionStabilityOutputPath] = path;
+
+            AnomalyCheckResult result =
+                await check.CheckAsync(context);
+
+            Assert.Equal(
+                AnomalyCheckStatus.Inconclusive,
+                result.Status);
         }
         finally
         {

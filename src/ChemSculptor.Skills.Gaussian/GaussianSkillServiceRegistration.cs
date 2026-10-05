@@ -50,8 +50,8 @@ public static class GaussianSkillServiceRegistration
             ICalculationResultValidator,
             GaussianSinglePointOutputValidator>(services);
         ServiceCollectionServiceExtensions.AddSingleton<
-            IAnomalyDetector,
-            GaussianWavefunctionStabilityDetector>(services);
+            IAnomalyCheck,
+            GaussianWavefunctionStabilityCheck>(services);
         return services;
     }
 }

@@ -516,9 +516,11 @@ anomaly.check-wavefunction-stability
 具体结果的新旧比较
 ```
 
-当前 `GaussianWavefunctionStabilityDetector` 属于过渡实现。最终应将其职责
-放入 `gaussian.wavefunction-stability.check` 专用 Skill，并由通用
-`anomaly.check-wavefunction-stability` Skill 调用。
+通用检查契约是 `IAnomalyCheck`。Gaussian 稳定性检查已经返回统一的
+`AnomalyCheckResult`。后续仍应增加通用
+`anomaly.check-wavefunction-stability` Skill 和专用
+`gaussian.wavefunction-stability.check` Skill，按通用 Skill 与专用 Skill
+配对原则接入工作流。
 
 ---
 
@@ -577,6 +579,7 @@ AnomalyCheckResult
 NotRun
 Passed
 Finding
+Inconclusive
 Skipped
 ExecutionFailed
 Canceled
@@ -622,8 +625,14 @@ GaussianWavefunctionStabilityParser
 WavefunctionStabilityResult
   通用稳定性结果
 
-GaussianWavefunctionStabilityDetector
-  把不稳定结果转换为 ScientificAnomaly
+GaussianWavefunctionStabilityCheck
+  执行检查并返回 AnomalyCheckResult
+
+AnomalyCheckResult
+  Passed、Finding、Skipped 或 Inconclusive
+
+AnomalyFinding
+  不稳定时包含 wavefunction-instability
 ```
 
 当前只处理已经生成的稳定性检查输出，还没有负责创建辅助计算作业。
