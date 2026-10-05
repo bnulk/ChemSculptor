@@ -12,6 +12,10 @@ public sealed class AnomalyCheckResult
     /// <summary>检查分类。</summary>
     public AnomalyCategory Category { get; set; } = AnomalyCategory.Unknown;
 
+    /// <summary>检查获取证据的方式。</summary>
+    public AnomalyCheckMechanism Mechanism { get; set; } =
+        AnomalyCheckMechanism.Unknown;
+
     /// <summary>检查状态。</summary>
     public AnomalyCheckStatus Status { get; set; } = AnomalyCheckStatus.NotRun;
 
@@ -23,6 +27,9 @@ public sealed class AnomalyCheckResult
 
     /// <summary>跳过的原因。</summary>
     public string SkippedReason { get; set; } = string.Empty;
+
+    /// <summary>需要辅助计算时关联的作业标识。</summary>
+    public string AuxiliaryJobId { get; set; } = string.Empty;
 
     /// <summary>检查发现的所有异常。</summary>
     public List<AnomalyFinding> Findings { get; set; } =

@@ -12,6 +12,10 @@ public sealed class AnomalyCheckDescriptor
     /// <summary>异常分类。</summary>
     public AnomalyCategory Category { get; set; } = AnomalyCategory.Unknown;
 
+    /// <summary>检查获取证据的方式。</summary>
+    public AnomalyCheckMechanism Mechanism { get; set; } =
+        AnomalyCheckMechanism.Unknown;
+
     /// <summary>检查模块版本。</summary>
     public string Version { get; set; } = "1.0.0";
 

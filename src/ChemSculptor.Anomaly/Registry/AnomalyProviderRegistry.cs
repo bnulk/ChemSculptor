@@ -37,10 +37,10 @@ public sealed class AnomalyProviderRegistry : IAnomalyProviderRegistry
             throw new ArgumentNullException(nameof(detector));
         }
 
-        if (!_detectors.TryAdd(detector.Code, detector))
+        if (!_detectors.TryAdd(detector.Descriptor.Code, detector))
         {
             throw new InvalidOperationException(
-                "异常检测器已经注册：" + detector.Code);
+                "异常检测器已经注册：" + detector.Descriptor.Code);
         }
     }
 

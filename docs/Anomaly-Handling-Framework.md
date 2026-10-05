@@ -485,6 +485,27 @@ anomaly.record-case
 
 这些技能只处理通用概念。
 
+需要调用具体计算程序的检查必须遵循“通用 Skill + 专用 Skill”原则。
+
+示例：
+
+```text
+通用 Skill
+  anomaly.check-wavefunction-stability
+
+Gaussian 专用 Skill
+  gaussian.wavefunction-stability.check
+```
+
+通用工作流只引用：
+
+```text
+anomaly.check-wavefunction-stability
+```
+
+通用 Skill 根据计算程序选择专用 Skill，并对上层返回统一的
+`AnomalyCheckResult`。
+
 具体程序模块负责提供：
 
 ```text
@@ -494,6 +515,10 @@ anomaly.record-case
 通用修正意图到具体参数的转换
 具体结果的新旧比较
 ```
+
+当前 `GaussianWavefunctionStabilityDetector` 属于过渡实现。最终应将其职责
+放入 `gaussian.wavefunction-stability.check` 专用 Skill，并由通用
+`anomaly.check-wavefunction-stability` Skill 调用。
 
 ---
 
@@ -557,6 +582,19 @@ ExecutionFailed
 Canceled
 ```
 
+检查机制：
+
+```text
+OutputArtifact
+  从主计算输出文件中提取证据
+
+RuntimeSignal
+  从进程、资源和运行环境信号中提取证据
+
+AuxiliaryCalculation
+  需要执行额外的辅助计算
+```
+
 其中 `Skipped` 用于：
 
 ```text
@@ -574,6 +612,21 @@ ONIOM 等不支持该检查的模型仍进入该节点，然后记录跳过状�
 ```text
 CommonAnomalyCheckCodes.WavefunctionStability
 ```
+
+当前的 Gaussian 波函数稳定性链路：
+
+```text
+GaussianWavefunctionStabilityParser
+  读取稳定性输出
+
+WavefunctionStabilityResult
+  通用稳定性结果
+
+GaussianWavefunctionStabilityDetector
+  把不稳定结果转换为 ScientificAnomaly
+```
+
+当前只处理已经生成的稳定性检查输出，还没有负责创建辅助计算作业。
 
 ### 11.2 异常记录聚合
 

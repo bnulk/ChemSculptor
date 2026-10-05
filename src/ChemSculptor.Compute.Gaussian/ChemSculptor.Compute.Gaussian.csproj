@@ -1,6 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <ItemGroup>
+    <ProjectReference Include="..\ChemSculptor.Anomaly\ChemSculptor.Anomaly.csproj" />
     <ProjectReference Include="..\ChemSculptor.Compute\ChemSculptor.Compute.csproj" />
     <ProjectReference Include="..\ChemSculptor.InputProcessor\ChemSculptor.InputProcessor.csproj" />
   </ItemGroup>

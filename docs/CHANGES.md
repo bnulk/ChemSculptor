@@ -5,6 +5,209 @@
 
 ---
 
+## v0.32.1（2026-10-05）：通用 Skill 与专用 Skill 配对原则
+
+### 版本
+
+- 当前版本：`0.32.1`
+- 日期：2026-10-05
+- 版本类型：架构约定
+
+### 改动目的
+
+确立永久原则：
+
+```text
+凡是需要调用具体计算程序的能力，
+都必须同时具备通用 Skill 和专用 Skill。
+```
+
+### 职责
+
+通用 Skill：
+
+```text
+由工作流引用
+名称不含具体程序
+提供稳定的通用契约
+通过注册表选择具体程序实现
+统一返回通用结果
+```
+
+专用 Skill：
+
+```text
+名称可以包含程序名
+服从通用 Skill 契约
+生成具体程序输入
+调用具体计算程序
+解析具体程序输出
+翻译为通用结果
+```
+
+示例：
+
+```text
+通用：
+  anomaly.check-wavefunction-stability
+
+专用：
+  gaussian.wavefunction-stability.check
+```
+
+工作流只能引用通用 Skill ID，不能引用专用 Skill ID。
+
+### 当前状态
+
+当前波函数稳定性检测器是过渡实现。后续重构时，应增加：
+
+```text
+anomaly.check-wavefunction-stability
+gaussian.wavefunction-stability.check
+```
+
+并让专用 Skill 返回 `AnomalyCheckResult`，而不是只返回异常发现列表。
+
+### 文档
+
+更新：
+
+```text
+docs/Coding-Conventions.md
+docs/Anomaly-Handling-Framework.md
+```
+
+本次只修改架构约定文档，不修改代码。
+
+---
+
+## v0.32.0（2026-10-05）：波函数稳定性检查处理
+
+### 版本
+
+- 当前版本：`0.32.0`
+- 日期：2026-10-05
+- 版本类型：功能新增
+
+### 改动目的
+
+建立波函数稳定性检查的第一段完整链路：
+
+```text
+读取 Gaussian 稳定性输出
+  ↓
+翻译为通用稳定性结果
+  ↓
+不稳定时生成科学异常发现
+```
+
+本阶段处理已经生成的稳定性检查输出，不负责创建辅助计算作业，也不自动修改多重度。
+
+### 检查机制
+
+新增：
+
+```text
+AnomalyCheckMechanism
+```
+
+取值：
+
+```text
+OutputArtifact
+RuntimeSignal
+AuxiliaryCalculation
+```
+
+波函数稳定性检查使用：
+
+```text
+AuxiliaryCalculation
+```
+
+### 通用模型
+
+新增：
+
+```text
+WavefunctionStabilityStatus
+WavefunctionStabilityResult
+CommonAnomalyCodes
+AnomalyContextKeys
+```
+
+状态包括：
+
+```text
+NotPerformed
+Stable
+Unstable
+Inconclusive
+```
+
+不稳定异常代码：
+
+```text
+wavefunction-instability
+```
+
+### Gaussian 解析和检测
+
+新增：
+
+```text
+GaussianWavefunctionStabilityParser
+GaussianWavefunctionStabilityDetector
+```
+
+解析器负责把 Gaussian 输出翻译为通用结果。
+
+检测器负责在不稳定时生成：
+
+```text
+Category = Scientific
+Code = wavefunction-instability
+Severity = Error
+RequiresScientificJudgment = true
+IsBlocking = true
+```
+
+解析器和检测器已经登记到 Gaussian 服务注册中，后续异常工作流可以从依赖注入
+容器取得该检测器。
+
+`IAnomalyDetector` 现在通过 `AnomalyCheckDescriptor` 声明检查代码、名称、分类和机制。
+
+### 测试
+
+新增测试覆盖：
+
+```text
+稳定波函数输出解析
+不稳定波函数输出解析
+没有明确结论时返回 Inconclusive
+不稳定结果生成科学异常发现
+检查机制为 AuxiliaryCalculation
+```
+
+### 验证
+
+- Release 全解决方案构建：0 警告 0 错误
+- 测试：57/57 通过
+
+### 当前边界
+
+尚未实现：
+
+```text
+创建 Gaussian 稳定性检查辅助作业
+把稳定性检查节点接入单点计算工作流
+诊断和修正方案
+人工审批
+派生重算
+```
+
+---
+
 ## v0.31.0（2026-10-04）：异常检查模型和存储
 
 ### 版本

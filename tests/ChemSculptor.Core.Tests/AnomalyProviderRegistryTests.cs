@@ -21,7 +21,7 @@ public class AnomalyProviderRegistryTests
             registry.ListDetectors();
 
         Assert.Single(detectors);
-        Assert.Equal("test-anomaly", detectors[0].Code);
+        Assert.Equal("test-anomaly", detectors[0].Descriptor.Code);
     }
 
     /// <summary>验证重复注册不会被静默覆盖。</summary>
@@ -48,14 +48,19 @@ public class AnomalyProviderRegistryTests
 
     private sealed class TestAnomalyDetector : IAnomalyDetector
     {
-        public string Code
+        public AnomalyCheckDescriptor Descriptor
         {
-            get { return "test-anomaly"; }
-        }
-
-        public string Version
-        {
-            get { return "1.0.0"; }
+            get
+            {
+                AnomalyCheckDescriptor descriptor =
+                    new AnomalyCheckDescriptor();
+                descriptor.Code = "test-anomaly";
+                descriptor.DisplayName = "测试异常";
+                descriptor.Category = AnomalyCategory.Scientific;
+                descriptor.Mechanism =
+                    AnomalyCheckMechanism.OutputArtifact;
+                return descriptor;
+            }
         }
 
         public bool CanDetect(AnomalyContext context)

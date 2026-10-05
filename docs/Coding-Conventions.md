@@ -218,6 +218,71 @@ orca.input-generation
 
 本规则永久生效，后续代码不得违反。
 
+### 7.1.1 通用 Skill 与专用 Skill 必须成对
+
+凡是需要调用具体计算程序的能力，必须同时设计：
+
+```text
+通用 Skill
+专用 Skill
+```
+
+通用 Skill：
+
+```text
+由工作流直接引用
+名称不包含具体程序
+使用稳定的通用请求和结果
+通过注册表选择具体程序实现
+负责统一参数校验、结果翻译和错误归一化
+```
+
+专用 Skill：
+
+```text
+名称可以包含具体程序
+服从通用 Skill 的能力契约
+负责具体程序的输入生成、执行调用、输出解析和参数翻译
+返回通用结果模型
+```
+
+示例：
+
+```text
+通用 Skill
+  anomaly.check-wavefunction-stability
+
+专用 Skill
+  gaussian.wavefunction-stability.check
+```
+
+工作流定义只能引用：
+
+```text
+anomaly.check-wavefunction-stability
+```
+
+不能引用：
+
+```text
+gaussian.wavefunction-stability.check
+```
+
+通用 Skill 与专用 Skill 通过能力代码和程序标识关联。
+
+禁止：
+
+```text
+只在工作流中写专用程序 Skill
+把具体程序名称写入通用工作流定义
+让通用 Skill 直接包含具体程序关键词
+让专用 Skill 返回只适用于当前程序的私有结果模型
+```
+
+程序适配器、Parser 和 Translator 可以继续作为普通组件存在。只有当它们形成独立的工作流能力时，才需要包装为专用 Skill。
+
+本规则永久生效，后续所有需要调用具体计算程序的能力都按此执行。
+
 ### 7.2 技能命名
 
 ```text

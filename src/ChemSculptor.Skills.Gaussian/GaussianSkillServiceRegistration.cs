@@ -1,6 +1,9 @@
+using ChemSculptor.Anomaly.Abstractions;
 using ChemSculptor.Compute;
 using ChemSculptor.Compute.Gaussian;
+using ChemSculptor.Compute.Gaussian.Anomaly.WavefunctionStability;
 using ChemSculptor.Domain;
+using ChemSculptor.Skills.Gaussian.Anomaly.WavefunctionStability;
 using ChemSculptor.Skills.Gaussian.GaussianFailureCorrectionProposal;
 using ChemSculptor.Skills.Gaussian.GaussianFailureDiagnosis;
 using ChemSculptor.Skills.Gaussian.GaussianSinglePointResultExtraction;
@@ -22,6 +25,8 @@ public static class GaussianSkillServiceRegistration
             services);
         ServiceCollectionServiceExtensions.AddSingleton<GaussianProcessingPlanTranslator>(
             services);
+        ServiceCollectionServiceExtensions.AddSingleton<
+            GaussianWavefunctionStabilityParser>(services);
 
         Gaussian16ProgramAdapterOptions options =
             Gaussian16ProgramAdapterOptions.CreateDefault();
@@ -44,6 +49,9 @@ public static class GaussianSkillServiceRegistration
         ServiceCollectionServiceExtensions.AddSingleton<
             ICalculationResultValidator,
             GaussianSinglePointOutputValidator>(services);
+        ServiceCollectionServiceExtensions.AddSingleton<
+            IAnomalyDetector,
+            GaussianWavefunctionStabilityDetector>(services);
         return services;
     }
 }
