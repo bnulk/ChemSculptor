@@ -4,6 +4,7 @@ using ChemSculptor.Anomaly.Registry;
 using ChemSculptor.Anomaly.Storage;
 using ChemSculptor.Api.Client;
 using ChemSculptor.Agent;
+using ChemSculptor.Compute;
 using ChemSculptor.Core;
 using ChemSculptor.Compute.Local;
 using ChemSculptor.Domain;
@@ -11,6 +12,8 @@ using ChemSculptor.InputProcessor;
 using ChemSculptor.Skills.Common;
 using ChemSculptor.Skills.Gaussian;
 using ChemSculptor.Skills.Orca;
+using ChemSculptor.ScientificData.Extraction;
+using ChemSculptor.ScientificData.Storage;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
@@ -57,6 +60,18 @@ public static class Program
         OrcaSkillServiceRegistration.AddOrcaSkills(builder.Services);
         LocalComputeServiceRegistration.AddLocalComputeServices(builder.Services);
         AgentServiceRegistration.AddAgentServices(builder.Services);
+
+        CalculationWorkspaceOptions workspaceOptions =
+            CalculationWorkspaceOptions.CreateDefault();
+        ScientificDataRepositoryOptions scientificDataOptions =
+            new ScientificDataRepositoryOptions();
+        scientificDataOptions.RootDirectory = Path.Combine(
+            workspaceOptions.RootDirectory,
+            "scientific-data");
+        ScientificDataExtractionServiceRegistration
+            .AddScientificDataExtraction(
+                builder.Services,
+                scientificDataOptions);
 
         // 构建可运行的 Web 应用，此时还未开始监听端口。
         WebApplication app = builder.Build();

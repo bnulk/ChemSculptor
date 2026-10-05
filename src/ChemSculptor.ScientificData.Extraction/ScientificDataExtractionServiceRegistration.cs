@@ -1,5 +1,6 @@
 using ChemSculptor.ScientificData.Extraction.Abstractions;
 using ChemSculptor.ScientificData.Storage;
+using ChemSculptor.Domain;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace ChemSculptor.ScientificData.Extraction;
@@ -30,6 +31,9 @@ public static class ScientificDataExtractionServiceRegistration
         ServiceCollectionServiceExtensions.AddSingleton<
             IScientificDataRecorder,
             ScientificDataRecorder>(services);
+        ServiceCollectionServiceExtensions.AddSingleton<
+            ISkill,
+            ScientificDataExtractionSkill>(services);
         return services;
     }
 }

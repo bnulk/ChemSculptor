@@ -16,6 +16,7 @@
     <ProjectReference Include="..\ChemSculptor.Compute\ChemSculptor.Compute.csproj" />
     <ProjectReference Include="..\ChemSculptor.FundamentalConstants\ChemSculptor.FundamentalConstants.csproj" />
     <ProjectReference Include="..\ChemSculptor.InputProcessor\ChemSculptor.InputProcessor.csproj" />
+    <ProjectReference Include="..\ChemSculptor.Domain\ChemSculptor.Domain.csproj" />
     <ProjectReference Include="..\ChemSculptor.ScientificData\ChemSculptor.ScientificData.csproj" />
   </ItemGroup>
 

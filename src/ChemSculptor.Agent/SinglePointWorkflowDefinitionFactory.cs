@@ -1,6 +1,7 @@
 using ChemSculptor.Anomaly.Models;
 using ChemSculptor.Compute;
 using ChemSculptor.Domain;
+using ChemSculptor.ScientificData.Models;
 
 namespace ChemSculptor.Agent;
 
@@ -103,6 +104,23 @@ public static class SinglePointWorkflowDefinitionFactory
         plan.Inputs["validation"] = validate.Id;
         plan.Inputs["extraction"] = extract.Id;
         definition.Nodes.Add(plan);
+
+        WorkflowNode scientificData = new WorkflowNode();
+        scientificData.Id = "science-data-record";
+        scientificData.Skill =
+            ScientificDataSkillIds.RecordCalculationResult;
+        scientificData.DependsOn.Add(plan.Id);
+        scientificData.Inputs["request"] = "$input.request";
+        scientificData.Inputs["validation"] = validate.Id;
+        scientificData.Inputs["extraction"] = extract.Id;
+        scientificData.Inputs["stability"] = stabilityCheck.Id;
+        scientificData.Inputs["correctionPlan"] =
+            stabilityCorrectionPlan.Id;
+        scientificData.Inputs["recoveryExecution"] =
+            recoveryExecution.Id;
+        scientificData.Inputs["recoveryStability"] =
+            recoveryStabilityCheck.Id;
+        definition.Nodes.Add(scientificData);
 
         return definition;
     }

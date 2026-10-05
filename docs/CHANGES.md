@@ -170,6 +170,50 @@ ScientificDataRecorder
 `ChemSculptor.ScientificData` 仍然不依赖计算程序。报告层以后只读取
 `IScientificDataRepository`。
 
+### 工作流接入
+
+单点工作流末尾新增：
+
+```text
+science-data-record
+```
+
+该节点使用：
+
+```text
+science.record-calculation-result
+```
+
+它读取：
+
+```text
+原始输入请求
+原始计算结果
+原始结果验证
+原始稳定性检查
+修正计划
+派生作业执行结果
+派生稳定性复检
+```
+
+然后生成并保存：
+
+```text
+ScientificResult
+  CalculationPoint
+  CalculationPointRelation
+  ScientificObservable
+```
+
+工作流节点顺序：
+
+```text
+plan
+  → science-data-record
+```
+
+今后报告生成不再读取计算作业或程序输出，只读取科学数据仓储。
+
 ### 配套教程
 
 新增：
