@@ -27,6 +27,10 @@ public class GaussianInputWriterTests
             CalculationDefaults.ApplyDefaultMultiplicityFromElectronCount(
                 spec,
                 10);
+            Assert.Equal(
+                "200",
+                spec.ExtraOptions[
+                    CalculationOptionKeys.ScfIterationLimit]);
             CanonicalGeometry geometry = CreateWaterGeometry();
 
             GaussianInputOptions options = new GaussianInputOptions();
@@ -42,7 +46,9 @@ public class GaussianInputWriterTests
 
             Assert.Contains("%nprocshared=4", text);
             Assert.Contains("%mem=4GB", text);
-            Assert.Contains("#p CAM-B3LYP/6-31G* SP", text);
+            Assert.Contains(
+                "#p CAM-B3LYP/6-31G* SP scfcyc=200",
+                text);
             Assert.Contains("water single point", text);
             Assert.Contains("0 1", text);
             Assert.Contains("O 0.000000 0.000000 0.117300", text);

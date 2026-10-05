@@ -29,6 +29,9 @@ public static class CalculationDefaults
     /// <summary>默认并行核数。</summary>
     public const int DefaultProcessorCount = 4;
 
+    /// <summary>默认自洽场迭代上限。</summary>
+    public const int DefaultScfIterationLimit = 200;
+
     /// <summary>
     /// 创建默认的单点计算方案。
     /// 坐标和运行状态不在这里设置。
@@ -45,6 +48,8 @@ public static class CalculationDefaults
         spec.Multiplicity = 0;
         spec.Solvent = string.Empty;
         spec.ExtraOptions = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        spec.ExtraOptions[CalculationOptionKeys.ScfIterationLimit] =
+            DefaultScfIterationLimit.ToString(CultureInfo.InvariantCulture);
         spec.Parameters = new List<CalculationParameter>();
 
         AddParameter(
@@ -86,6 +91,16 @@ public static class CalculationDefaults
             CalculationRiskLevel.Info,
             false,
             "默认使用 6-31G*。");
+
+        AddParameter(
+            spec,
+            "scf-iteration-limit",
+            "SCF 迭代上限",
+            DefaultScfIterationLimit.ToString(CultureInfo.InvariantCulture),
+            DefaultScfIterationLimit.ToString(CultureInfo.InvariantCulture),
+            CalculationRiskLevel.Info,
+            false,
+            "默认允许最多 200 次 SCF 迭代；具体计算程序负责翻译。");
 
         AddParameter(
             spec,

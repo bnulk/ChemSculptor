@@ -539,6 +539,7 @@ Basis        = 6-31G*
 Charge       = 0
 Multiplicity = 解析几何后按电子数确定
 ProcessorCount = 4
+SCF 迭代上限 = 200
 ```
 
 服务先保留未确定的多重度，在坐标解析完成后计算：
@@ -566,7 +567,7 @@ ProcessorCount = 4
 %mem=4GB
 %nprocshared=4
 
-#p CAM-B3LYP/6-31G* SP
+#p CAM-B3LYP/6-31G* SP scfcyc=200
 
 ChemSculptor single point calculation
 

@@ -354,7 +354,7 @@ public class GaussianWavefunctionStabilityTests
                 "%mem=4GB\n" +
                 "%nprocshared=4\n" +
                 "\n" +
-                "#p CAM-B3LYP/6-31G* SP\n" +
+                "#p CAM-B3LYP/6-31G* SP scfcyc=200\n" +
                 "\n" +
                 "water single point\n" +
                 "\n" +
@@ -412,6 +412,7 @@ public class GaussianWavefunctionStabilityTests
             Assert.Contains(
                 "guess=read geom=check stable",
                 auxiliaryInput);
+            Assert.Contains("scfcyc=200", auxiliaryInput);
             Assert.DoesNotContain(" SP", auxiliaryInput);
             Assert.DoesNotContain(
                 "O 0.0 0.0 0.0",

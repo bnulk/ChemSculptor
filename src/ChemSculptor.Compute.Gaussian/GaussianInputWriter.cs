@@ -30,6 +30,7 @@ public sealed class GaussianInputWriter
         }
 
         string routeKeyword = GetRouteKeyword(spec.TaskType);
+        string routeLine = BuildRouteLine(spec, routeKeyword);
         string title = options.Title;
 
         if (string.IsNullOrWhiteSpace(title))
@@ -44,8 +45,7 @@ public sealed class GaussianInputWriter
             await writer.WriteLineAsync(
                 "%nprocshared=" + options.ProcessorCount.ToString(CultureInfo.InvariantCulture));
             await writer.WriteLineAsync();
-            await writer.WriteLineAsync(
-                "#p " + spec.Method + "/" + spec.Basis + " " + routeKeyword);
+            await writer.WriteLineAsync(routeLine);
             await writer.WriteLineAsync();
             await writer.WriteLineAsync(title);
             await writer.WriteLineAsync();
@@ -129,6 +129,37 @@ public sealed class GaussianInputWriter
         }
 
         throw new NotSupportedException("当前阶段只支持单点计算输入生成。");
+    }
+
+    private static string BuildRouteLine(
+        CalculationSpec spec,
+        string routeKeyword)
+    {
+        string routeLine =
+            "#p " + spec.Method + "/" + spec.Basis + " " + routeKeyword;
+        string? iterationLimitText;
+
+        if (spec.ExtraOptions.TryGetValue(
+            CalculationOptionKeys.ScfIterationLimit,
+            out iterationLimitText))
+        {
+            int iterationLimit;
+
+            if (int.TryParse(
+                iterationLimitText,
+                NumberStyles.Integer,
+                CultureInfo.InvariantCulture,
+                out iterationLimit)
+                && iterationLimit > 0)
+            {
+                routeLine =
+                    routeLine +
+                    " scfcyc=" +
+                    iterationLimit.ToString(CultureInfo.InvariantCulture);
+            }
+        }
+
+        return routeLine;
     }
 
     private static string FormatAtomLine(CanonicalAtom atom)

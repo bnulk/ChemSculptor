@@ -5,6 +5,83 @@
 
 ---
 
+## v0.36.0（2026-10-05）：默认 SCF 迭代上限 200
+
+### 版本
+
+- 当前版本：`0.36.0`
+- 日期：2026-10-05
+- 版本类型：功能新增
+
+### 改动目的
+
+为通用计算方案增加默认 SCF 迭代上限，并由具体程序适配器翻译为程序关键词。
+
+### 通用默认值
+
+新增：
+
+```text
+CalculationOptionKeys.ScfIterationLimit
+```
+
+默认值：
+
+```text
+200
+```
+
+`CalculationDefaults` 在创建默认单点方案时写入：
+
+```text
+scf-iteration-limit = 200
+```
+
+同时新增计算参数：
+
+```text
+SCF 迭代上限 = 200
+```
+
+### Gaussian 翻译
+
+`GaussianInputWriter` 将通用参数翻译为：
+
+```text
+scfcyc=200
+```
+
+普通单点路线：
+
+```text
+#p CAM-B3LYP/6-31G* SP scfcyc=200
+```
+
+稳定性检查保留该上限：
+
+```text
+#p CAM-B3LYP/6-31G* scfcyc=200 guess=read geom=check stable
+```
+
+### 语义说明
+
+Gaussian 的 `scfcyc` 表示 SCF 最大迭代次数，不表示强制至少迭代 200 次。
+
+### 验证
+
+- Release 全解决方案构建：0 警告 0 错误
+- 测试：65/65 通过
+- 真实 O2 单点计算：
+
+```text
+主计算路线：#p CAM-B3LYP/6-31G* SP scfcyc=200
+稳定性路线：#p CAM-B3LYP/6-31G* scfcyc=200 guess=read geom=check stable
+稳定性结果：Finding
+不稳定类型：RHF-to-UHF
+```
+
+---
+
 ## v0.35.0（2026-10-05）：稳定性辅助计算
 
 ### 版本
