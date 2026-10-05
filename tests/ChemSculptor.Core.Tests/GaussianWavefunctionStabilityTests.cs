@@ -104,6 +104,45 @@ public class GaussianWavefunctionStabilityTests
         }
     }
 
+    /// <summary>验证解析稳定性矩阵本征向量和电子态。</summary>
+    [Fact]
+    public async Task ParsesStabilityEigenvectors()
+    {
+        string root = CreateTemporaryRoot();
+        string path = Path.Combine(root, "eigenvectors.log");
+
+        try
+        {
+            string text =
+                "Eigenvector   1:      Triplet-?Sym  Eigenvalue=-0.1026197  <S**2>=2.000\n" +
+                "       8 ->  9         0.70229\n" +
+                "Eigenvector   2:      Singlet-?Sym  Eigenvalue= 0.0000000  <S**2>=0.000\n" +
+                "       8 ->  9         0.70414\n" +
+                "Eigenvector   3:      Triplet-?Sym  Eigenvalue= 0.1196073  <S**2>=2.000\n" +
+                "       6 ->  9         0.67299\n" +
+                "       7 -> 10         0.19718\n";
+            await File.WriteAllTextAsync(path, text);
+
+            GaussianWavefunctionStabilityParser parser =
+                new GaussianWavefunctionStabilityParser();
+            WavefunctionStabilityResult result =
+                await parser.ParseAsync(path);
+
+            Assert.Equal(3, result.Eigenvectors.Count);
+            Assert.Equal(1, result.Eigenvectors[0].Index);
+            Assert.Equal(3, result.Eigenvectors[0].Multiplicity);
+            Assert.Equal(-0.1026197, result.Eigenvectors[0].Eigenvalue);
+            Assert.Single(result.Eigenvectors[0].Transitions);
+            Assert.Equal(
+                "Triplet-?Sym",
+                result.Eigenvectors[0].StateName);
+        }
+        finally
+        {
+            DeleteTemporaryRoot(root);
+        }
+    }
+
     /// <summary>验证没有识别结论时返回可区分的状态。</summary>
     [Fact]
     public async Task ReturnsInconclusiveWhenStatementIsMissing()

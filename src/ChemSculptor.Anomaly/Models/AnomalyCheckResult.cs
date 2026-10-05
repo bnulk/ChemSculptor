@@ -12,6 +12,9 @@ public sealed class AnomalyCheckResult
     /// <summary>保存本次检查的异常处理记录标识。</summary>
     public string AnomalyRecordId { get; set; } = string.Empty;
 
+    /// <summary>关联的计算作业标识。</summary>
+    public string JobId { get; set; } = string.Empty;
+
     /// <summary>检查显示名称。</summary>
     public string DisplayName { get; set; } = string.Empty;
 
@@ -44,6 +47,9 @@ public sealed class AnomalyCheckResult
     /// <summary>检查证据。</summary>
     public List<AnomalyEvidence> Evidence { get; set; } =
         new List<AnomalyEvidence>();
+
+    /// <summary>波函数稳定性检查的详细结果。</summary>
+    public WavefunctionStabilityResult? WavefunctionStability { get; set; }
 
     /// <summary>开始时间。</summary>
     public DateTimeOffset? StartedAt { get; set; }

@@ -60,10 +60,18 @@ public static class SinglePointWorkflowDefinitionFactory
         stabilityCheck.Inputs["validation"] = validate.Id;
         definition.Nodes.Add(stabilityCheck);
 
+        WorkflowNode stabilityCorrectionPlan = new WorkflowNode();
+        stabilityCorrectionPlan.Id = "stability-correction-plan";
+        stabilityCorrectionPlan.Skill =
+            AnomalySkillIds.PlanWavefunctionStabilityCorrection;
+        stabilityCorrectionPlan.DependsOn.Add(stabilityCheck.Id);
+        stabilityCorrectionPlan.Inputs["stability"] = stabilityCheck.Id;
+        definition.Nodes.Add(stabilityCorrectionPlan);
+
         WorkflowNode plan = new WorkflowNode();
         plan.Id = "plan";
         plan.Skill = CalculationSkillIds.CalculationWorkflowProcessingPlan;
-        plan.DependsOn.Add(stabilityCheck.Id);
+        plan.DependsOn.Add(stabilityCorrectionPlan.Id);
         plan.Inputs["validation"] = validate.Id;
         plan.Inputs["extraction"] = extract.Id;
         definition.Nodes.Add(plan);

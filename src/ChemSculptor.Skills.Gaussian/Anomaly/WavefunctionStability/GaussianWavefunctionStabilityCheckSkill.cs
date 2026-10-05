@@ -135,6 +135,9 @@ public sealed class GaussianWavefunctionStabilityCheckSkill
     {
         AnomalyCheckResult checkResult = CreateBaseResult();
         checkResult.StartedAt = DateTimeOffset.UtcNow;
+        checkResult.JobId = context.Job == null
+            ? string.Empty
+            : context.Job.JobId;
 
         if (!CanCheck(context))
         {
@@ -156,6 +159,8 @@ public sealed class GaussianWavefunctionStabilityCheckSkill
                     await _parser.ParseAsync(
                         outputPath,
                         cancellationToken);
+                existingResult.CurrentMultiplicity =
+                    context.Job!.Spec.Multiplicity;
                 ApplyStabilityResult(checkResult, existingResult);
                 checkResult.CompletedAt = DateTimeOffset.UtcNow;
                 return checkResult;
@@ -328,6 +333,8 @@ public sealed class GaussianWavefunctionStabilityCheckSkill
             await _parser.ParseAsync(
                 outputPath,
                 cancellationToken);
+        stabilityResult.CurrentMultiplicity =
+            originalJob.Spec.Multiplicity;
         ApplyStabilityResult(checkResult, stabilityResult);
         checkResult.CompletedAt = DateTimeOffset.UtcNow;
         return checkResult;
@@ -339,6 +346,7 @@ public sealed class GaussianWavefunctionStabilityCheckSkill
     {
         checkResult.Evidence = new List<AnomalyEvidence>(
             stabilityResult.Evidence);
+        checkResult.WavefunctionStability = stabilityResult;
         checkResult.Summary = stabilityResult.Summary;
 
         if (stabilityResult.Status == WavefunctionStabilityStatus.Stable)

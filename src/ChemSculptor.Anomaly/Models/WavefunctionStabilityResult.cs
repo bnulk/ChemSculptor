@@ -19,4 +19,11 @@ public sealed class WavefunctionStabilityResult
     /// <summary>稳定性检查证据。</summary>
     public List<AnomalyEvidence> Evidence { get; set; } =
         new List<AnomalyEvidence>();
+
+    /// <summary>执行稳定性检查时使用的自旋多重度。</summary>
+    public int CurrentMultiplicity { get; set; }
+
+    /// <summary>稳定性矩阵的全部本征向量。</summary>
+    public List<WavefunctionStabilityEigenvector> Eigenvectors { get; set; } =
+        new List<WavefunctionStabilityEigenvector>();
 }

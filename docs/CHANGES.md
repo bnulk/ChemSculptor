@@ -5,6 +5,147 @@
 
 ---
 
+## v0.37.0（2026-10-05）：波函数稳定性修正方案
+
+### 版本
+
+- 当前版本：`0.37.0`
+- 日期：2026-10-05
+- 版本类型：功能新增
+
+### 改动目的
+
+从 Gaussian 稳定性矩阵中选择能量下降最大的本征值，并生成通用修正方案。
+
+### 通用模型
+
+新增：
+
+```text
+SpinMultiplicityNames
+WavefunctionStabilityTransition
+WavefunctionStabilityEigenvector
+CorrectionIntentCodes
+WavefunctionStabilityCorrectionPlanningResult
+```
+
+`WavefunctionStabilityResult` 增加：
+
+```text
+CurrentMultiplicity
+Eigenvectors
+```
+
+### Gaussian 解析
+
+`GaussianWavefunctionStabilityParser` 现在解析：
+
+```text
+Eigenvector 编号
+电子态名称
+自旋多重度
+Eigenvalue
+S**2
+轨道跃迁分量
+```
+
+支持：
+
+```text
+Singlet
+Doublet
+Triplet
+Quartet
+Quintet
+Sextet
+Septet
+Octet
+```
+
+### 通用规划器
+
+新增：
+
+```text
+WavefunctionStabilityCorrectionPlanner
+```
+
+策略：
+
+```text
+选择数值最小的 Eigenvalue
+  ↓
+取得对应电子态的自旋多重度
+  ↓
+与当前自旋多重度比较
+  ├── 相同 → wavefunction.optimize
+  └── 不同 → spin-multiplicity.change
+```
+
+### Skill 和工作流
+
+新增通用 Skill：
+
+```text
+anomaly.plan-wavefunction-stability-correction
+```
+
+单点工作流增加节点：
+
+```text
+validate
+  ↓
+stability-check
+  ↓
+stability-correction-plan
+  ↓
+plan
+```
+
+修正计划写入 `AnomalyRecord`，状态变为 `AwaitingApproval`。
+
+### 测试
+
+新增测试覆盖：
+
+```text
+稳定性矩阵本征向量解析
+电子态名称到自旋多重度映射
+选择最低本征值
+相同多重度生成波函数优化方案
+不同多重度生成修改自旋多重度方案
+没有负本征值时不生成降低能量方案
+工作流包含 stability-correction-plan 节点
+```
+
+### 验证
+
+- Release 全解决方案构建：0 警告 0 错误
+- 测试：69/69 通过
+- 真实 O2 单点计算：
+
+```text
+稳定性本征向量数量：6
+最低本征值电子态：Triplet
+修正意图：spin-multiplicity.change
+原自旋多重度：1
+目标自旋多重度：3
+异常记录状态：AwaitingApproval
+```
+
+### 当前边界
+
+当前只生成修正方案，尚未：
+
+```text
+人工审批
+把通用修正方案翻译为 Gaussian 输入
+创建派生修正作业
+执行修正重算
+```
+
+---
+
 ## v0.36.0（2026-10-05）：默认 SCF 迭代上限 200
 
 ### 版本

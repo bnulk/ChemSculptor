@@ -700,6 +700,30 @@ plan
 wavefunction-instability
 ```
 
+稳定性检查完成后，通用修正规划节点解析全部稳定矩阵本征向量：
+
+```text
+Eigenvector
+StateName
+Multiplicity
+Eigenvalue
+SpinSquared
+Transitions
+```
+
+规划器选择数值最小的本征值：
+
+```text
+最低本征值对应电子态多重度 == 当前多重度
+  → wavefunction.optimize
+
+最低本征值对应电子态多重度 != 当前多重度
+  → spin-multiplicity.change
+```
+
+生成的 `CorrectionPlan` 写入 `AnomalyRecord`，记录状态变为
+`AwaitingApproval`。当前阶段只生成方案，不执行修正。
+
 ### 11.2 异常记录聚合
 
 `AnomalyRecord` 是异常处理存储的主要聚合根，包含：

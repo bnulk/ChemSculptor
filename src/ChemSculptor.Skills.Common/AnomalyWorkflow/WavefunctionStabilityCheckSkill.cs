@@ -73,6 +73,12 @@ public sealed class WavefunctionStabilityCheckSkill
                 checkRequest,
                 cancellationToken);
 
+        if (string.IsNullOrWhiteSpace(checkResult.JobId)
+            && checkRequest.Context.Job != null)
+        {
+            checkResult.JobId = checkRequest.Context.Job.JobId;
+        }
+
         if (checkRequest.Context.Job != null)
         {
             AnomalyRecord record =

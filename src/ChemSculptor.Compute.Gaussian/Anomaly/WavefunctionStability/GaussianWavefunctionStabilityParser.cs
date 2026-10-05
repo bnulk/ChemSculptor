@@ -1,4 +1,6 @@
 using ChemSculptor.Anomaly.Models;
+using System.Globalization;
+using System.Text.RegularExpressions;
 
 namespace ChemSculptor.Compute.Gaussian.Anomaly.WavefunctionStability;
 
@@ -8,6 +10,14 @@ namespace ChemSculptor.Compute.Gaussian.Anomaly.WavefunctionStability;
 /// </summary>
 public sealed class GaussianWavefunctionStabilityParser
 {
+    private static readonly Regex EigenvectorPattern = new Regex(
+        @"Eigenvector\s+(\d+):\s+(\S+)\s+Eigenvalue=\s*([-+]?[0-9]+(?:\.[0-9]+)?(?:[DdEe][+-]?[0-9]+)?)\s+<S\*\*2>=\s*([-+]?[0-9]+(?:\.[0-9]+)?(?:[DdEe][+-]?[0-9]+)?)",
+        RegexOptions.Compiled | RegexOptions.CultureInvariant);
+
+    private static readonly Regex TransitionPattern = new Regex(
+        @"^\s*(\d+)\s*->\s*(\d+)\s+([-+]?[0-9]+(?:\.[0-9]+)?(?:[DdEe][+-]?[0-9]+)?)",
+        RegexOptions.Compiled | RegexOptions.CultureInvariant);
+
     /// <summary>解析稳定性检查输出。</summary>
     public async Task<WavefunctionStabilityResult> ParseAsync(
         string outputPath,
@@ -35,10 +45,43 @@ public sealed class GaussianWavefunctionStabilityParser
         bool foundStableStatement = false;
         bool foundUnstableStatement = false;
         string instabilityKind = string.Empty;
+        WavefunctionStabilityEigenvector? currentEigenvector = null;
 
         for (int index = 0; index < lines.Length; index++)
         {
             string line = lines[index].Trim();
+
+            Match eigenvectorMatch = EigenvectorPattern.Match(line);
+
+            if (eigenvectorMatch.Success)
+            {
+                currentEigenvector = CreateEigenvector(
+                    eigenvectorMatch);
+                result.Eigenvectors.Add(currentEigenvector);
+                continue;
+            }
+
+            Match transitionMatch = TransitionPattern.Match(line);
+
+            if (transitionMatch.Success
+                && currentEigenvector != null)
+            {
+                WavefunctionStabilityTransition transition =
+                    new WavefunctionStabilityTransition();
+                transition.FromOrbital =
+                    int.Parse(
+                        transitionMatch.Groups[1].Value,
+                        CultureInfo.InvariantCulture);
+                transition.ToOrbital =
+                    int.Parse(
+                        transitionMatch.Groups[2].Value,
+                        CultureInfo.InvariantCulture);
+                transition.Coefficient =
+                    ParseGaussianNumber(
+                        transitionMatch.Groups[3].Value);
+                currentEigenvector.Transitions.Add(transition);
+                continue;
+            }
 
             if (IsStableStatement(line))
             {
@@ -95,6 +138,41 @@ public sealed class GaussianWavefunctionStabilityParser
         }
 
         return result;
+    }
+
+    private static WavefunctionStabilityEigenvector CreateEigenvector(
+        Match match)
+    {
+        string stateName = match.Groups[2].Value;
+        int multiplicity;
+        SpinMultiplicityNames.TryParse(
+            stateName,
+            out multiplicity);
+
+        WavefunctionStabilityEigenvector eigenvector =
+            new WavefunctionStabilityEigenvector();
+        eigenvector.Index = int.Parse(
+            match.Groups[1].Value,
+            CultureInfo.InvariantCulture);
+        eigenvector.StateName = stateName;
+        eigenvector.Multiplicity = multiplicity;
+        eigenvector.Eigenvalue = ParseGaussianNumber(
+            match.Groups[3].Value);
+        eigenvector.SpinSquared = ParseGaussianNumber(
+            match.Groups[4].Value);
+        return eigenvector;
+    }
+
+    private static double ParseGaussianNumber(string text)
+    {
+        string normalized = text.Replace('D', 'E').Replace('d', 'e');
+        double value;
+        double.TryParse(
+            normalized,
+            NumberStyles.Float,
+            CultureInfo.InvariantCulture,
+            out value);
+        return value;
     }
 
     private static bool IsStableStatement(string line)
