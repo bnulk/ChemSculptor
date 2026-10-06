@@ -73,6 +73,11 @@ public class ScientificResultExtractorTests
                     == "O2-recovery-m3.gjf");
             Assert.Contains(
                 corrected.Artifacts,
+                artifact => artifact.CanonicalStem
+                    == "O2-recovery-m3"
+                    && artifact.CanonicalExtension == ".gjf");
+            Assert.Contains(
+                corrected.Artifacts,
                 artifact => artifact.DownloadFileName
                     == "O2-recovery-m3.log");
             Assert.Contains(

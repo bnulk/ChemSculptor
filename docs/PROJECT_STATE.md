@@ -3,7 +3,7 @@
 ## 当前版本
 
 ```text
-0.42.0
+0.43.0
 ```
 
 ## 文档维护原则
@@ -35,7 +35,7 @@ HANDOFF.md
 
 ```text
 Release 构建：0 警告，0 错误
-测试：81/81 通过
+测试：83/83 通过
 ```
 
 ## 总体架构
@@ -102,6 +102,7 @@ WinForms 客户端
 科学计算点数据结构
 科学点程序专门数据
 科学点原始文件引用
+科学点规范文件主体和扩展名
 科学数据文件仓储
 计算结果到科学数据的提取
 客户端科学摘要
@@ -140,13 +141,16 @@ WinForms 领取和显示摘要
 
 阶段 0 已完成：科学点文件成果包规范已冻结。
 
+阶段 1 已完成：科学点模型已经能够保存原始文件引用，
+并支持规范文件主体、规范扩展名以及旧科学数据读取。
+
 规范文档：
 
 ```text
 docs/Scientific-Point-Artifact-Package-Spec.md
 ```
 
-下一阶段任务是实现成果包生成服务：
+下一阶段是实现成果包生成服务：
 
 ```text
 ScientificArchiveManifest
@@ -162,6 +166,15 @@ WinForms 保存完整成果包
 对话文本和点摘要文本
 历史科学数据兼容和回填
 氧气端到端验证
+```
+
+阶段 1 验收结果：
+
+```text
+PointArtifactReference 已包含 CanonicalStem 和 CanonicalExtension
+Artifact 模型 JSON 往返测试通过
+旧科学成果 JSON 兼容读取测试通过
+未修改计算层、工作流、API 和 WinForms
 ```
 
 ## 重要文档

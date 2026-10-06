@@ -112,6 +112,8 @@ CalculationJobId
 Kind
 RelativePath
 DownloadFileName
+CanonicalStem
+CanonicalExtension
 MediaType
 Length
 Sha256
@@ -122,6 +124,19 @@ CanUseForRestart
 `RelativePath` 相对于该作业的 `run` 目录。
 
 `DownloadFileName` 是客户端保存时使用的逻辑文件名，不改变服务器原始文件。
+
+`CanonicalStem` 是不包含扩展名的规范文件名主体。
+
+`CanonicalExtension` 是规范文件扩展名，包含前导点。
+
+正常情况下：
+
+```text
+DownloadFileName = CanonicalStem + CanonicalExtension
+```
+
+如果同一科学点内出现扩展名冲突，工具可以在
+`CanonicalStem` 末尾增加数字后缀，但仍必须满足上述关系。
 
 ## 7. 文件类别
 

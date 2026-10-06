@@ -5,6 +5,113 @@
 
 ---
 
+## v0.43.0（2026-10-06）：完成科学点文件引用模型
+
+### 版本
+
+- 当前版本：`0.43.0`
+- 日期：2026-10-06
+- 版本类型：功能完善
+
+### 改动目的
+
+完成阶段 1“扩展科学点模型”。
+
+目标是让每个科学点的原始文件引用能够独立描述规范文件名，
+同时保证已经保存的旧科学成果 JSON 仍然可以读取。
+
+### 模型改动
+
+`PointArtifactReference` 增加：
+
+```text
+CanonicalStem
+CanonicalExtension
+```
+
+字段含义：
+
+```text
+CanonicalStem
+  不包含扩展名的规范文件名主体
+
+CanonicalExtension
+  规范文件扩展名，包含前导点
+```
+
+正常情况下满足：
+
+```text
+DownloadFileName = CanonicalStem + CanonicalExtension
+```
+
+如果同一科学点内产生相同扩展名冲突，提取器会在
+`CanonicalStem` 末尾加入数字后缀，避免下载文件名冲突。
+
+### 提取器改动
+
+`ScientificResultExtractor` 创建文件引用时现在同时填写：
+
+```text
+DownloadFileName
+CanonicalStem
+CanonicalExtension
+```
+
+氧气恢复点示例：
+
+```text
+CanonicalStem      = O2-recovery-m3
+CanonicalExtension = .gjf
+DownloadFileName   = O2-recovery-m3.gjf
+```
+
+### 兼容性
+
+旧的科学成果 JSON 不含阶段 1 新增字段。
+
+读取后：
+
+```text
+CalculationJobId 为空字符串
+ProgramData 使用默认对象
+Artifacts 使用空列表
+```
+
+因此旧数据不需要迁移即可继续读取。
+
+### 测试
+
+新增：
+
+```text
+PointArtifactReference JSON 往返测试
+旧版 ScientificResult JSON 兼容读取测试
+CanonicalStem 和 CanonicalExtension 提取结果断言
+```
+
+验证结果：
+
+```text
+Release 构建：0 警告，0 错误
+测试：83/83 通过
+```
+
+### 当前边界
+
+本阶段只扩展科学点模型和提取结果，不修改：
+
+```text
+计算层
+工作流
+Api
+WinForms
+```
+
+完整成果包生成和下载仍未实现。
+
+---
+
 ## v0.42.0（2026-10-06）：科学点程序数据与原始文件引用
 
 ### 版本

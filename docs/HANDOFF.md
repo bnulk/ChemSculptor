@@ -2,57 +2,58 @@
 
 ## 当前阶段
 
-阶段 0：冻结科学点文件成果包规范。
+阶段 1：扩展科学点模型。已完成。
 
 ```text
-新增数据规范文档
-确定科学点必填字段
-确定 Artifact 稳定标识
-确定下载文件命名规则
-确定成果包目录结构
-确定点和文本的关系
-不修改现有代码和工作流
+CalculationPoint 保存 CalculationJobId、ProgramData 和 Artifacts
+PointArtifactReference 保存规范文件主体和规范扩展名
+Artifact 模型支持 JSON 序列化和反序列化
+旧科学成果 JSON 保持可读取
 ```
 
 ## 已完成
 
 ```text
-科学点文件成果包规范已建立
-成果包目录结构已确定
-文件命名规则已确定
-原始点、被取代点、失败点的保留规则已确定
-文本与科学点的关系已确定
+CalculationPoint 已增加 CalculationJobId
+CalculationPoint 已增加 ProgramData
+CalculationPoint 已增加 Artifacts
+PointArtifactReference 已增加 CanonicalStem
+PointArtifactReference 已增加 CanonicalExtension
+提取器已填写规范文件名主体和扩展名
+旧数据兼容读取已由测试覆盖
 ```
 
 ## 修改文件
 
 ```text
+src/ChemSculptor.ScientificData/Models/PointArtifactReference.cs
+src/ChemSculptor.ScientificData.Extraction/ScientificResultExtractor.cs
+tests/ChemSculptor.Core.Tests/ScientificResultExtractorTests.cs
+tests/ChemSculptor.Core.Tests/FileScientificDataRepositoryTests.cs
 docs/Scientific-Point-Artifact-Package-Spec.md
 docs/PROJECT_STATE.md
+docs/CHANGES.md
 docs/HANDOFF.md
 ```
 
 ## 验证结果
 
-本次只新增和修改文档，不修改代码。
-
 ```text
-无代码构建和测试变更
+Release 构建：0 警告，0 错误
+测试：83/83 通过
 ```
 
 ## 尚未完成
 
 ```text
-ScientificArchiveManifest 尚未实现
-ScientificArchiveService 尚未实现
-成果包清单 API 尚未实现
-按科学点下载 API 尚未实现
-WinForms 尚未保存完整科学点成果包
+阶段 1 没有遗留项。
+
+阶段 2 尚未开始。
 ```
 
 ## 下一步精确任务
 
-阶段 1：实现成果包清单和文件解析服务：
+建议的阶段 2：实现成果包清单和文件解析服务：
 
 ```text
 新增 ScientificArchiveManifest
@@ -67,15 +68,14 @@ WinForms 尚未保存完整科学点成果包
 本阶段先不修改 WinForms
 ```
 
-本阶段要求：
+候选实现内容：
 
 ```text
-不修改 CalculationPoint
-不修改提取器
-不修改 WinForms
-不修改工作流
-增加 Manifest 和路径解析测试
-完成后运行 Release 构建和测试
+ScientificArchiveManifest
+ScientificArchivePoint
+ScientificArchiveFile
+IScientificArchiveService
+根据 ScientificResult 和 CalculationPoint.Artifacts 解析 run 目录文件
 ```
 
 ## 注意事项

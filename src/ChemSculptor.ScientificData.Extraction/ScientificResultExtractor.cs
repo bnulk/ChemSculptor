@@ -541,16 +541,19 @@ public sealed class ScientificResultExtractor
 
             string extension = Path.GetExtension(
                 artifact.RelativePath);
-            string fileName = canonicalStem + extension;
+            string fileStem = canonicalStem;
+            string fileName = fileStem + extension;
             int duplicateIndex = 2;
 
             while (!usedFileNames.Add(fileName))
             {
-                fileName =
+                fileStem =
                     canonicalStem +
                     "-" +
                     duplicateIndex.ToString(
-                        CultureInfo.InvariantCulture) +
+                        CultureInfo.InvariantCulture);
+                fileName =
+                    fileStem +
                     extension;
                 duplicateIndex++;
             }
@@ -568,6 +571,8 @@ public sealed class ScientificResultExtractor
                 artifact.Kind);
             reference.RelativePath = artifact.RelativePath;
             reference.DownloadFileName = fileName;
+            reference.CanonicalStem = fileStem;
+            reference.CanonicalExtension = extension;
             reference.MediaType = artifact.MediaType;
             reference.Length = artifact.Length;
             reference.Sha256 = artifact.Sha256;

@@ -19,6 +19,12 @@ public sealed class PointArtifactReference
     /// <summary>下载时使用的文件名。</summary>
     public string DownloadFileName { get; set; } = string.Empty;
 
+    /// <summary>不包含扩展名的规范文件名主体。</summary>
+    public string CanonicalStem { get; set; } = string.Empty;
+
+    /// <summary>规范文件扩展名，包含前导点。</summary>
+    public string CanonicalExtension { get; set; } = string.Empty;
+
     /// <summary>文件媒体类型。</summary>
     public string MediaType { get; set; } =
         "application/octet-stream";
