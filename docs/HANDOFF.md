@@ -2,43 +2,48 @@
 
 ## 当前阶段
 
-固定项目协作文档结构。
+科学点程序数据和原始文件引用。
 
 ```text
-新增 docs/PROJECT_STATE.md
-新增 docs/HANDOFF.md
-建立 docs/Tutorials/
-移动已有 Tutorial 文档
-CHANGES.md 保持不变
+CalculationPoint 增加 CalculationJobId
+CalculationPoint 增加 ProgramData
+CalculationPoint 增加 Artifacts
+新增 PointProgramData
+新增 PointArtifactReference
+extractor 填充程序数据和文件引用
+Gaussian 适配器增加 chk、stdout、stderr
 ```
 
 ## 已完成
 
 ```text
-PROJECT_STATE.md 已建立
-HANDOFF.md 已建立
-docs/Tutorials/ 已建立
-现有 Tutorial 文档已移入 docs/Tutorials/
+科学点通用数据与程序专门数据已分离
+原始点和恢复点分别保存 CalculationJobId
+原始点和恢复点分别保存文件引用
+文件下载逻辑名已统一
+Release 构建通过
+测试 81/81 通过
 ```
 
 ## 修改文件
 
 ```text
+src/ChemSculptor.ScientificData/Models/CalculationPoint.cs
+src/ChemSculptor.ScientificData/Models/PointCalculationModel.cs
+src/ChemSculptor.ScientificData/Models/PointProgramData.cs
+src/ChemSculptor.ScientificData/Models/PointArtifactReference.cs
+src/ChemSculptor.ScientificData/Models/ScientificDataEnums.cs
+src/ChemSculptor.ScientificData.Extraction/ScientificResultExtractor.cs
+src/ChemSculptor.Compute.Gaussian/Gaussian16ProgramAdapter.cs
+tests/ChemSculptor.Core.Tests/ScientificResultExtractorTests.cs
 docs/PROJECT_STATE.md
+docs/CHANGES.md
 docs/HANDOFF.md
-
-docs/Tutorials/ChemSculptor-Tutorial.md
-docs/Tutorials/ChemSculptor-Skill-Collection-Tutorial.md
-docs/Tutorials/Skill-Collections-and-Workflow-Tutorial.md
-docs/Tutorials/ScientificData-Tutorial.md
-docs/Tutorials/Oxygen-End-to-End-Tutorial.md
 ```
 
 ## 验证结果
 
-本次只移动和新增 Markdown 文档，不修改代码。
-
-最近一次代码验证仍然有效：
+本次已修改代码并完成验证：
 
 ```text
 Release 构建：0 警告，0 错误
@@ -48,46 +53,43 @@ Release 构建：0 警告，0 错误
 ## 尚未完成
 
 ```text
-CalculationPoint 尚未增加 CalculationJobId
-CalculationPoint 尚未增加 Artifacts
-提取器尚未填充科学点文件引用
 成果包清单 API 尚未实现
 按科学点下载 API 尚未实现
 WinForms 尚未保存完整科学点成果包
 conversation.txt 尚未保存
 final-summary.txt 尚未作为独立文件保存
 历史科学数据尚未回填文件引用
+新科学点文件引用尚未通过真实 O2 流程再次验证
 ```
 
 ## 下一步精确任务
 
-只实现阶段 1：
+只实现成果包清单和按科学点下载：
 
 ```text
-扩展 ChemSculptor.ScientificData 中的 CalculationPoint
-  增加 CalculationJobId
-  增加 Artifacts
+新增 ScientificArchiveManifest
+新增 ScientificArchivePoint
+新增 ScientificArchiveFile
+新增 IScientificArchiveService
 
-新增 PointArtifactReference
-  ArtifactId
-  Kind
-  RelativePath
-  MediaType
-  Length
-  Sha256
-  CanonicalStem
-  CanonicalExtension
-  CanDownload
+服务根据 ScientificResult 和 CalculationPoint.Artifacts
+解析服务器 run 目录中的真实文件
+
+API 增加：
+GET /scientific-results/{resultId}/archive-manifest
+GET /scientific-results/{resultId}/archive/{pointId}/{artifactId}
+GET /calculations/{jobId}/archive-manifest
+GET /calculations/{jobId}/archive/{pointId}/{artifactId}
 ```
 
 本阶段要求：
 
 ```text
+不修改 CalculationPoint 模型
 不修改提取器
-不修改 API
 不修改 WinForms
 不修改工作流
-增加必要的序列化测试
+增加服务测试和路径安全测试
 完成后运行 Release 构建和测试
 ```
 

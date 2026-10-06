@@ -127,7 +127,11 @@ public sealed class ScientificResultExtractor
                 molecularGeometry,
                 originalStatus,
                 originalProvenance,
-                "原始计算点");
+                "原始计算点",
+                BuildCanonicalStem(
+                    molecularGeometry.Formula,
+                    "original",
+                    request.OriginalJob.Spec.Multiplicity));
         originalPoint.Validations.AddRange(
             CreateValidationRecords(
                 request.OriginalValidationReport,
@@ -165,7 +169,11 @@ public sealed class ScientificResultExtractor
                 molecularGeometry,
                 recoveryStatus,
                 recoveryProvenance,
-                "派生修正计算点");
+                "派生修正计算点",
+                BuildCanonicalStem(
+                    molecularGeometry.Formula,
+                    "recovery",
+                    recoveryJob.Spec.Multiplicity));
             recoveryPoint.Validations.AddRange(
                 CreateValidationRecords(
                     new CalculationValidationReport(),
@@ -316,17 +324,25 @@ public sealed class ScientificResultExtractor
         MolecularGeometry molecularGeometry,
         CalculationPointStatus status,
         PointProvenance provenance,
-        string name)
+        string name,
+        string canonicalStem)
     {
         CalculationPoint point = new CalculationPoint();
         point.Id = "point-" + job.JobId;
         point.Name = name;
         point.Kind = CalculationPointKind.Unknown;
         point.Status = status;
+        point.CalculationJobId = job.JobId;
         point.Geometry = CloneGeometry(geometry);
         point.ElectronicState = CreateElectronicState(job.Spec);
         point.CalculationModel = CreateCalculationModel(job.Spec);
+        point.ProgramData = CreateProgramData(job, result);
         point.Provenance = provenance;
+        point.Artifacts.AddRange(
+            CreateArtifactReferences(
+                job,
+                result,
+                canonicalStem));
         point.Metadata["formula"] = molecularGeometry.Formula;
         point.Metadata["normalTermination"] =
             result.NormalTermination.ToString(
@@ -449,6 +465,7 @@ public sealed class ScientificResultExtractor
         PointCalculationModel model =
             new PointCalculationModel();
         model.Program = spec.Program;
+        model.ProgramVersion = string.Empty;
         model.Method = spec.Method;
         model.Basis = spec.Basis;
         model.Environment = spec.Solvent;
@@ -460,6 +477,195 @@ public sealed class ScientificResultExtractor
         }
 
         return model;
+    }
+
+    private static PointProgramData CreateProgramData(
+        CalculationJob job,
+        CalculationResult result)
+    {
+        PointProgramData data = new PointProgramData();
+        data.ProgramCode = NormalizeProgramCode(job.Spec.Program);
+        data.ProgramVersion = string.Empty;
+
+        if (!string.IsNullOrWhiteSpace(job.InputFilePath))
+        {
+            data.InputFormat = Path.GetExtension(
+                job.InputFilePath).TrimStart('.');
+        }
+
+        foreach (KeyValuePair<string, string> pair in
+            job.Spec.ExtraOptions)
+        {
+            data.Values[pair.Key] = pair.Value;
+        }
+
+        if (!string.IsNullOrWhiteSpace(result.Program))
+        {
+            data.Values["resultProgram"] = result.Program;
+        }
+
+        return data;
+    }
+
+    private static List<PointArtifactReference>
+        CreateArtifactReferences(
+            CalculationJob job,
+            CalculationResult result,
+            string canonicalStem)
+    {
+        List<PointArtifactReference> references =
+            new List<PointArtifactReference>();
+
+        if (result.Artifacts == null
+            || result.Artifacts.Count == 0)
+        {
+            return references;
+        }
+
+        HashSet<string> usedFileNames =
+            new HashSet<string>(
+                StringComparer.OrdinalIgnoreCase);
+
+        for (int index = 0;
+            index < result.Artifacts.Count;
+            index++)
+        {
+            CalculationArtifactDescriptor artifact =
+                result.Artifacts[index];
+
+            if (string.IsNullOrWhiteSpace(
+                artifact.RelativePath))
+            {
+                continue;
+            }
+
+            string extension = Path.GetExtension(
+                artifact.RelativePath);
+            string fileName = canonicalStem + extension;
+            int duplicateIndex = 2;
+
+            while (!usedFileNames.Add(fileName))
+            {
+                fileName =
+                    canonicalStem +
+                    "-" +
+                    duplicateIndex.ToString(
+                        CultureInfo.InvariantCulture) +
+                    extension;
+                duplicateIndex++;
+            }
+
+            PointArtifactReference reference =
+                new PointArtifactReference();
+            reference.ArtifactId =
+                "artifact-" +
+                job.JobId +
+                "-" +
+                index.ToString(
+                    CultureInfo.InvariantCulture);
+            reference.CalculationJobId = job.JobId;
+            reference.Kind = MapArtifactKind(
+                artifact.Kind);
+            reference.RelativePath = artifact.RelativePath;
+            reference.DownloadFileName = fileName;
+            reference.MediaType = artifact.MediaType;
+            reference.Length = artifact.Length;
+            reference.Sha256 = artifact.Sha256;
+            reference.CanDownload = true;
+            reference.CanUseForRestart =
+                artifact.CanUseForRestart;
+            references.Add(reference);
+        }
+
+        return references;
+    }
+
+    private static ScientificArtifactKind MapArtifactKind(
+        CalculationArtifactKind kind)
+    {
+        if (kind == CalculationArtifactKind.Input)
+        {
+            return ScientificArtifactKind.Input;
+        }
+
+        if (kind == CalculationArtifactKind.PrimaryOutput)
+        {
+            return ScientificArtifactKind.PrimaryOutput;
+        }
+
+        if (kind == CalculationArtifactKind.SupportingOutput)
+        {
+            return ScientificArtifactKind.SupportingOutput;
+        }
+
+        if (kind == CalculationArtifactKind.RestartState)
+        {
+            return ScientificArtifactKind.RestartState;
+        }
+
+        return ScientificArtifactKind.Other;
+    }
+
+    private static string BuildCanonicalStem(
+        string formula,
+        string role,
+        int multiplicity)
+    {
+        string basis = string.IsNullOrWhiteSpace(formula)
+            ? "point"
+            : formula;
+        StringBuilder builder = new StringBuilder();
+
+        for (int index = 0; index < basis.Length; index++)
+        {
+            char value = basis[index];
+
+            if (char.IsLetterOrDigit(value)
+                || value == '-'
+                || value == '_'
+                || value == '.')
+            {
+                builder.Append(value);
+            }
+            else
+            {
+                builder.Append('-');
+            }
+        }
+
+        return builder.ToString() +
+            "-" +
+            role +
+            "-m" +
+            multiplicity.ToString(
+                CultureInfo.InvariantCulture);
+    }
+
+    private static string NormalizeProgramCode(string program)
+    {
+        if (string.IsNullOrWhiteSpace(program))
+        {
+            return string.Empty;
+        }
+
+        StringBuilder builder = new StringBuilder();
+
+        for (int index = 0; index < program.Length; index++)
+        {
+            char value = program[index];
+
+            if (char.IsLetterOrDigit(value))
+            {
+                builder.Append(char.ToLowerInvariant(value));
+            }
+            else if (builder.Length > 0
+                && builder[builder.Length - 1] != '-')
+            {
+                builder.Append('-');
+            }
+        }
+
+        return builder.ToString().Trim('-');
     }
 
     private static PointElectronicStateKind MapElectronicStateKind(

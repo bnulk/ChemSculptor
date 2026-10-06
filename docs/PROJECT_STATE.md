@@ -3,7 +3,7 @@
 ## 当前版本
 
 ```text
-0.41.0
+0.42.0
 ```
 
 ## 文档维护原则
@@ -100,6 +100,8 @@ WinForms 客户端
 派生作业执行
 派生作业稳定性复检
 科学计算点数据结构
+科学点程序专门数据
+科学点原始文件引用
 科学数据文件仓储
 计算结果到科学数据的提取
 客户端科学摘要
@@ -128,7 +130,7 @@ WinForms 领取和显示摘要
 当前只实现 Gaussian 16 本机执行主链
 远程 HPC 队列和调度尚未实现
 几何优化、频率、TD-DFT 等任务尚未实现
-科学点文件清单尚未进入 CalculationPoint
+科学点文件清单已进入 CalculationPoint
 完整成果包下载尚未实现
 对话框文本保存和逐点文本说明尚未实现
 客户端摘要当前使用 Api 内存邮箱
@@ -136,24 +138,18 @@ WinForms 领取和显示摘要
 
 ## 下一阶段
 
-第一优先任务是让科学点拥有自己的原始文件清单：
+第一优先任务是让科学点文件清单能够形成完整成果包：
 
 ```text
-CalculationPoint
-  增加 CalculationJobId
-  增加 Artifacts
-
-PointArtifactReference
-  标识输入、输出、fchk、chk 等文件
+ScientificArchiveManifest
+ScientificArchiveService
+成果包清单 API
+按科学点下载 API
 ```
 
 后续依次完成：
 
 ```text
-提取器填充文件引用
-科学点文件解析服务
-成果包清单 API
-按科学点下载 API
 WinForms 保存完整成果包
 对话文本和点摘要文本
 历史科学数据兼容和回填

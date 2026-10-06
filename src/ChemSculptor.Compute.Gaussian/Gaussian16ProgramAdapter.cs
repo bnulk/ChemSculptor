@@ -139,6 +139,21 @@ public sealed class Gaussian16ProgramAdapter : IQuantumProgramAdapter
             CalculationArtifactKind.RestartState,
             "application/octet-stream",
             true));
+        patterns.Add(CreateArtifactPattern(
+            "*.chk",
+            CalculationArtifactKind.RestartState,
+            "application/octet-stream",
+            true));
+        patterns.Add(CreateArtifactPattern(
+            "stdout.log",
+            CalculationArtifactKind.SupportingOutput,
+            "text/plain; charset=utf-8",
+            false));
+        patterns.Add(CreateArtifactPattern(
+            "stderr.log",
+            CalculationArtifactKind.SupportingOutput,
+            "text/plain; charset=utf-8",
+            false));
         return patterns;
     }
 

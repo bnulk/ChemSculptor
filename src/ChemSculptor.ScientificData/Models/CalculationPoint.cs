@@ -20,6 +20,9 @@ public sealed class CalculationPoint
     public CalculationPointStatus Status { get; set; } =
         CalculationPointStatus.Candidate;
 
+    /// <summary>产生该点的主要计算作业标识。</summary>
+    public string CalculationJobId { get; set; } = string.Empty;
+
     /// <summary>几何结构。</summary>
     public PointGeometry Geometry { get; set; } =
         new PointGeometry();
@@ -36,6 +39,10 @@ public sealed class CalculationPoint
     public PointCalculationModel CalculationModel { get; set; } =
         new PointCalculationModel();
 
+    /// <summary>计算程序专门数据。</summary>
+    public PointProgramData ProgramData { get; set; } =
+        new PointProgramData();
+
     /// <summary>计算点上保存的性质。</summary>
     public List<ScientificProperty> Properties { get; set; } =
         new List<ScientificProperty>();
@@ -47,6 +54,10 @@ public sealed class CalculationPoint
     /// <summary>来源和接受过程。</summary>
     public PointProvenance Provenance { get; set; } =
         new PointProvenance();
+
+    /// <summary>该科学点对应的原始文件。</summary>
+    public List<PointArtifactReference> Artifacts { get; set; } =
+        new List<PointArtifactReference>();
 
     /// <summary>用于检索的标签。</summary>
     public List<string> Labels { get; set; } =

@@ -62,6 +62,23 @@ public class ScientificResultExtractorTests
             Assert.Equal(
                 3,
                 corrected.ElectronicState.Multiplicity);
+            Assert.Equal("job-recovery", corrected.CalculationJobId);
+            Assert.Equal(
+                "gaussian-16",
+                corrected.ProgramData.ProgramCode);
+            Assert.Equal(3, corrected.Artifacts.Count);
+            Assert.Contains(
+                corrected.Artifacts,
+                artifact => artifact.DownloadFileName
+                    == "O2-recovery-m3.gjf");
+            Assert.Contains(
+                corrected.Artifacts,
+                artifact => artifact.DownloadFileName
+                    == "O2-recovery-m3.log");
+            Assert.Contains(
+                corrected.Artifacts,
+                artifact => artifact.DownloadFileName
+                    == "O2-recovery-m3.fchk");
             Assert.Equal(
                 ScientificObservableKind.SinglePointEnergy,
                 result.Result.Observables[0].Kind);
@@ -115,6 +132,19 @@ public class ScientificResultExtractorTests
         originalResult.Energy = -149.0;
         originalResult.EnergyUnit = "Hartree";
         originalResult.Multiplicity = 1;
+        originalResult.Artifacts.Add(
+            CreateArtifact(
+                "job-original.gjf",
+                CalculationArtifactKind.Input));
+        originalResult.Artifacts.Add(
+            CreateArtifact(
+                "output.log",
+                CalculationArtifactKind.PrimaryOutput));
+        originalResult.Artifacts.Add(
+            CreateArtifact(
+                "job-original.fchk",
+                CalculationArtifactKind.RestartState,
+                true));
 
         AnomalyCheckResult originalStability =
             new AnomalyCheckResult();
@@ -140,6 +170,19 @@ public class ScientificResultExtractorTests
         recoveryResult.Energy = -150.0;
         recoveryResult.EnergyUnit = "Hartree";
         recoveryResult.Multiplicity = 3;
+        recoveryResult.Artifacts.Add(
+            CreateArtifact(
+                "job-recovery.gjf",
+                CalculationArtifactKind.Input));
+        recoveryResult.Artifacts.Add(
+            CreateArtifact(
+                "output.log",
+                CalculationArtifactKind.PrimaryOutput));
+        recoveryResult.Artifacts.Add(
+            CreateArtifact(
+                "job-recovery.fchk",
+                CalculationArtifactKind.RestartState,
+                true));
 
         RecoveryJobExecutionResult recoveryExecution =
             new RecoveryJobExecutionResult();
@@ -184,6 +227,23 @@ public class ScientificResultExtractorTests
         request.RecoveryExecution = recoveryExecution;
         request.RecoveryStabilityCheck = recoveryStability;
         return request;
+    }
+
+    private static CalculationArtifactDescriptor CreateArtifact(
+        string relativePath,
+        CalculationArtifactKind kind,
+        bool canUseForRestart = false)
+    {
+        CalculationArtifactDescriptor artifact =
+            new CalculationArtifactDescriptor();
+        artifact.FileName = Path.GetFileName(relativePath);
+        artifact.RelativePath = relativePath;
+        artifact.Kind = kind;
+        artifact.MediaType = "application/octet-stream";
+        artifact.Length = 100;
+        artifact.Sha256 = "test-sha256";
+        artifact.CanUseForRestart = canUseForRestart;
+        return artifact;
     }
 
     private static CalculationPoint FindPoint(

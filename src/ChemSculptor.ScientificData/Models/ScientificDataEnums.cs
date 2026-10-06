@@ -113,6 +113,25 @@ public enum ScientificPropertyKind
     Other
 }
 
+/// <summary>科学点相关文件的通用类别。</summary>
+public enum ScientificArtifactKind
+{
+    /// <summary>计算程序使用的输入文件。</summary>
+    Input,
+
+    /// <summary>计算程序产生的主要输出。</summary>
+    PrimaryOutput,
+
+    /// <summary>辅助输出或运行日志。</summary>
+    SupportingOutput,
+
+    /// <summary>可用于恢复或继续计算的状态文件。</summary>
+    RestartState,
+
+    /// <summary>其它文件。</summary>
+    Other
+}
+
 /// <summary>科学成果从点集导出的物理量类别。</summary>
 public enum ScientificObservableKind
 {

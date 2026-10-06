@@ -6,6 +6,9 @@ public sealed class PointCalculationModel
     /// <summary>计算程序。</summary>
     public string Program { get; set; } = string.Empty;
 
+    /// <summary>计算程序版本。</summary>
+    public string ProgramVersion { get; set; } = string.Empty;
+
     /// <summary>方法或泛函。</summary>
     public string Method { get; set; } = string.Empty;
 

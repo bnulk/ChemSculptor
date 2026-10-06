@@ -5,6 +5,123 @@
 
 ---
 
+## v0.42.0（2026-10-06）：科学点程序数据与原始文件引用
+
+### 版本
+
+- 当前版本：`0.42.0`
+- 日期：2026-10-06
+- 版本类型：功能新增
+
+### 改动目的
+
+让科学数据仓库同时保存通用科学数据和程序专门数据。
+每个科学点现在可以标识自己的计算作业，并保存该点对应的原始文件引用。
+
+### 通用与专门数据
+
+新增：
+
+```text
+PointProgramData
+  ProgramCode
+  ProgramVersion
+  InputFormat
+  SchemaVersion
+  Values
+```
+
+`PointCalculationModel` 增加：
+
+```text
+ProgramVersion
+```
+
+程序专门字段保存在 `PointProgramData.Values`，通用模型不解释具体程序语法。
+
+### 科学点原始文件
+
+新增：
+
+```text
+PointArtifactReference
+  ArtifactId
+  CalculationJobId
+  Kind
+  RelativePath
+  DownloadFileName
+  MediaType
+  Length
+  Sha256
+  CanDownload
+  CanUseForRestart
+  Metadata
+```
+
+`CalculationPoint` 增加：
+
+```text
+CalculationJobId
+ProgramData
+Artifacts
+```
+
+### 文件命名
+
+科学点提取时生成统一逻辑文件名：
+
+```text
+O2-original-m1.gjf
+O2-original-m1.log
+O2-original-m1.fchk
+
+O2-recovery-m3.gjf
+O2-recovery-m3.log
+O2-recovery-m3.fchk
+```
+
+原始计算目录中的 `output.log` 等文件不重命名；逻辑文件名仅用于科学点标识和后续下载。
+
+### Gaussian 原始文件
+
+Gaussian 适配器现在声明以下产物：
+
+```text
+output.log
+*.gjf
+*.fchk
+*.chk
+stdout.log
+stderr.log
+```
+
+### 验证
+
+- Release 全解决方案构建：0 警告，0 错误
+- 测试：81/81 通过
+- 提取器测试验证：
+
+```text
+原始点和恢复点具有独立 CalculationJobId
+程序专门数据写入 PointProgramData
+原始点和恢复点分别保存文件引用
+O2-original-m1 和 O2-recovery-m3 文件命名正确
+```
+
+### 当前边界
+
+尚未实现：
+
+```text
+成果包清单 API
+按科学点下载原始文件
+WinForms 保存完整科学点成果包
+对话文本和点摘要文本文件
+历史科学数据回填
+```
+
+---
+
 ## v0.41.0（2026-10-05）：科学计算点数据结构
 
 ### 版本
