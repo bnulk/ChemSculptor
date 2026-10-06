@@ -1,0 +1,12 @@
+%chk=job-5ec8a5ee5c4440f7b5e19fcd1ebf9ba8.chk
+%mem=4GB
+%nprocshared=4
+
+#p CAM-B3LYP/6-31G* SP scfcyc=200
+
+ChemSculptor single point calculation
+
+0 1
+O -1.768141 -0.414902 -0.017717
+O -2.929741 -0.414902 -0.017717
+
