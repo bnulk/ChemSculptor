@@ -138,7 +138,15 @@ WinForms 领取和显示摘要
 
 ## 下一阶段
 
-第一优先任务是让科学点文件清单能够形成完整成果包：
+阶段 0 已完成：科学点文件成果包规范已冻结。
+
+规范文档：
+
+```text
+docs/Scientific-Point-Artifact-Package-Spec.md
+```
+
+下一阶段任务是实现成果包生成服务：
 
 ```text
 ScientificArchiveManifest
