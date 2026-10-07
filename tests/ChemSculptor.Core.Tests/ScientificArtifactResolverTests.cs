@@ -360,54 +360,6 @@ public class ScientificArtifactResolverTests
         }
     }
 
-    /// <summary>
-    /// 验证没有文件清单的旧科学成果仍能解析。
-    /// </summary>
-    [Fact]
-    public async Task OldResultWithoutArtifactsDoesNotFail()
-    {
-        string root = CreateTemporaryRoot();
-
-        try
-        {
-            CalculationWorkspaceOptions workspaceOptions =
-                CreateWorkspaceOptions(root);
-            WorkspaceManager workspace =
-                new WorkspaceManager(workspaceOptions);
-            FileScientificDataRepository repository =
-                CreateRepository(root);
-            await workspace.EnsureJobWorkspaceAsync("job-original");
-
-            ScientificResult result =
-                CreateResult(
-                    "old-result",
-                    CreatePoint(
-                        "point-original",
-                        "job-original"));
-            await repository.SaveAsync(result);
-
-            ScientificArtifactResolver resolver =
-                new ScientificArtifactResolver(
-                    repository,
-                    workspace);
-            ScientificArtifactManifest manifest =
-                await resolver.ResolveManifestAsync(result.Id);
-
-            Assert.True(manifest.Succeeded);
-            Assert.Single(manifest.Points);
-            Assert.False(
-                manifest.Points[0].HasArtifactManifest);
-            Assert.Contains(
-                "没有文件清单",
-                manifest.Points[0].ArtifactManifestMessage);
-            Assert.Empty(manifest.Points[0].Artifacts);
-        }
-        finally
-        {
-            DeleteTemporaryRoot(root);
-        }
-    }
-
     private static CalculationWorkspaceOptions
         CreateWorkspaceOptions(string root)
     {

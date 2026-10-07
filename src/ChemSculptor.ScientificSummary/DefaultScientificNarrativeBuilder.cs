@@ -104,18 +104,11 @@ public sealed class DefaultScientificNarrativeBuilder
             "基组：" +
             point.CalculationModel.Basis);
 
-        if (point.Artifacts.Count == 0)
-        {
-            builder.AppendLine("文件清单：没有文件清单。");
-        }
-        else
-        {
-            builder.AppendLine(
-                "文件清单：" +
-                point.Artifacts.Count.ToString(
-                    CultureInfo.InvariantCulture) +
-                " 个文件。");
-        }
+        builder.AppendLine(
+            "文件清单：" +
+            point.Artifacts.Count.ToString(
+                CultureInfo.InvariantCulture) +
+            " 个文件。");
 
         for (int index = 0;
             index < point.Properties.Count;

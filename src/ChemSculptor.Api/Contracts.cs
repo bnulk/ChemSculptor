@@ -180,45 +180,6 @@ public sealed class CalculationCancelResponse
     public string Message { get; set; } = string.Empty;
 }
 
-/// <summary>计算产物清单响应。</summary>
-public sealed class CalculationArtifactManifestResponse
-{
-    /// <summary>计算作业标识。</summary>
-    public string JobId { get; set; } = string.Empty;
-
-    /// <summary>可下载文件。</summary>
-    public List<CalculationArtifactFileResponse> Files { get; set; } =
-        new List<CalculationArtifactFileResponse>();
-}
-
-/// <summary>单个计算产物响应。</summary>
-public sealed class CalculationArtifactFileResponse
-{
-    /// <summary>文件名称。</summary>
-    public string FileName { get; set; } = string.Empty;
-
-    /// <summary>相对于计算运行目录的路径。</summary>
-    public string RelativePath { get; set; } = string.Empty;
-
-    /// <summary>文件字节数。</summary>
-    public long Length { get; set; }
-
-    /// <summary>产物用途。</summary>
-    public string Kind { get; set; } = string.Empty;
-
-    /// <summary>传输时使用的媒体类型。</summary>
-    public string MediaType { get; set; } = string.Empty;
-
-    /// <summary>文件的 SHA-256 摘要。</summary>
-    public string Sha256 { get; set; } = string.Empty;
-
-    /// <summary>是否可以用于恢复或继续计算。</summary>
-    public bool CanUseForRestart { get; set; }
-
-    /// <summary>下载路径。</summary>
-    public string DownloadPath { get; set; } = string.Empty;
-}
-
 /// <summary>科学点文件成果包清单响应。</summary>
 public sealed class ScientificArtifactManifestResponse
 {
@@ -250,13 +211,6 @@ public sealed class ScientificArtifactPointResponse
 
     /// <summary>自旋多重度。</summary>
     public int Multiplicity { get; set; }
-
-    /// <summary>是否存在文件引用清单。</summary>
-    public bool HasArtifactManifest { get; set; }
-
-    /// <summary>文件引用清单状态说明。</summary>
-    public string ArtifactManifestMessage { get; set; } =
-        string.Empty;
 
     /// <summary>该科学点的文件清单。</summary>
     public List<ScientificArtifactFileResponse> Files { get; set; } =
@@ -357,9 +311,6 @@ public sealed class CalculationResultResponse
     public List<CalculationDiagnosticResponse> Diagnostics { get; set; } =
         new List<CalculationDiagnosticResponse>();
 
-    /// <summary>本次计算的文件清单。</summary>
-    public List<CalculationArtifactFileResponse> Artifacts { get; set; } =
-        new List<CalculationArtifactFileResponse>();
 }
 
 /// <summary>计算结果验证响应。</summary>

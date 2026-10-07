@@ -240,13 +240,6 @@ Points[]
 `/calculations/{jobId}/artifact-manifest` 先根据计算作业查找
 所属科学成果，再返回相同结构的清单。
 
-原有的计算产物端点保持兼容：
-
-```text
-GET /calculations/{jobId}/artifacts
-GET /calculations/{jobId}/artifacts/{fileName}
-```
-
 ## 6.4 科学数据叙述 API
 
 科学文本从 `ScientificResult` 生成：
@@ -328,61 +321,7 @@ scientific-result-<rootJobId>/
 写客户端对话记录
 ```
 
-## 6.6 历史数据兼容与回填
-
-没有 `Artifacts` 的旧科学点仍属于合法科学数据。
-
-旧点清单状态：
-
-```text
-HasArtifactManifest = false
-ArtifactManifestMessage = 没有文件清单。
-Files = []
-```
-
-旧记录：
-
-```text
-不因为缺少文件引用而报错
-仍可生成成果包目录和叙述文本
-点叙述显示“没有文件清单”
-```
-
-回填工具：
-
-```text
-IScientificArtifactBackfillService
-ScientificArtifactBackfillService
-```
-
-回填来源：
-
-```text
-ScientificResult
-  → CalculationPoint.CalculationJobId
-  → CalculationJob
-  → CalculationResult.Artifacts
-  → PointArtifactReference
-```
-
-回填规则：
-
-```text
-只回填 Artifacts 为空的点
-不覆盖已有引用
-回填后使用共享 ScientificArtifactReferenceFactory
-只有实际修改后才保存 ScientificResult
-可重复执行
-```
-
-回填 API：
-
-```text
-POST /scientific-results/{resultId}/artifact-backfill
-POST /scientific-artifacts/backfill
-```
-
-## 6.7 氧气端到端验证
+## 6.6 氧气端到端验证
 
 已使用 O2 单点计算验证：
 
@@ -684,12 +623,10 @@ ChemSculptor 版本
 
 程序专门细节放入对应点的 `program.json`。
 
-## 16. 兼容性
+## 16. 版本规则
 
 ```text
 规范版本必须写入 manifest.json
-新增字段必须保持向后兼容
-旧科学数据可以读入，但没有文件引用时不得伪造
 完整成果包必须包含规范版本 1 的文件清单
 ```
 
@@ -701,7 +638,6 @@ ChemSculptor 版本
 不修改 WinForms
 不修改现有工作流
 不实现文本自动写作
-不实现历史数据回填
 ```
 
 ## 18. 阶段 0 验收

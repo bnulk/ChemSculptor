@@ -137,27 +137,6 @@ public sealed class LocalProcessBackend : IComputeBackend
         return Task.FromResult(state.Status);
     }
 
-    /// <summary>把运行目录中的产物复制到指定目录。</summary>
-    public Task FetchArtifactsAsync(
-        CalculationJob job,
-        string localDirectory,
-        CancellationToken cancellationToken = default)
-    {
-        LocalProcessState? state;
-        if (!_states.TryGetValue(job.JobId, out state))
-        {
-            return Task.CompletedTask;
-        }
-
-        Directory.CreateDirectory(localDirectory);
-
-        CopyFileIfExists(state.StandardOutputPath, localDirectory);
-        CopyFileIfExists(state.StandardErrorPath, localDirectory);
-        CopyFileIfExists(state.OutputFilePath, localDirectory);
-
-        return Task.CompletedTask;
-    }
-
     /// <summary>取消运行中的本机进程。</summary>
     public Task CancelAsync(
         CalculationJob job,
@@ -241,14 +220,4 @@ public sealed class LocalProcessBackend : IComputeBackend
         }
     }
 
-    private static void CopyFileIfExists(string sourcePath, string targetDirectory)
-    {
-        if (string.IsNullOrWhiteSpace(sourcePath) || !File.Exists(sourcePath))
-        {
-            return;
-        }
-
-        string targetPath = Path.Combine(targetDirectory, Path.GetFileName(sourcePath));
-        File.Copy(sourcePath, targetPath, true);
-    }
 }

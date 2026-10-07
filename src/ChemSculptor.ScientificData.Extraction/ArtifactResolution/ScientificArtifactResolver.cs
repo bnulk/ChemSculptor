@@ -290,12 +290,6 @@ public sealed class ScientificArtifactResolver
         manifest.Status = point.Status;
         manifest.Multiplicity =
             point.ElectronicState.Multiplicity;
-        manifest.HasArtifactManifest =
-            point.Artifacts.Count > 0;
-        manifest.ArtifactManifestMessage =
-            point.Artifacts.Count > 0
-                ? string.Empty
-                : "没有文件清单。";
 
         if (string.IsNullOrWhiteSpace(point.Id))
         {

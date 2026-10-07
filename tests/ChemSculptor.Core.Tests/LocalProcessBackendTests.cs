@@ -18,7 +18,6 @@ public class LocalProcessBackendTests
             Guid.NewGuid().ToString("N"));
 
         string runDirectory = Path.Combine(root, "run");
-        string artifactsDirectory = Path.Combine(root, "artifacts");
         Directory.CreateDirectory(runDirectory);
 
         try
@@ -54,8 +53,6 @@ public class LocalProcessBackendTests
             Assert.Contains("environment-ok", standardOutput);
             Assert.Contains("Normal termination", standardOutput);
 
-            await backend.FetchArtifactsAsync(job, artifactsDirectory);
-            Assert.True(File.Exists(Path.Combine(artifactsDirectory, "stdout.log")));
         }
         finally
         {

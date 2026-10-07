@@ -99,49 +99,6 @@ public class FileScientificDataRepositoryTests
     }
 
     /// <summary>
-    /// 验证缺少阶段 1 字段的旧科学成果 JSON 仍可读取。
-    /// </summary>
-    [Fact]
-    public async Task ReadsLegacyScientificResultWithoutArtifactFields()
-    {
-        string root = CreateTemporaryRoot();
-
-        try
-        {
-            ScientificDataRepositoryOptions options =
-                new ScientificDataRepositoryOptions();
-            options.RootDirectory = Path.Combine(
-                root,
-                "scientific-data");
-            Directory.CreateDirectory(options.RootDirectory);
-
-            string path = Path.Combine(
-                options.RootDirectory,
-                "legacy-result.json");
-            string json = CreateLegacyJson();
-            await File.WriteAllTextAsync(path, json);
-
-            FileScientificDataRepository repository =
-                new FileScientificDataRepository(options);
-            ScientificResult? saved =
-                await repository.GetAsync("legacy-result");
-
-            Assert.NotNull(saved);
-            Assert.Single(saved.PointSet.Points);
-
-            CalculationPoint point =
-                saved.PointSet.Points[0];
-            Assert.Equal(string.Empty, point.CalculationJobId);
-            Assert.NotNull(point.ProgramData);
-            Assert.Empty(point.Artifacts);
-        }
-        finally
-        {
-            DeleteTemporaryRoot(root);
-        }
-    }
-
-    /// <summary>
     /// 验证阶段 1 模型的完整 JSON 往返。
     /// </summary>
     [Fact]
@@ -207,47 +164,6 @@ public class FileScientificDataRepositoryTests
         Assert.Equal(
             artifact.CanUseForRestart,
             restored.CanUseForRestart);
-    }
-
-    private static string CreateLegacyJson()
-    {
-        return """
-        {
-          "id": "legacy-result",
-          "title": "旧科学成果",
-          "summary": "阶段 1 之前保存的数据",
-          "status": "Complete",
-          "pointSet": {
-            "id": "legacy-point-set",
-            "name": "旧点集",
-            "description": "不含 Artifacts 字段",
-            "points": [
-              {
-                "id": "legacy-point",
-                "name": "旧点",
-                "kind": "Unknown",
-                "status": "Accepted",
-                "geometry": {},
-                "components": [],
-                "electronicState": {},
-                "calculationModel": {},
-                "properties": [],
-                "validations": [],
-                "provenance": {},
-                "labels": [],
-                "metadata": {},
-                "createdAt": "2026-10-05T00:00:00+00:00",
-                "updatedAt": "2026-10-05T00:00:00+00:00"
-              }
-            ],
-            "relations": []
-          },
-          "observables": [],
-          "metadata": {},
-          "createdAt": "2026-10-05T00:00:00+00:00",
-          "completedAt": "2026-10-05T01:00:00+00:00"
-        }
-        """;
     }
 
     private static string CreateTemporaryRoot()

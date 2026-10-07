@@ -175,16 +175,17 @@ GET /calculations/{jobId}/validation
 “保存”按钮先让用户选择目标目录，然后调用：
 
 ```text
-GET /calculations/{jobId}/artifacts
+GET /calculations/{jobId}/artifact-manifest
+GET /scientific-results/{resultId}/narrative
 ```
 
-服务器返回本次计算允许下载的文件清单。客户端逐个调用：
+服务器返回全部科学点、点目录和文件下载路径。客户端逐个调用：
 
 ```text
-GET /calculations/{jobId}/artifacts/{fileName}
+GET /scientific-results/{resultId}/artifacts/{pointId}/{artifactId}
 ```
 
-并把文件写入目标目录。
+并按 `DirectoryName` 和 `DownloadFileName` 写入成果包。
 
 客户端不判断具体计算程序的扩展名，不压缩文件，也不解析计算输出。
 

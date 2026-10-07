@@ -5,17 +5,58 @@
 
 ---
 
-## v0.49.1（2026-10-07）：阶段 8 氧气完整验证
+## v0.50.0（2026-10-07）：统一发布基线
 
 ### 版本
 
-- 当前版本：`0.49.1`
+- 当前版本：`0.50.0`
+- 日期：2026-10-07
+- 版本类型：架构清理
+
+### 改动目的
+
+项目从未对外发布，因此不需要为旧版本保留并行接口和数据迁移层。
+
+本次将科学仓库收敛为单一发布基线。
+
+### 清理范围
+
+```text
+删除并行计算产物下载链路
+删除数据迁移工具
+删除未发布阶段遗留的额外字段
+删除对应的旧测试和旧文档
+```
+
+### 当前唯一路径
+
+```text
+CalculationResult.Artifacts
+  → PointArtifactReference
+  → artifact-manifest
+  → 科学点文件下载
+```
+
+### 验证
+
+```text
+Release 构建：0 警告，0 错误
+测试：90/90 通过
+```
+
+---
+
+## v0.49.0（2026-10-07）：阶段 7 氧气完整验证
+
+### 版本
+
+- 当前版本：`0.49.0`
 - 日期：2026-10-07
 - 版本类型：验证与文档
 
 ### 验证目的
 
-完成阶段 8“完整验证”。
+完成阶段 7“完整验证”。
 
 使用真实氧气任务验证从客户端消息提交、单点计算、稳定性检查、
 矫正计算、科学数据仓储到成果包保存的完整链路。
@@ -108,136 +149,8 @@ scientific-result-<rootJobId>/
 
 ```text
 Release 构建：0 警告，0 错误
-测试：93/93 通过
+测试：90/90 通过
 ```
-
----
-
-## v0.49.0（2026-10-07）：兼容和历史数据迁移
-
-### 版本
-
-- 当前版本：`0.49.0`
-- 日期：2026-10-07
-- 版本类型：功能新增
-
-### 改动目的
-
-完成阶段 7“兼容和历史数据迁移”。
-
-旧 `ScientificResult` 即使没有文件引用，也可以生成清单和成果包，
-并可通过计算作业结果逐项回填文件引用。
-
-### 旧记录兼容
-
-科学点清单增加：
-
-```text
-HasArtifactManifest
-ArtifactManifestMessage
-```
-
-没有文件引用时：
-
-```text
-HasArtifactManifest = false
-ArtifactManifestMessage = 没有文件清单。
-```
-
-成果包清单仍然成功返回，不因为缺少文件引用而报错。
-
-WinForms 在保存旧点时显示：
-
-```text
-<PointId>：没有文件清单。
-```
-
-点叙述中也记录：
-
-```text
-文件清单：没有文件清单。
-```
-
-### 共享文件引用工厂
-
-新增：
-
-```text
-ScientificArtifactReferenceFactory
-```
-
-新结果提取和历史回填现在使用同一套：
-
-```text
-CanonicalStem
-下载文件名
-ArtifactId
-文件类别映射
-可重启状态映射
-```
-
-避免两套命名和引用生成逻辑发生漂移。
-
-### 回填服务
-
-新增：
-
-```text
-IScientificArtifactBackfillService
-ScientificArtifactBackfillService
-```
-
-回填规则：
-
-```text
-只处理 Artifacts 为空的科学点
-读取科学点的 CalculationJobId
-读取 CalculationJob
-读取 CalculationResult
-从 Artifacts 生成 PointArtifactReference
-已有文件引用时不覆盖
-只有实际发生回填时才保存 ScientificResult
-```
-
-因此可以：
-
-```text
-一次回填一个 ScientificResult
-重复执行而不会重复添加引用
-逐步迁移历史科学数据
-```
-
-### 回填 API
-
-```text
-POST /scientific-results/{resultId}/artifact-backfill
-POST /scientific-artifacts/backfill
-```
-
-### 测试
-
-新增：
-
-```text
-旧结果没有 Artifacts 时清单仍成功
-旧点显示没有文件清单
-从 CalculationResult 回填完整文件引用
-回填名称符合 O2-original-m1.*
-第二次回填不重复添加
-```
-
-验证结果：
-
-```text
-Release 构建：0 警告，0 错误
-测试：93/93 通过
-```
-
-### 当前边界
-
-回填依赖原有 CalculationJob 和 CalculationResult 仍然存在。
-
-如果历史计算文件或结果已经删除，回填只能报告缺少文件清单。
 
 ---
 
@@ -513,15 +426,6 @@ run 目录限制
 链接检查
 文件存在性检查
 SHA-256 校验
-```
-
-### 旧端点兼容
-
-原有端点未修改：
-
-```text
-GET /calculations/{jobId}/artifacts
-GET /calculations/{jobId}/artifacts/{fileName}
 ```
 
 ### 测试
@@ -840,27 +744,12 @@ CanonicalExtension = .gjf
 DownloadFileName   = O2-recovery-m3.gjf
 ```
 
-### 兼容性
-
-旧的科学成果 JSON 不含阶段 1 新增字段。
-
-读取后：
-
-```text
-CalculationJobId 为空字符串
-ProgramData 使用默认对象
-Artifacts 使用空列表
-```
-
-因此旧数据不需要迁移即可继续读取。
-
 ### 测试
 
 新增：
 
 ```text
 PointArtifactReference JSON 往返测试
-旧版 ScientificResult JSON 兼容读取测试
 CanonicalStem 和 CanonicalExtension 提取结果断言
 ```
 
@@ -998,7 +887,6 @@ O2-original-m1 和 O2-recovery-m3 文件命名正确
 按科学点下载原始文件
 WinForms 保存完整科学点成果包
 对话文本和点摘要文本文件
-历史科学数据回填
 ```
 
 ---
@@ -2967,8 +2855,6 @@ ResponseModels.cs
   CalculationValidationDto
   CalculationValidationCheckDto
   CalculationDiagnosticDto
-  CalculationArtifactManifestDto
-  CalculationArtifactFileDto
 ```
 
 ### 行为
@@ -3129,36 +3015,6 @@ Gaussian 正常结束后，适配器检查 `.chk`，调用 `formchk` 生成 `.fc
 记录 Warning 诊断
 不阻止计算结果、结果提取和验证继续完成
 ```
-
-### API
-
-新增：
-
-```text
-GET /calculations/{jobId}/artifacts
-GET /calculations/{jobId}/artifacts/{fileName}
-```
-
-第一个接口返回文件清单，第二个接口下载单个文件。
-
-`GET /calculations/{jobId}/result` 也返回 `artifacts` 列表。
-
-下载接口优先读取 `result.json` 中的产物描述；只有旧结果没有清单时，才根据
-适配器规则重新扫描运行目录。
-
-### WinForms
-
-客户端“保存”按钮改为：
-
-```text
-选择目标目录
-  ↓
-GET /calculations/{jobId}/artifacts
-  ↓
-逐个下载服务器清单中的文件
-```
-
-客户端不压缩文件，不判断具体扩展名，也不解析计算输出。
 
 ### 结果示例
 

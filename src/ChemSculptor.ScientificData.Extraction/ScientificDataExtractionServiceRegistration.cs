@@ -1,6 +1,5 @@
 using ChemSculptor.ScientificData.Extraction.Abstractions;
 using ChemSculptor.ScientificData.Extraction.ArtifactResolution;
-using ChemSculptor.ScientificData.Extraction.ArtifactResolution.Backfill;
 using ChemSculptor.ScientificData.Storage;
 using ChemSculptor.Domain;
 using Microsoft.Extensions.DependencyInjection;
@@ -36,9 +35,6 @@ public static class ScientificDataExtractionServiceRegistration
         ServiceCollectionServiceExtensions.AddSingleton<
             IScientificArtifactResolver,
             ScientificArtifactResolver>(services);
-        ServiceCollectionServiceExtensions.AddSingleton<
-            IScientificArtifactBackfillService,
-            ScientificArtifactBackfillService>(services);
         ServiceCollectionServiceExtensions.AddSingleton<
             ISkill,
             ScientificDataExtractionSkill>(services);

@@ -519,45 +519,6 @@ public sealed class SinglePointCalculationSubmissionResult
     public List<string> Diagnostics { get; set; } = new List<string>();
 }
 
-/// <summary>一个可下载的计算产物。</summary>
-public sealed class CalculationArtifactFile
-{
-    /// <summary>文件名称。</summary>
-    public string FileName { get; set; } = string.Empty;
-
-    /// <summary>相对于计算运行目录的路径。</summary>
-    public string RelativePath { get; set; } = string.Empty;
-
-    /// <summary>服务器上的完整路径。</summary>
-    public string FullPath { get; set; } = string.Empty;
-
-    /// <summary>文件字节数。</summary>
-    public long Length { get; set; }
-
-    /// <summary>产物用途。</summary>
-    public CalculationArtifactKind Kind { get; set; } = CalculationArtifactKind.Other;
-
-    /// <summary>传输时使用的媒体类型。</summary>
-    public string MediaType { get; set; } = "application/octet-stream";
-
-    /// <summary>文件的 SHA-256 摘要。</summary>
-    public string Sha256 { get; set; } = string.Empty;
-
-    /// <summary>是否可以用于恢复或继续计算。</summary>
-    public bool CanUseForRestart { get; set; }
-}
-
-/// <summary>一次计算作业的产物清单。</summary>
-public sealed class CalculationArtifactBundle
-{
-    /// <summary>作业标识。</summary>
-    public string JobId { get; set; } = string.Empty;
-
-    /// <summary>产物文件。</summary>
-    public List<CalculationArtifactFile> Files { get; set; } =
-        new List<CalculationArtifactFile>();
-}
-
 /// <summary>
 /// 一条计算诊断信息。
 /// </summary>

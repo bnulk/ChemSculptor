@@ -3,7 +3,7 @@
 ## 当前版本
 
 ```text
-0.49.1
+0.50.0
 ```
 
 ## 文档维护原则
@@ -35,7 +35,7 @@ HANDOFF.md
 
 ```text
 Release 构建：0 警告，0 错误
-测试：93/93 通过
+测试：90/90 通过
 ```
 
 ## 总体架构
@@ -108,8 +108,6 @@ WinForms 客户端
 WinForms 成果包保存
 科学数据叙述生成
 科学数据叙述 API
-历史文件引用兼容
-历史文件引用回填
 科学数据文件仓储
 计算结果到科学数据的提取
 客户端科学摘要
@@ -168,10 +166,7 @@ WinForms 已按清单保存完整成果包
 点摘要、来源、组织方式和最终摘要均引用 PointId，
 关系和物理量可追溯到点。
 
-阶段 7 已完成：没有文件清单的旧 ScientificResult 可以生成成果包，
-并可依据 CalculationJob 和 CalculationResult 逐步回填文件引用。
-
-阶段 8 已完成：真实氧气任务通过单点计算、稳定性检查、三重态矫正、
+阶段 7 已完成：真实氧气任务通过单点计算、稳定性检查、三重态矫正、
 科学数据仓储和成果包保存等价流程。
 
 规范文档：
@@ -194,10 +189,9 @@ WinForms 实际点击保存验证
 relations.json 和 observables.json 已使用叙述包真实数据
 conversation.txt 是客户端会话记录，不属于科学结论
 成果包保存尚未通过实际 GUI 点击端到端验证
-回填依赖旧 CalculationJob 和 CalculationResult 仍然存在
 ```
 
-阶段 5、阶段 6 和阶段 7 验收结果：
+阶段 5 和阶段 6 验收结果：
 
 ```text
 修正前后的文件都下载
@@ -206,11 +200,9 @@ point-summary 和 provenance 明确引用 PointId
 关系和物理量可以追溯到点
 对话内容保存到 narrative/conversation.txt
 新记录文件引用完整
-旧记录不报错并显示没有文件清单
-历史数据可以逐项、幂等回填
 ```
 
-阶段 8 验证结果：
+阶段 7 验证结果：
 
 ```text
 真实 O2 任务完成
@@ -226,7 +218,6 @@ conversation.txt 和 final-summary.txt 成功保存
 ```text
 PointArtifactReference 已包含 CanonicalStem 和 CanonicalExtension
 Artifact 模型 JSON 往返测试通过
-旧科学成果 JSON 兼容读取测试通过
 未修改计算层、工作流、API 和 WinForms
 ```
 
@@ -256,7 +247,6 @@ Artifact 模型 JSON 往返测试通过
 原始点和恢复点都进入清单
 文件名符合统一命名
 单文件下载路径可生成
-旧的计算 artifacts 端点保持兼容
 ```
 
 ## 重要文档

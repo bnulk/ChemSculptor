@@ -22,8 +22,6 @@ public static class CalculationEndpoints
         EndpointRouteBuilderExtensions.MapGet(calculations, "/{jobId}/result", GetCalculationResultAsync);
         EndpointRouteBuilderExtensions.MapGet(calculations, "/{jobId}/validation", GetCalculationValidationAsync);
         EndpointRouteBuilderExtensions.MapPost(calculations, "/{jobId}/cancel", CancelCalculationAsync);
-        EndpointRouteBuilderExtensions.MapGet(calculations, "/{jobId}/artifacts", GetCalculationArtifactsAsync);
-        EndpointRouteBuilderExtensions.MapGet(calculations, "/{jobId}/artifacts/{fileName}", DownloadCalculationArtifactAsync);
 
         return app;
     }
@@ -142,17 +140,6 @@ public static class CalculationEndpoints
         response.OutputFilePath = result.OutputFilePath;
         response.Diagnostics = ConvertDiagnostics(result.Diagnostics);
 
-        if (result.Artifacts != null)
-        {
-            for (int index = 0; index < result.Artifacts.Count; index++)
-            {
-                CalculationArtifactDescriptor descriptor = result.Artifacts[index];
-                CalculationArtifactFileResponse artifactResponse =
-                    ConvertArtifactDescriptor(jobId, descriptor);
-                response.Artifacts.Add(artifactResponse);
-            }
-        }
-
         return Results.Ok(response);
     }
 
@@ -230,136 +217,6 @@ public static class CalculationEndpoints
         response.Canceled = true;
         response.Message = "计算作业已取消。";
         return Results.Ok(response);
-    }
-
-    /// <summary>列出允许下载的计算产物。</summary>
-    private static async Task<IResult> GetCalculationArtifactsAsync(
-        string jobId,
-        ISinglePointCalculationService calculationService,
-        CancellationToken cancellationToken)
-    {
-        CalculationArtifactBundle? bundle =
-            await calculationService.GetArtifactsAsync(
-                jobId,
-                cancellationToken);
-
-        if (bundle == null)
-        {
-            ApiError error = new ApiError();
-            error.Error = "计算作业 " + jobId + " 不存在。";
-            return Results.NotFound(error);
-        }
-
-        if (bundle.Files.Count == 0)
-        {
-            ApiError error = new ApiError();
-            error.Error = "当前作业没有可下载的计算文件。";
-            return Results.Conflict(error);
-        }
-
-        CalculationArtifactManifestResponse response =
-            new CalculationArtifactManifestResponse();
-        response.JobId = bundle.JobId;
-
-        for (int index = 0; index < bundle.Files.Count; index++)
-        {
-            CalculationArtifactFile artifact = bundle.Files[index];
-            CalculationArtifactFileResponse fileResponse =
-                new CalculationArtifactFileResponse();
-            fileResponse.FileName = artifact.FileName;
-            fileResponse.RelativePath = artifact.RelativePath;
-            fileResponse.Length = artifact.Length;
-            fileResponse.Kind = artifact.Kind.ToString();
-            fileResponse.MediaType = artifact.MediaType;
-            fileResponse.Sha256 = artifact.Sha256;
-            fileResponse.CanUseForRestart = artifact.CanUseForRestart;
-            fileResponse.DownloadPath =
-                "/calculations/" +
-                Uri.EscapeDataString(jobId) +
-                "/artifacts/" +
-                Uri.EscapeDataString(artifact.FileName);
-            response.Files.Add(fileResponse);
-        }
-
-        return Results.Ok(response);
-    }
-
-    /// <summary>下载单个计算产物。</summary>
-    private static async Task<IResult> DownloadCalculationArtifactAsync(
-        string jobId,
-        string fileName,
-        ISinglePointCalculationService calculationService,
-        CancellationToken cancellationToken)
-    {
-        if (!string.Equals(
-            fileName,
-            Path.GetFileName(fileName),
-            StringComparison.OrdinalIgnoreCase))
-        {
-            ApiError error = new ApiError();
-            error.Error = "文件名无效。";
-            return Results.BadRequest(error);
-        }
-
-        CalculationArtifactBundle? bundle =
-            await calculationService.GetArtifactsAsync(
-                jobId,
-                cancellationToken);
-
-        if (bundle == null)
-        {
-            ApiError error = new ApiError();
-            error.Error = "计算作业 " + jobId + " 不存在。";
-            return Results.NotFound(error);
-        }
-
-        for (int index = 0; index < bundle.Files.Count; index++)
-        {
-            CalculationArtifactFile artifact = bundle.Files[index];
-
-            if (string.Equals(
-                artifact.FileName,
-                fileName,
-                StringComparison.OrdinalIgnoreCase))
-            {
-                string mediaType = artifact.MediaType;
-
-                if (string.IsNullOrWhiteSpace(mediaType))
-                {
-                    mediaType = "application/octet-stream";
-                }
-
-                return Results.File(
-                    artifact.FullPath,
-                    mediaType,
-                    artifact.FileName);
-            }
-        }
-
-        ApiError notFoundError = new ApiError();
-        notFoundError.Error = "没有找到计算文件：" + fileName;
-        return Results.NotFound(notFoundError);
-    }
-
-    private static CalculationArtifactFileResponse ConvertArtifactDescriptor(
-        string jobId,
-        CalculationArtifactDescriptor descriptor)
-    {
-        CalculationArtifactFileResponse response =
-            new CalculationArtifactFileResponse();
-        response.FileName = descriptor.FileName;
-        response.RelativePath = descriptor.RelativePath;
-        response.Length = descriptor.Length;
-        response.Kind = descriptor.Kind.ToString();
-        response.MediaType = descriptor.MediaType;
-        response.Sha256 = descriptor.Sha256;
-        response.CanUseForRestart = descriptor.CanUseForRestart;
-        response.DownloadPath =
-            "/calculations/" +
-            Uri.EscapeDataString(jobId) +
-            "/artifacts/" +
-            Uri.EscapeDataString(descriptor.FileName);
-        return response;
     }
 
     private static List<CalculationValidationCheckResponse> ConvertValidationChecks(

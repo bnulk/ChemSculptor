@@ -2,7 +2,7 @@
 
 ## 1. 这份教程要解决什么问题
 
-这份教程总结当前工程刚刚完成的 8 阶段“科学仓库升级”。
+这份教程总结当前工程刚刚完成的“科学仓库升级”。
 
 升级前，工程主要围绕“计算作业”保存数据：
 
@@ -175,20 +175,6 @@ Artifact API / Narrative API
 WinForms 成果包保存
 ```
 
-历史数据回填：
-
-```text
-ScientificResult
-  ↓
-CalculationPoint.CalculationJobId
-  ↓
-CalculationJob
-  ↓
-CalculationResult
-  ↓
-PointArtifactReference
-```
-
 依赖原则：
 
 ```text
@@ -226,7 +212,6 @@ docs/Scientific-Point-Artifact-Package-Spec.md
 ```text
 不同模块产生不同文件名
 客户端和服务端各自解释路径
-历史数据无法兼容
 后续结果包无法稳定解析
 ```
 
@@ -296,18 +281,6 @@ CanonicalExtension = .gjf
 DownloadFileName   = O2-recovery-m3.gjf
 ```
 
-### 兼容旧数据
-
-旧 JSON 没有新增字段时：
-
-```text
-CalculationJobId 使用空字符串
-ProgramData 使用默认对象
-Artifacts 使用空列表
-```
-
-旧数据不需要迁移即可读取。
-
 ## 7. 阶段 2：提取器填充文件引用
 
 ### 阶段目标
@@ -365,7 +338,7 @@ Artifacts
 ScientificArtifactReferenceFactory
 ```
 
-新结果和历史回填都调用同一个工厂，避免两套命名逻辑不一致。
+新结果提取调用统一工厂，避免命名逻辑分散。
 
 ## 8. 阶段 3：建立文件解析服务
 
@@ -483,17 +456,6 @@ Points[]
 恢复作业
 派生作业
 ```
-
-### 兼容旧端点
-
-原来的：
-
-```text
-GET /calculations/{jobId}/artifacts
-GET /calculations/{jobId}/artifacts/{fileName}
-```
-
-保持不变，避免破坏旧客户端。
 
 ## 10. 阶段 5：重写 WinForms“保存”按钮
 
@@ -624,71 +586,7 @@ LLM 外部知识
 
 它只把科学数据转换为可阅读文本。
 
-## 12. 阶段 7：兼容和历史数据迁移
-
-### 阶段目标
-
-让已有 `ScientificResult` 没有 `Artifacts` 时也能生成成果包，并支持回填。
-
-主要文件：
-
-```text
-src/ChemSculptor.ScientificData.Extraction/ArtifactResolution/Backfill/ScientificArtifactBackfillService.cs
-src/ChemSculptor.ScientificData.Extraction/ArtifactResolution/ScientificArtifactReferenceFactory.cs
-src/ChemSculptor.Api/Endpoints/ScientificArtifactBackfillEndpoints.cs
-```
-
-### 旧记录显示
-
-旧点没有文件清单时：
-
-```text
-HasArtifactManifest = false
-ArtifactManifestMessage = 没有文件清单。
-```
-
-清单仍然成功返回。
-
-WinForms 显示：
-
-```text
-<PointId>：没有文件清单。
-```
-
-点叙述显示：
-
-```text
-文件清单：没有文件清单。
-```
-
-### 回填来源
-
-```text
-ScientificResult
-  → CalculationPoint.CalculationJobId
-  → CalculationJob
-  → CalculationResult.Artifacts
-  → PointArtifactReference
-```
-
-### 回填规则
-
-```text
-只处理 Artifacts 为空的点
-不覆盖已有文件清单
-只有实际发生修改才保存 ScientificResult
-可以一次回填一个结果
-可以重复运行
-```
-
-回填 API：
-
-```text
-POST /scientific-results/{resultId}/artifact-backfill
-POST /scientific-artifacts/backfill
-```
-
-## 13. 阶段 8：完整氧气验证
+## 12. 阶段 7：完整氧气验证
 
 ### 验证目标
 
@@ -750,7 +648,7 @@ O2-recovery-m3.log
 
 实际 GUI 鼠标点击仍需人工补做一次。
 
-## 14. 一次完整的 O2 数据流
+## 13. 一次完整的 O2 数据流
 
 ```text
 客户端提交 O2 坐标和“单点计算”
@@ -792,7 +690,7 @@ Narrative Package
 客户端成果包
 ```
 
-## 15. 成果包目录
+## 14. 成果包目录
 
 ```text
 scientific-result-<rootJobId>/
@@ -830,7 +728,7 @@ scientific-result-<rootJobId>/
 每个点的原始文件在哪里
 ```
 
-## 16. 关键 API
+## 15. 关键 API
 
 ```text
 GET /scientific-results/{resultId}/artifact-manifest
@@ -839,12 +737,9 @@ GET /calculations/{jobId}/artifact-manifest
 
 GET /scientific-results/{resultId}/narrative
 GET /calculations/{jobId}/narrative
-
-POST /scientific-results/{resultId}/artifact-backfill
-POST /scientific-artifacts/backfill
 ```
 
-## 17. 建议的代码阅读顺序
+## 16. 建议的代码阅读顺序
 
 ```text
 1. ScientificDataEnums.cs
@@ -857,21 +752,19 @@ POST /scientific-artifacts/backfill
 8. ScientificArtifactReferenceFactory.cs
 9. ScientificResultExtractor.cs
 10. ScientificArtifactResolver.cs
-11. ScientificArtifactBackfillService.cs
-12. ScientificArtifactEndpoints.cs
-13. ScientificArtifactResponseMapper.cs
-14. DefaultScientificNarrativeBuilder.cs
-15. ScientificNarrativeService.cs
-16. ScientificNarrativeEndpoints.cs
-17. MainForm.SaveArtifactsAsync
-18. ScientificArtifactBackfillServiceTests.cs
-19. ScientificArtifactResolverTests.cs
-20. ScientificNarrativeBuilderTests.cs
+11. ScientificArtifactEndpoints.cs
+12. ScientificArtifactResponseMapper.cs
+13. DefaultScientificNarrativeBuilder.cs
+14. ScientificNarrativeService.cs
+15. ScientificNarrativeEndpoints.cs
+16. MainForm.SaveArtifactsAsync
+17. ScientificArtifactResolverTests.cs
+18. ScientificNarrativeBuilderTests.cs
 ```
 
-## 18. 设计经验
+## 17. 设计经验
 
-### 18.1 先定义科学对象，再定义文件
+### 17.1 先定义科学对象，再定义文件
 
 不要从文件反推科学含义。
 
@@ -883,7 +776,7 @@ POST /scientific-artifacts/backfill
   → 文件下载
 ```
 
-### 18.2 作业和科学点分开
+### 17.2 作业和科学点分开
 
 ```text
 作业
@@ -893,7 +786,7 @@ POST /scientific-artifacts/backfill
   参与科研解释
 ```
 
-### 18.3 原始路径和下载名分开
+### 17.3 原始路径和下载名分开
 
 ```text
 RelativePath
@@ -903,7 +796,7 @@ DownloadFileName
   客户端逻辑名称
 ```
 
-### 18.4 文本不能反向创造数据
+### 17.4 文本不能反向创造数据
 
 叙述文本只能引用已有科学点。
 
@@ -916,20 +809,7 @@ PointId
 原始文件
 ```
 
-### 18.5 兼容和回填要幂等
-
-升级不能要求一次迁移所有历史数据。
-
-正确做法：
-
-```text
-旧数据先能读
-没有文件清单也能生成成果包
-需要时逐项回填
-重复回填不重复添加
-```
-
-### 18.6 路径安全必须在服务端
+### 17.5 路径安全必须在服务端
 
 客户端的 `pointId` 和 `artifactId` 只是逻辑标识。
 
@@ -943,7 +823,7 @@ PointId
 自己验证 SHA-256
 ```
 
-## 19. 后续扩展
+## 18. 后续扩展
 
 以后增加新计算程序、优化、频率、IRC 或反应能时，应继续遵守：
 
@@ -977,9 +857,9 @@ package.zip
 文本只描述点
 ```
 
-## 20. 最后总结
+## 19. 最后总结
 
-这次 8 阶段升级完成了从“保存计算过程”向“保存可追溯科学成果”的转变。
+这次升级完成了从“保存计算过程”向“保存可追溯科学成果”的转变。
 
 最终得到的是一个可以被下载、校验、解释和复用的科学成果包：
 
@@ -989,6 +869,5 @@ package.zip
 + 导出物理量
 + 原始文件引用
 + 叙述文本
-+ 兼容和回填能力
 = 科学仓库升级
 ```

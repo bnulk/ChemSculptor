@@ -626,14 +626,6 @@ public class GaussianWavefunctionStabilityTests
                 CalculationJobState.Completed);
         }
 
-        public Task FetchArtifactsAsync(
-            CalculationJob job,
-            string localDirectory,
-            CancellationToken cancellationToken = default)
-        {
-            return Task.CompletedTask;
-        }
-
         public Task CancelAsync(
             CalculationJob job,
             CancellationToken cancellationToken = default)

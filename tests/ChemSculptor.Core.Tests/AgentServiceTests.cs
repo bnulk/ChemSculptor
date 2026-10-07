@@ -213,14 +213,6 @@ public class AgentServiceTests
             return Task.FromResult(CalculationJobState.Running);
         }
 
-        public Task FetchArtifactsAsync(
-            CalculationJob job,
-            string localDirectory,
-            CancellationToken cancellationToken = default)
-        {
-            return Task.CompletedTask;
-        }
-
         public Task CancelAsync(
             CalculationJob job,
             CancellationToken cancellationToken = default)

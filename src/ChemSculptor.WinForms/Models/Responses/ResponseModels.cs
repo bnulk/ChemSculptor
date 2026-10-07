@@ -169,35 +169,6 @@ public sealed class CalculationDiagnosticDto
     public string Message { get; set; } = string.Empty;
 }
 
-/// <summary>计算产物清单响应。</summary>
-public sealed class CalculationArtifactManifestDto
-{
-    public string JobId { get; set; } = string.Empty;
-
-    public List<CalculationArtifactFileDto> Files { get; set; } =
-        new List<CalculationArtifactFileDto>();
-}
-
-/// <summary>单个计算产物。</summary>
-public sealed class CalculationArtifactFileDto
-{
-    public string FileName { get; set; } = string.Empty;
-
-    public string RelativePath { get; set; } = string.Empty;
-
-    public long Length { get; set; }
-
-    public string Kind { get; set; } = string.Empty;
-
-    public string MediaType { get; set; } = string.Empty;
-
-    public string Sha256 { get; set; } = string.Empty;
-
-    public bool CanUseForRestart { get; set; }
-
-    public string DownloadPath { get; set; } = string.Empty;
-}
-
 /// <summary>科学点文件成果包清单响应。</summary>
 public sealed class ScientificArtifactManifestDto
 {
@@ -221,11 +192,6 @@ public sealed class ScientificArtifactPointDto
     public string Status { get; set; } = string.Empty;
 
     public int Multiplicity { get; set; }
-
-    public bool HasArtifactManifest { get; set; }
-
-    public string ArtifactManifestMessage { get; set; } =
-        string.Empty;
 
     public List<ScientificArtifactFileDto> Files { get; set; } =
         new List<ScientificArtifactFileDto>();

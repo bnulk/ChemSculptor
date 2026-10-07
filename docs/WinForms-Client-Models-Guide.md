@@ -320,25 +320,26 @@ CalculationDiagnosticDto
 诊断问题
 ```
 
-### 5.5 产物清单响应
+### 5.5 成果包清单响应
 
 ```text
-CalculationArtifactManifestDto
-CalculationArtifactFileDto
+ScientificArtifactManifestDto
+ScientificArtifactPointDto
+ScientificArtifactFileDto
 ```
 
-服务器决定有哪些备份文件，客户端只按清单下载。
+服务器决定有哪些科学点和文件，客户端只按清单下载。
 
 文件描述包含：
 
 ```text
-FileName
-RelativePath
-Length
+ArtifactId
 Kind
-MediaType
+DownloadFileName
+Length
 Sha256
-CanUseForRestart
+IsAvailable
+Error
 DownloadPath
 ```
 
@@ -383,9 +384,11 @@ WinForms 创建 CalculationJobItem
   ↓
 点击“保存”
   ↓
-接收 CalculationArtifactManifestDto
+接收 ScientificArtifactManifestDto
   ↓
-逐项下载 CalculationArtifactFileDto
+逐项下载 ScientificArtifactFileDto
+  ↓
+按科学点目录保存
 ```
 
 可以概括为：

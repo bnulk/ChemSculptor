@@ -763,8 +763,8 @@ GET /calculations/{jobId}/status
 GET /calculations/{jobId}
 GET /calculations/{jobId}/result
 GET /calculations/{jobId}/validation
-GET /calculations/{jobId}/artifacts
-GET /calculations/{jobId}/artifacts/{fileName}
+GET /calculations/{jobId}/artifact-manifest
+GET /scientific-results/{resultId}/artifacts/{pointId}/{artifactId}
 POST /calculations/{jobId}/cancel
 ```
 

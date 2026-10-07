@@ -78,12 +78,6 @@ public interface IComputeBackend
         CalculationJob job,
         CancellationToken cancellationToken = default);
 
-    /// <summary>取回作业产物。</summary>
-    Task FetchArtifactsAsync(
-        CalculationJob job,
-        string localDirectory,
-        CancellationToken cancellationToken = default);
-
     /// <summary>取消作业。</summary>
     Task CancelAsync(
         CalculationJob job,
@@ -313,8 +307,4 @@ public interface ISinglePointCalculationService
         string jobId,
         CancellationToken cancellationToken = default);
 
-    /// <summary>查询计算作业产物清单。</summary>
-    Task<CalculationArtifactBundle?> GetArtifactsAsync(
-        string jobId,
-        CancellationToken cancellationToken = default);
 }
