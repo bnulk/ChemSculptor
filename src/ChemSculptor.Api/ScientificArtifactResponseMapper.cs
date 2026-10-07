@@ -33,6 +33,10 @@ public static class ScientificArtifactResponseMapper
                 point.DirectoryName;
             pointResponse.Status = point.Status.ToString();
             pointResponse.Multiplicity = point.Multiplicity;
+            pointResponse.HasArtifactManifest =
+                point.HasArtifactManifest;
+            pointResponse.ArtifactManifestMessage =
+                point.ArtifactManifestMessage;
 
             for (int fileIndex = 0;
                 fileIndex < point.Artifacts.Count;

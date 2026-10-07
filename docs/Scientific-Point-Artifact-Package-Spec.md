@@ -328,6 +328,60 @@ scientific-result-<rootJobId>/
 写客户端对话记录
 ```
 
+## 6.6 历史数据兼容与回填
+
+没有 `Artifacts` 的旧科学点仍属于合法科学数据。
+
+旧点清单状态：
+
+```text
+HasArtifactManifest = false
+ArtifactManifestMessage = 没有文件清单。
+Files = []
+```
+
+旧记录：
+
+```text
+不因为缺少文件引用而报错
+仍可生成成果包目录和叙述文本
+点叙述显示“没有文件清单”
+```
+
+回填工具：
+
+```text
+IScientificArtifactBackfillService
+ScientificArtifactBackfillService
+```
+
+回填来源：
+
+```text
+ScientificResult
+  → CalculationPoint.CalculationJobId
+  → CalculationJob
+  → CalculationResult.Artifacts
+  → PointArtifactReference
+```
+
+回填规则：
+
+```text
+只回填 Artifacts 为空的点
+不覆盖已有引用
+回填后使用共享 ScientificArtifactReferenceFactory
+只有实际修改后才保存 ScientificResult
+可重复执行
+```
+
+回填 API：
+
+```text
+POST /scientific-results/{resultId}/artifact-backfill
+POST /scientific-artifacts/backfill
+```
+
 ## 7. 文件类别
 
 ```text

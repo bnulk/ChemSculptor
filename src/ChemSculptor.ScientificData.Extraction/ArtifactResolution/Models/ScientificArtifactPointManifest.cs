@@ -24,6 +24,13 @@ public sealed class ScientificArtifactPointManifest
     /// <summary>科学点的自旋多重度。</summary>
     public int Multiplicity { get; set; }
 
+    /// <summary>是否存在文件引用清单。</summary>
+    public bool HasArtifactManifest { get; set; }
+
+    /// <summary>文件引用清单状态说明。</summary>
+    public string ArtifactManifestMessage { get; set; } =
+        string.Empty;
+
     /// <summary>该科学点的运行目录是否可解析并存在。</summary>
     public bool IsAvailable { get; set; }
 

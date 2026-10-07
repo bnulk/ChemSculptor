@@ -251,6 +251,13 @@ public sealed class ScientificArtifactPointResponse
     /// <summary>自旋多重度。</summary>
     public int Multiplicity { get; set; }
 
+    /// <summary>是否存在文件引用清单。</summary>
+    public bool HasArtifactManifest { get; set; }
+
+    /// <summary>文件引用清单状态说明。</summary>
+    public string ArtifactManifestMessage { get; set; } =
+        string.Empty;
+
     /// <summary>该科学点的文件清单。</summary>
     public List<ScientificArtifactFileResponse> Files { get; set; } =
         new List<ScientificArtifactFileResponse>();

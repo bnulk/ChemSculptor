@@ -6,6 +6,7 @@ using ChemSculptor.Compute;
 using ChemSculptor.FundamentalConstants.Chemistry.Elements;
 using ChemSculptor.InputProcessor;
 using ChemSculptor.ScientificData.Extraction.Abstractions;
+using ChemSculptor.ScientificData.Extraction.ArtifactResolution;
 using ChemSculptor.ScientificData.Extraction.Models;
 using ChemSculptor.ScientificData.Models;
 
@@ -128,7 +129,7 @@ public sealed class ScientificResultExtractor
                 originalStatus,
                 originalProvenance,
                 "原始计算点",
-                BuildCanonicalStem(
+                ScientificArtifactReferenceFactory.BuildCanonicalStem(
                     molecularGeometry.Formula,
                     "original",
                     request.OriginalJob.Spec.Multiplicity));
@@ -170,7 +171,7 @@ public sealed class ScientificResultExtractor
                 recoveryStatus,
                 recoveryProvenance,
                 "派生修正计算点",
-                BuildCanonicalStem(
+                ScientificArtifactReferenceFactory.BuildCanonicalStem(
                     molecularGeometry.Formula,
                     "recovery",
                     recoveryJob.Spec.Multiplicity));
@@ -339,7 +340,7 @@ public sealed class ScientificResultExtractor
         point.ProgramData = CreateProgramData(job, result);
         point.Provenance = provenance;
         point.Artifacts.AddRange(
-            CreateArtifactReferences(
+            ScientificArtifactReferenceFactory.CreateReferences(
                 job,
                 result,
                 canonicalStem));
@@ -505,145 +506,6 @@ public sealed class ScientificResultExtractor
         }
 
         return data;
-    }
-
-    private static List<PointArtifactReference>
-        CreateArtifactReferences(
-            CalculationJob job,
-            CalculationResult result,
-            string canonicalStem)
-    {
-        List<PointArtifactReference> references =
-            new List<PointArtifactReference>();
-
-        if (result.Artifacts == null
-            || result.Artifacts.Count == 0)
-        {
-            return references;
-        }
-
-        HashSet<string> usedFileNames =
-            new HashSet<string>(
-                StringComparer.OrdinalIgnoreCase);
-
-        for (int index = 0;
-            index < result.Artifacts.Count;
-            index++)
-        {
-            CalculationArtifactDescriptor artifact =
-                result.Artifacts[index];
-
-            if (string.IsNullOrWhiteSpace(
-                artifact.RelativePath))
-            {
-                continue;
-            }
-
-            string extension = Path.GetExtension(
-                artifact.RelativePath);
-            string fileStem = canonicalStem;
-            string fileName = fileStem + extension;
-            int duplicateIndex = 2;
-
-            while (!usedFileNames.Add(fileName))
-            {
-                fileStem =
-                    canonicalStem +
-                    "-" +
-                    duplicateIndex.ToString(
-                        CultureInfo.InvariantCulture);
-                fileName =
-                    fileStem +
-                    extension;
-                duplicateIndex++;
-            }
-
-            PointArtifactReference reference =
-                new PointArtifactReference();
-            reference.ArtifactId =
-                "artifact-" +
-                job.JobId +
-                "-" +
-                index.ToString(
-                    CultureInfo.InvariantCulture);
-            reference.CalculationJobId = job.JobId;
-            reference.Kind = MapArtifactKind(
-                artifact.Kind);
-            reference.RelativePath = artifact.RelativePath;
-            reference.DownloadFileName = fileName;
-            reference.CanonicalStem = fileStem;
-            reference.CanonicalExtension = extension;
-            reference.MediaType = artifact.MediaType;
-            reference.Length = artifact.Length;
-            reference.Sha256 = artifact.Sha256;
-            reference.CanDownload = true;
-            reference.CanUseForRestart =
-                artifact.CanUseForRestart;
-            references.Add(reference);
-        }
-
-        return references;
-    }
-
-    private static ScientificArtifactKind MapArtifactKind(
-        CalculationArtifactKind kind)
-    {
-        if (kind == CalculationArtifactKind.Input)
-        {
-            return ScientificArtifactKind.Input;
-        }
-
-        if (kind == CalculationArtifactKind.PrimaryOutput)
-        {
-            return ScientificArtifactKind.PrimaryOutput;
-        }
-
-        if (kind == CalculationArtifactKind.SupportingOutput)
-        {
-            return ScientificArtifactKind.SupportingOutput;
-        }
-
-        if (kind == CalculationArtifactKind.RestartState)
-        {
-            return ScientificArtifactKind.RestartState;
-        }
-
-        return ScientificArtifactKind.Other;
-    }
-
-    private static string BuildCanonicalStem(
-        string formula,
-        string role,
-        int multiplicity)
-    {
-        string basis = string.IsNullOrWhiteSpace(formula)
-            ? "point"
-            : formula;
-        StringBuilder builder = new StringBuilder();
-
-        for (int index = 0; index < basis.Length; index++)
-        {
-            char value = basis[index];
-
-            if (char.IsLetterOrDigit(value)
-                || value == '-'
-                || value == '_'
-                || value == '.')
-            {
-                builder.Append(value);
-            }
-            else
-            {
-                builder.Append('-');
-            }
-        }
-
-        return builder.ToString() +
-            "-" +
-            role +
-            "-m" +
-            multiplicity.ToString(
-                CultureInfo.InvariantCulture);
     }
 
     private static string NormalizeProgramCode(string program)

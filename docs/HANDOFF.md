@@ -2,43 +2,48 @@
 
 ## 当前阶段
 
-阶段 6：生成叙述性文本。已完成。
+阶段 7：兼容和历史数据迁移。已完成。
 
 ```text
-科学文本只从 ScientificResult 生成
-point-summary 和 provenance 明确引用 PointId
-organization 记录点、关系和物理量
-final-summary 引用接受点和物理量依赖点
-conversation 由客户端保存，不作为科学结论
+旧 ScientificResult 没有文件清单时不报错
+旧点在清单中显示“没有文件清单”
+从 CalculationJob 和 CalculationResult 回填引用
+回填幂等，可逐项执行
+新结果和历史回填共用文件引用工厂
 ```
 
 ## 已完成
 
 ```text
-新增 IScientificNarrativeBuilder
-新增 DefaultScientificNarrativeBuilder
-新增 IScientificNarrativeService
-新增 ScientificNarrativeService
-新增 /scientific-results/{resultId}/narrative
-新增 /calculations/{jobId}/narrative
-WinForms 保存真实 relations.json 和 observables.json
-WinForms 为每个科学点保存 point-summary.txt 和 provenance.txt
+新增 ScientificArtifactReferenceFactory
+新增 IScientificArtifactBackfillService
+新增 ScientificArtifactBackfillService
+新增 POST /scientific-results/{resultId}/artifact-backfill
+新增 POST /scientific-artifacts/backfill
+清单增加 HasArtifactManifest 和 ArtifactManifestMessage
+WinForms 显示旧点没有文件清单
+点叙述显示文件清单状态
 ```
 
 ## 修改文件
 
 ```text
-src/ChemSculptor.ScientificSummary/Abstractions/IScientificNarrativeBuilder.cs
-src/ChemSculptor.ScientificSummary/Abstractions/IScientificNarrativeService.cs
-src/ChemSculptor.ScientificSummary/Models/ScientificPointNarrative.cs
-src/ChemSculptor.ScientificSummary/Models/ScientificNarrativePackage.cs
-src/ChemSculptor.ScientificSummary/DefaultScientificNarrativeBuilder.cs
-src/ChemSculptor.ScientificSummary/ScientificNarrativeService.cs
-src/ChemSculptor.Api/Endpoints/ScientificNarrativeEndpoints.cs
+src/ChemSculptor.ScientificData.Extraction/ArtifactResolution/ScientificArtifactReferenceFactory.cs
+src/ChemSculptor.ScientificData.Extraction/ArtifactResolution/Backfill/IScientificArtifactBackfillService.cs
+src/ChemSculptor.ScientificData.Extraction/ArtifactResolution/Backfill/ScientificArtifactBackfillService.cs
+src/ChemSculptor.ScientificData.Extraction/ArtifactResolution/Backfill/Models/ScientificArtifactBackfillResult.cs
+src/ChemSculptor.ScientificData.Extraction/ArtifactResolution/Backfill/Models/ScientificArtifactBackfillPointResult.cs
+src/ChemSculptor.Api/Endpoints/ScientificArtifactBackfillEndpoints.cs
 src/ChemSculptor.Api/Program.cs
+src/ChemSculptor.Api/Contracts.cs
+src/ChemSculptor.Api/ScientificArtifactResponseMapper.cs
+src/ChemSculptor.ScientificData.Extraction/ArtifactResolution/Models/ScientificArtifactPointManifest.cs
+src/ChemSculptor.ScientificData.Extraction/ArtifactResolution/ScientificArtifactResolver.cs
+src/ChemSculptor.ScientificSummary/DefaultScientificNarrativeBuilder.cs
 src/ChemSculptor.WinForms/MainForm.cs
 src/ChemSculptor.WinForms/Models/Responses/ResponseModels.cs
-tests/ChemSculptor.Core.Tests/ScientificNarrativeBuilderTests.cs
+tests/ChemSculptor.Core.Tests/ScientificArtifactBackfillServiceTests.cs
+tests/ChemSculptor.Core.Tests/ScientificArtifactResolverTests.cs
 docs/Scientific-Point-Artifact-Package-Spec.md
 docs/PROJECT_STATE.md
 docs/CHANGES.md
@@ -49,12 +54,13 @@ docs/HANDOFF.md
 
 ```text
 Release 构建：0 警告，0 错误
-测试：91/91 通过
+测试：93/93 通过
 ```
 
 ## 尚未完成
 
 ```text
+阶段 7 没有代码遗留项
 尚未通过实际 GUI 点击完成端到端成果包保存验证
 尚未生成完整成果包 checksums
 尚未实现压缩和断点续传
@@ -65,11 +71,10 @@ Release 构建：0 警告，0 错误
 下一阶段由用户指定。建议：
 
 ```text
-在 WinForms 中实际提交氧气计算并点击保存
-核对 points/01-original-m1 和 points/02-recovery-m3
-核对输入、fchk、输出共享统一基本文件名
-核对 point-summary、provenance、organization 和 final-summary
-核对 relations.json、observables.json 和 conversation.txt
+选择一个没有 Artifacts 的旧 ScientificResult
+调用 artifact-backfill 回填
+确认第二次调用不回填
+确认旧记录不调用回填也可显示“没有文件清单”
 ```
 
 ## 注意事项
@@ -81,6 +86,7 @@ Release 构建：0 警告，0 错误
 文本不得加入未进入 ScientificResult 的计算结论
 conversation.txt 是客户端会话记录
 原始点、被取代点和失败点都应保留
+回填依赖旧 CalculationJob 和 CalculationResult 仍然存在
 ```
 
 ## 强制文档规则

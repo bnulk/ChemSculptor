@@ -1007,6 +1007,17 @@ public sealed class MainForm : Form
                     pointDirectoryName);
                 Directory.CreateDirectory(pointDirectory);
 
+                if (!point.HasArtifactManifest
+                    && !string.IsNullOrWhiteSpace(
+                        point.ArtifactManifestMessage))
+                {
+                    AppendMessage(
+                        "hint",
+                        point.PointId +
+                        "：" +
+                        point.ArtifactManifestMessage);
+                }
+
                 for (int fileIndex = 0;
                     fileIndex < point.Files.Count;
                     fileIndex++)

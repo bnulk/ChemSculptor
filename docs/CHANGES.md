@@ -5,6 +5,134 @@
 
 ---
 
+## v0.49.0（2026-10-07）：兼容和历史数据迁移
+
+### 版本
+
+- 当前版本：`0.49.0`
+- 日期：2026-10-07
+- 版本类型：功能新增
+
+### 改动目的
+
+完成阶段 7“兼容和历史数据迁移”。
+
+旧 `ScientificResult` 即使没有文件引用，也可以生成清单和成果包，
+并可通过计算作业结果逐项回填文件引用。
+
+### 旧记录兼容
+
+科学点清单增加：
+
+```text
+HasArtifactManifest
+ArtifactManifestMessage
+```
+
+没有文件引用时：
+
+```text
+HasArtifactManifest = false
+ArtifactManifestMessage = 没有文件清单。
+```
+
+成果包清单仍然成功返回，不因为缺少文件引用而报错。
+
+WinForms 在保存旧点时显示：
+
+```text
+<PointId>：没有文件清单。
+```
+
+点叙述中也记录：
+
+```text
+文件清单：没有文件清单。
+```
+
+### 共享文件引用工厂
+
+新增：
+
+```text
+ScientificArtifactReferenceFactory
+```
+
+新结果提取和历史回填现在使用同一套：
+
+```text
+CanonicalStem
+下载文件名
+ArtifactId
+文件类别映射
+可重启状态映射
+```
+
+避免两套命名和引用生成逻辑发生漂移。
+
+### 回填服务
+
+新增：
+
+```text
+IScientificArtifactBackfillService
+ScientificArtifactBackfillService
+```
+
+回填规则：
+
+```text
+只处理 Artifacts 为空的科学点
+读取科学点的 CalculationJobId
+读取 CalculationJob
+读取 CalculationResult
+从 Artifacts 生成 PointArtifactReference
+已有文件引用时不覆盖
+只有实际发生回填时才保存 ScientificResult
+```
+
+因此可以：
+
+```text
+一次回填一个 ScientificResult
+重复执行而不会重复添加引用
+逐步迁移历史科学数据
+```
+
+### 回填 API
+
+```text
+POST /scientific-results/{resultId}/artifact-backfill
+POST /scientific-artifacts/backfill
+```
+
+### 测试
+
+新增：
+
+```text
+旧结果没有 Artifacts 时清单仍成功
+旧点显示没有文件清单
+从 CalculationResult 回填完整文件引用
+回填名称符合 O2-original-m1.*
+第二次回填不重复添加
+```
+
+验证结果：
+
+```text
+Release 构建：0 警告，0 错误
+测试：93/93 通过
+```
+
+### 当前边界
+
+回填依赖原有 CalculationJob 和 CalculationResult 仍然存在。
+
+如果历史计算文件或结果已经删除，回填只能报告缺少文件清单。
+
+---
+
 ## v0.48.0（2026-10-07）：生成叙述性文本
 
 ### 版本

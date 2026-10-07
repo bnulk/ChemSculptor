@@ -222,6 +222,11 @@ public sealed class ScientificArtifactPointDto
 
     public int Multiplicity { get; set; }
 
+    public bool HasArtifactManifest { get; set; }
+
+    public string ArtifactManifestMessage { get; set; } =
+        string.Empty;
+
     public List<ScientificArtifactFileDto> Files { get; set; } =
         new List<ScientificArtifactFileDto>();
 }

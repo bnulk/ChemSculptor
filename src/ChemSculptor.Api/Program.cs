@@ -162,6 +162,8 @@ public static class Program
         ClientSummaryEndpoints.MapClientSummaryEndpoints(app);
         ScientificArtifactEndpoints.MapScientificArtifactEndpoints(app);
         ScientificNarrativeEndpoints.MapScientificNarrativeEndpoints(app);
+        ScientificArtifactBackfillEndpoints
+            .MapScientificArtifactBackfillEndpoints(app);
 
         // 启动 Kestrel 并进入请求监听循环，直到进程关闭。
         app.Run();
@@ -200,6 +202,10 @@ public static class Program
         response.Endpoints.Add("GET /calculations/{jobId}/artifact-manifest");
         response.Endpoints.Add("GET /scientific-results/{resultId}/narrative");
         response.Endpoints.Add("GET /calculations/{jobId}/narrative");
+        response.Endpoints.Add(
+            "POST /scientific-results/{resultId}/artifact-backfill");
+        response.Endpoints.Add(
+            "POST /scientific-artifacts/backfill");
 
         return Results.Ok(response);
     }
