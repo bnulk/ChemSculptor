@@ -5,6 +5,181 @@
 
 ---
 
+## v0.48.0（2026-10-07）：生成叙述性文本
+
+### 版本
+
+- 当前版本：`0.48.0`
+- 日期：2026-10-07
+- 版本类型：功能新增
+
+### 改动目的
+
+完成阶段 6“生成叙述性文本”。
+
+科学文本只从 `ScientificResult` 生成，并明确引用 `PointId`。
+关系和物理量通过标识追溯到计算点。
+
+### 新增服务
+
+```text
+IScientificNarrativeBuilder
+DefaultScientificNarrativeBuilder
+
+IScientificNarrativeService
+ScientificNarrativeService
+```
+
+实现位置：
+
+```text
+ChemSculptor.ScientificSummary
+```
+
+### 生成内容
+
+服务生成：
+
+```text
+ScientificPointNarrative.PointSummary
+  单个科学点说明
+
+ScientificPointNarrative.Provenance
+  点的来源、父点、作业号和矫正次数
+
+ScientificNarrativePackage.Organization
+  点、关系和物理量的组织方式
+
+ScientificNarrativePackage.FinalSummary
+  最终科学摘要
+```
+
+`conversation.txt` 不由科学数据生成。
+它由客户端作为会话记录保存，不作为科学结论。
+
+### 追溯规则
+
+```text
+每个点文本包含 PointId
+每个关系包含 RelationId、FromPointId 和 ToPointId
+每个物理量包含 ObservableId、PointIds 和 RelationIds
+最终摘要引用接受点和物理量依赖点
+```
+
+### 新增端点
+
+```text
+GET /scientific-results/{resultId}/narrative
+GET /calculations/{jobId}/narrative
+```
+
+### 客户端成果包
+
+WinForms 保存按钮现在：
+
+```text
+读取 artifact-manifest
+读取 scientific-results/{resultId}/narrative
+按点目录写 point-summary.txt
+按点目录写 provenance.txt
+写真实 relations.json
+写真实 observables.json
+写 narrative/final-summary.txt
+写 narrative/organization.txt
+写客户端 conversation.txt
+```
+
+原先的 relations.json 和 observables.json 空数组占位已移除。
+
+### 测试
+
+新增：
+
+```text
+叙述文本全部引用 PointId
+provenance 记录 ParentPointId 和 CorrectionCount
+organization 记录关系和物理量标识
+final-summary 引用接受点和物理量依赖点
+```
+
+验证结果：
+
+```text
+Release 构建：0 警告，0 错误
+测试：91/91 通过
+```
+
+### 当前边界
+
+尚未通过实际 GUI 点击完成端到端成果包保存验证。
+
+---
+
+## v0.47.0（2026-10-07）：重写 WinForms 成果包保存
+
+### 版本
+
+- 当前版本：`0.47.0`
+- 日期：2026-10-07
+- 版本类型：功能重写
+
+### 改动目的
+
+完成阶段 5“重写 WinForms‘保存’按钮”。
+
+客户端改为按成果包清单下载全部科学点文件，
+并使用点目录组织修正前后文件。
+
+### 保存目录
+
+```text
+scientific-result-<rootJobId>/
+  points/
+    01-original-m1/
+    02-recovery-m3/
+  relations.json
+  observables.json
+  artifact-manifest.json
+  narrative/
+    final-summary.txt
+    conversation.txt
+    organization.txt
+```
+
+阶段 6 在此基础上增加：
+
+```text
+point-summary.txt
+provenance.txt
+真实 relations.json
+真实 observables.json
+```
+
+### 文件下载
+
+客户端遍历清单中的全部科学点：
+
+```text
+原始点
+恢复点
+未来其它派生点
+```
+
+每个文件通过 `DownloadPath` 下载，并按
+`DownloadFileName` 保存。
+
+因此修正前后的文件都保留，输入、fchk 和输出
+共享各自点的基本文件名。
+
+### 验证
+
+```text
+Release 构建：0 警告，0 错误
+测试：90/90 通过
+```
+
+---
+
 ## v0.46.0（2026-10-07）：增加成果包 API
 
 ### 版本

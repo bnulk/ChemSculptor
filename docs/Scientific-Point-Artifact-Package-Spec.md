@@ -247,6 +247,87 @@ GET /calculations/{jobId}/artifacts
 GET /calculations/{jobId}/artifacts/{fileName}
 ```
 
+## 6.4 科学数据叙述 API
+
+科学文本从 `ScientificResult` 生成：
+
+```text
+GET /scientific-results/{resultId}/narrative
+GET /calculations/{jobId}/narrative
+```
+
+返回：
+
+```text
+ResultId
+RootJobId
+FinalSummary
+Organization
+Points[]
+  PointId
+  Sequence
+  PointSummary
+  Provenance
+Relations[]
+Observables[]
+```
+
+追溯规则：
+
+```text
+PointSummary 和 Provenance 必须包含 PointId
+Relation 必须包含 FromPointId 和 ToPointId
+Observable 必须包含 PointIds
+FinalSummary 引用接受点和物理量依赖点
+```
+
+文本来源限制：
+
+```text
+只读取 ScientificResult
+不读取计算输出文本形成结论
+不加入没有进入科学数据的判断
+```
+
+`conversation.txt` 不属于科学结论。
+它是客户端保存的会话记录。
+
+## 6.5 客户端成果包目录
+
+WinForms 保存按钮当前生成：
+
+```text
+scientific-result-<rootJobId>/
+  points/
+    01-original-m1/
+      point-summary.txt
+      provenance.txt
+      文件
+    02-recovery-m3/
+      point-summary.txt
+      provenance.txt
+      文件
+  relations.json
+  observables.json
+  artifact-manifest.json
+  narrative/
+    final-summary.txt
+    conversation.txt
+    organization.txt
+```
+
+保存步骤：
+
+```text
+读取 artifact-manifest
+读取 narrative
+创建根目录和点目录
+下载全部可用文件
+写点叙述和来源
+写关系、物理量、清单和整体叙述
+写客户端对话记录
+```
+
 ## 7. 文件类别
 
 ```text

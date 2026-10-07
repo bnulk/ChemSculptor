@@ -936,6 +936,42 @@ public sealed class MainForm : Form
                 return;
             }
 
+            if (string.IsNullOrWhiteSpace(manifest.ResultId))
+            {
+                AppendMessage("error", "成果包清单缺少科学成果标识。");
+                return;
+            }
+
+            HttpResponseMessage narrativeResponse =
+                await _http.GetAsync(
+                    Endpoint(
+                        "/scientific-results/" +
+                        Uri.EscapeDataString(manifest.ResultId) +
+                        "/narrative"));
+
+            if (!narrativeResponse.IsSuccessStatusCode)
+            {
+                string errorText =
+                    await narrativeResponse.Content
+                        .ReadAsStringAsync();
+                AppendMessage(
+                    "error",
+                    "读取科学数据叙述包失败：" + errorText);
+                return;
+            }
+
+            ScientificNarrativePackageDto? narrative =
+                await narrativeResponse.Content
+                    .ReadFromJsonAsync<ScientificNarrativePackageDto>();
+
+            if (narrative == null)
+            {
+                AppendMessage(
+                    "error",
+                    "服务器没有返回科学数据叙述包。");
+                return;
+            }
+
             string rootJobId = GetSafePathSegment(
                 string.IsNullOrWhiteSpace(manifest.RootJobId)
                     ? _latestArtifactJobId
@@ -1043,19 +1079,62 @@ public sealed class MainForm : Form
             await WriteArtifactManifestAsync(
                 packageDirectory,
                 manifest);
-            await WriteEmptyJsonArrayAsync(
+            await WriteJsonAsync(
                 Path.Combine(
                     packageDirectory,
-                    "relations.json"));
-            await WriteEmptyJsonArrayAsync(
+                    "relations.json"),
+                narrative.Relations);
+            await WriteJsonAsync(
                 Path.Combine(
                     packageDirectory,
-                    "observables.json"));
+                    "observables.json"),
+                narrative.Observables);
+
+            for (int index = 0;
+                index < narrative.Points.Count;
+                index++)
+            {
+                ScientificPointNarrativeDto pointNarrative =
+                    narrative.Points[index];
+                ScientificArtifactPointDto? manifestPoint =
+                    FindManifestPoint(
+                        manifest,
+                        pointNarrative.PointId);
+
+                if (manifestPoint == null)
+                {
+                    AppendMessage(
+                        "error",
+                        "叙述文本没有对应科学点目录：" +
+                        pointNarrative.PointId);
+                    continue;
+                }
+
+                string pointDirectoryName = GetSafePathSegment(
+                    manifestPoint.DirectoryName,
+                    "point-" +
+                    manifestPoint.Sequence.ToString("D2"));
+                string pointDirectory = Path.Combine(
+                    pointsDirectory,
+                    pointDirectoryName);
+                Directory.CreateDirectory(pointDirectory);
+                await WriteTextAsync(
+                    Path.Combine(
+                        pointDirectory,
+                        "point-summary.txt"),
+                    pointNarrative.PointSummary);
+                await WriteTextAsync(
+                    Path.Combine(
+                        pointDirectory,
+                        "provenance.txt"),
+                    pointNarrative.Provenance);
+            }
+
             await WriteTextAsync(
                 Path.Combine(
                     narrativeDirectory,
                     "final-summary.txt"),
-                BuildFinalSummaryText(_latestArtifactJobId));
+                narrative.FinalSummary);
             await WriteTextAsync(
                 Path.Combine(
                     narrativeDirectory,
@@ -1065,7 +1144,7 @@ public sealed class MainForm : Form
                 Path.Combine(
                     narrativeDirectory,
                     "organization.txt"),
-                BuildOrganizationText(manifest));
+                narrative.Organization);
 
             AppendMessage(
                 "system",
@@ -1098,25 +1177,25 @@ public sealed class MainForm : Form
         string packageDirectory,
         ScientificArtifactManifestDto manifest)
     {
+        await WriteJsonAsync(
+            Path.Combine(
+                packageDirectory,
+                "artifact-manifest.json"),
+            manifest);
+    }
+
+    private static async Task WriteJsonAsync<T>(
+        string path,
+        T value)
+    {
         JsonSerializerOptions options =
             new JsonSerializerOptions(
                 JsonSerializerDefaults.Web);
         options.WriteIndented = true;
         string json = JsonSerializer.Serialize(
-            manifest,
+            value,
             options);
-        await WriteTextAsync(
-            Path.Combine(
-                packageDirectory,
-                "artifact-manifest.json"),
-            json);
-    }
-
-    private static Task WriteEmptyJsonArrayAsync(string path)
-    {
-        return WriteTextAsync(
-            path,
-            "[]" + Environment.NewLine);
+        await WriteTextAsync(path, json);
     }
 
     private static async Task WriteTextAsync(
@@ -1127,39 +1206,6 @@ public sealed class MainForm : Form
             path,
             text,
             Encoding.UTF8);
-    }
-
-    private string BuildFinalSummaryText(string jobId)
-    {
-        CalculationJobItem? calculation = null;
-
-        if (!string.IsNullOrWhiteSpace(jobId))
-        {
-            _calculations.TryGetValue(
-                jobId,
-                out calculation);
-        }
-
-        if (calculation != null
-            && !string.IsNullOrWhiteSpace(
-                calculation.ClientSummaryText))
-        {
-            return calculation.ClientSummaryText;
-        }
-
-        if (calculation != null
-            && !string.IsNullOrWhiteSpace(
-                calculation.ResultText))
-        {
-            return calculation.ResultText;
-        }
-
-        if (!string.IsNullOrWhiteSpace(_latestResultText))
-        {
-            return _latestResultText;
-        }
-
-        return "当前没有可用的最终摘要。";
     }
 
     private string BuildConversationText(string jobId)
@@ -1226,48 +1272,26 @@ public sealed class MainForm : Form
         return _activeSession;
     }
 
-    private static string BuildOrganizationText(
-        ScientificArtifactManifestDto manifest)
+    private static ScientificArtifactPointDto? FindManifestPoint(
+        ScientificArtifactManifestDto manifest,
+        string pointId)
     {
-        StringBuilder builder = new StringBuilder();
-        builder.AppendLine("科学成果：" + manifest.ResultId);
-        builder.AppendLine("根作业：" + manifest.RootJobId);
-        builder.AppendLine();
-
         for (int pointIndex = 0;
             pointIndex < manifest.Points.Count;
             pointIndex++)
         {
             ScientificArtifactPointDto point =
                 manifest.Points[pointIndex];
-            builder.Append(point.Sequence.ToString("D2"));
-            builder.Append(". ");
-            builder.Append(point.DirectoryName);
-            builder.Append("；状态：");
-            builder.Append(point.Status);
-            builder.Append("；多重度：");
-            builder.AppendLine(
-                point.Multiplicity.ToString());
-
-            for (int fileIndex = 0;
-                fileIndex < point.Files.Count;
-                fileIndex++)
+            if (string.Equals(
+                point.PointId,
+                pointId,
+                StringComparison.OrdinalIgnoreCase))
             {
-                ScientificArtifactFileDto file =
-                    point.Files[fileIndex];
-                builder.Append("   - ");
-                builder.Append(file.DownloadFileName);
-                builder.Append("；类别：");
-                builder.Append(file.Kind);
-                builder.Append("；可用：");
-                builder.AppendLine(
-                    file.IsAvailable.ToString());
+                return point;
             }
-
-            builder.AppendLine();
         }
 
-        return builder.ToString().TrimEnd();
+        return null;
     }
 
     private static string GetSafePathSegment(

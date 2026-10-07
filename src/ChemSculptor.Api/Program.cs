@@ -89,6 +89,12 @@ public static class Program
         ServiceCollectionServiceExtensions.AddSingleton<
             IClientSummaryService,
             ClientSummaryService>(builder.Services);
+        ServiceCollectionServiceExtensions.AddSingleton<
+            IScientificNarrativeBuilder,
+            DefaultScientificNarrativeBuilder>(builder.Services);
+        ServiceCollectionServiceExtensions.AddSingleton<
+            IScientificNarrativeService,
+            ScientificNarrativeService>(builder.Services);
 
         // 构建可运行的 Web 应用，此时还未开始监听端口。
         WebApplication app = builder.Build();
@@ -155,6 +161,7 @@ public static class Program
         AgentEndpoints.MapAgentEndpoints(app);
         ClientSummaryEndpoints.MapClientSummaryEndpoints(app);
         ScientificArtifactEndpoints.MapScientificArtifactEndpoints(app);
+        ScientificNarrativeEndpoints.MapScientificNarrativeEndpoints(app);
 
         // 启动 Kestrel 并进入请求监听循环，直到进程关闭。
         app.Run();
@@ -191,6 +198,8 @@ public static class Program
         response.Endpoints.Add("GET /scientific-results/{resultId}/artifact-manifest");
         response.Endpoints.Add("GET /scientific-results/{resultId}/artifacts/{pointId}/{artifactId}");
         response.Endpoints.Add("GET /calculations/{jobId}/artifact-manifest");
+        response.Endpoints.Add("GET /scientific-results/{resultId}/narrative");
+        response.Endpoints.Add("GET /calculations/{jobId}/narrative");
 
         return Results.Ok(response);
     }

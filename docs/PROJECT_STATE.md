@@ -3,7 +3,7 @@
 ## 当前版本
 
 ```text
-0.46.0
+0.48.0
 ```
 
 ## 文档维护原则
@@ -35,7 +35,7 @@ HANDOFF.md
 
 ```text
 Release 构建：0 警告，0 错误
-测试：90/90 通过
+测试：91/91 通过
 ```
 
 ## 总体架构
@@ -105,6 +105,9 @@ WinForms 客户端
 科学点规范文件主体和扩展名
 科学点文件解析服务
 科学点成果包 API
+WinForms 成果包保存
+科学数据叙述生成
+科学数据叙述 API
 科学数据文件仓储
 计算结果到科学数据的提取
 客户端科学摘要
@@ -134,8 +137,9 @@ WinForms 领取和显示摘要
 远程 HPC 队列和调度尚未实现
 几何优化、频率、TD-DFT 等任务尚未实现
 科学点文件清单已进入 CalculationPoint
-完整成果包下载尚未实现
-对话框文本保存和逐点文本说明尚未实现
+WinForms 已按清单保存完整成果包
+关系、物理量和科学叙述已可追溯
+成果包 checksums、压缩和断点续传尚未实现
 客户端摘要当前使用 Api 内存邮箱
 ```
 
@@ -155,28 +159,43 @@ WinForms 领取和显示摘要
 阶段 4 已完成：客户端可以通过成果包清单读取原始点和恢复点
 的全部文件信息，并按结果、科学点和文件标识下载单个文件。
 
+阶段 5 已完成：WinForms 按成果包清单下载全部点文件，
+并按科学点目录组织成果包。
+
+阶段 6 已完成：科学文本只从 ScientificResult 生成，
+点摘要、来源、组织方式和最终摘要均引用 PointId，
+关系和物理量可追溯到点。
+
 规范文档：
 
 ```text
 docs/Scientific-Point-Artifact-Package-Spec.md
 ```
 
-下一阶段是实现成果包生成服务：
+下一阶段由用户指定。建议完成实际 GUI 端到端验证和成果包完整性校验：
 
 ```text
-ScientificArchiveManifest
-ScientificArchiveService
-成果包清单 API
-按科学点下载 API
+WinForms 实际点击保存验证
+完整成果包 checksums
+断点续传和大成果包压缩
 ```
 
-后续依次完成：
+当前边界：
 
 ```text
-WinForms 保存完整成果包
-对话文本和点摘要文本
-历史科学数据兼容和回填
-氧气端到端验证
+relations.json 和 observables.json 已使用叙述包真实数据
+conversation.txt 是客户端会话记录，不属于科学结论
+成果包保存尚未通过实际 GUI 点击端到端验证
+```
+
+阶段 5 和阶段 6 验收结果：
+
+```text
+修正前后的文件都下载
+输入、fchk、输出使用统一基本文件名
+point-summary 和 provenance 明确引用 PointId
+关系和物理量可以追溯到点
+对话内容保存到 narrative/conversation.txt
 ```
 
 阶段 1 验收结果：

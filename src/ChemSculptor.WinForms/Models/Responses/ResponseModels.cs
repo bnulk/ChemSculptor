@@ -245,3 +245,79 @@ public sealed class ScientificArtifactFileDto
 
     public string DownloadPath { get; set; } = string.Empty;
 }
+
+/// <summary>由科学数据生成的成果叙述包。</summary>
+public sealed class ScientificNarrativePackageDto
+{
+    public string ResultId { get; set; } = string.Empty;
+
+    public string RootJobId { get; set; } = string.Empty;
+
+    public string FinalSummary { get; set; } = string.Empty;
+
+    public string Organization { get; set; } = string.Empty;
+
+    public List<ScientificPointNarrativeDto> Points { get; set; } =
+        new List<ScientificPointNarrativeDto>();
+
+    public List<ScientificPointRelationDto> Relations { get; set; } =
+        new List<ScientificPointRelationDto>();
+
+    public List<ScientificObservableDto> Observables { get; set; } =
+        new List<ScientificObservableDto>();
+}
+
+/// <summary>单个科学点的叙述文本。</summary>
+public sealed class ScientificPointNarrativeDto
+{
+    public string PointId { get; set; } = string.Empty;
+
+    public int Sequence { get; set; }
+
+    public string PointSummary { get; set; } = string.Empty;
+
+    public string Provenance { get; set; } = string.Empty;
+}
+
+/// <summary>可以追溯到科学点的关系。</summary>
+public sealed class ScientificPointRelationDto
+{
+    public string Id { get; set; } = string.Empty;
+
+    public string Kind { get; set; } = string.Empty;
+
+    public string FromPointId { get; set; } = string.Empty;
+
+    public string ToPointId { get; set; } = string.Empty;
+
+    public string Label { get; set; } = string.Empty;
+
+    public int? Sequence { get; set; }
+
+    public string Description { get; set; } = string.Empty;
+}
+
+/// <summary>可以追溯到科学点的物理量。</summary>
+public sealed class ScientificObservableDto
+{
+    public string Id { get; set; } = string.Empty;
+
+    public string Name { get; set; } = string.Empty;
+
+    public string Kind { get; set; } = string.Empty;
+
+    public double? NumericValue { get; set; }
+
+    public string TextValue { get; set; } = string.Empty;
+
+    public string Unit { get; set; } = string.Empty;
+
+    public string Formula { get; set; } = string.Empty;
+
+    public List<string> PointIds { get; set; } = new List<string>();
+
+    public List<string> RelationIds { get; set; } =
+        new List<string>();
+
+    public string Summary { get; set; } = string.Empty;
+}
