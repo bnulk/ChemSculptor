@@ -20,6 +20,12 @@
 使用真实氧气任务验证从客户端消息提交、单点计算、稳定性检查、
 矫正计算、科学数据仓储到成果包保存的完整链路。
 
+新增学习材料：
+
+```text
+docs/Tutorials/Scientific-Repository-Upgrade-Tutorial.md
+```
+
 ### 真实任务
 
 任务结果：

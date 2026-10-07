@@ -33,6 +33,7 @@ docs/CHANGES.md
 docs/PROJECT_STATE.md
 docs/HANDOFF.md
 docs/Scientific-Point-Artifact-Package-Spec.md
+docs/Tutorials/Scientific-Repository-Upgrade-Tutorial.md
 ```
 
 ## 验证结果

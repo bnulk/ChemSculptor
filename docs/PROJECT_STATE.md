@@ -270,6 +270,7 @@ docs/Tutorials/ChemSculptor-Tutorial.md
 docs/Tutorials/ChemSculptor-Skill-Collection-Tutorial.md
 docs/Tutorials/Skill-Collections-and-Workflow-Tutorial.md
 docs/Tutorials/ScientificData-Tutorial.md
+docs/Tutorials/Scientific-Repository-Upgrade-Tutorial.md
 docs/Tutorials/Oxygen-End-to-End-Tutorial.md
 ```
 
