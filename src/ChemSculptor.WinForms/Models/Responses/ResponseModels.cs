@@ -197,3 +197,51 @@ public sealed class CalculationArtifactFileDto
 
     public string DownloadPath { get; set; } = string.Empty;
 }
+
+/// <summary>科学点文件成果包清单响应。</summary>
+public sealed class ScientificArtifactManifestDto
+{
+    public string ResultId { get; set; } = string.Empty;
+
+    public string RootJobId { get; set; } = string.Empty;
+
+    public List<ScientificArtifactPointDto> Points { get; set; } =
+        new List<ScientificArtifactPointDto>();
+}
+
+/// <summary>成果包中的单个科学点。</summary>
+public sealed class ScientificArtifactPointDto
+{
+    public string PointId { get; set; } = string.Empty;
+
+    public int Sequence { get; set; }
+
+    public string DirectoryName { get; set; } = string.Empty;
+
+    public string Status { get; set; } = string.Empty;
+
+    public int Multiplicity { get; set; }
+
+    public List<ScientificArtifactFileDto> Files { get; set; } =
+        new List<ScientificArtifactFileDto>();
+}
+
+/// <summary>成果包中的单个文件。</summary>
+public sealed class ScientificArtifactFileDto
+{
+    public string ArtifactId { get; set; } = string.Empty;
+
+    public string Kind { get; set; } = string.Empty;
+
+    public string DownloadFileName { get; set; } = string.Empty;
+
+    public long Length { get; set; }
+
+    public string Sha256 { get; set; } = string.Empty;
+
+    public bool IsAvailable { get; set; }
+
+    public string Error { get; set; } = string.Empty;
+
+    public string DownloadPath { get; set; } = string.Empty;
+}

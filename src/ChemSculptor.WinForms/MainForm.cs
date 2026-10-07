@@ -885,7 +885,7 @@ public sealed class MainForm : Form
         return builder.ToString().TrimEnd();
     }
 
-    /// <summary>从服务器下载最近一次计算的 log、fchk 和 gjf 文件。</summary>
+    /// <summary>按服务器清单保存整个科学点文件成果包。</summary>
     private async Task SaveArtifactsAsync()
     {
         if (string.IsNullOrWhiteSpace(_latestArtifactJobId))
@@ -907,6 +907,7 @@ public sealed class MainForm : Form
 
         string targetDirectory = dialog.SelectedPath;
         dialog.Dispose();
+        _saveResultButton.Enabled = false;
 
         try
         {
@@ -915,69 +916,385 @@ public sealed class MainForm : Form
                     Endpoint(
                         "/calculations/" +
                         _latestArtifactJobId +
-                        "/artifacts"));
+                        "/artifact-manifest"));
 
             if (!manifestResponse.IsSuccessStatusCode)
             {
                 string errorText =
                     await manifestResponse.Content.ReadAsStringAsync();
-                AppendMessage("error", "读取计算文件清单失败：" + errorText);
+                AppendMessage("error", "读取成果包清单失败：" + errorText);
                 return;
             }
 
-            CalculationArtifactManifestDto? manifest =
+            ScientificArtifactManifestDto? manifest =
                 await manifestResponse.Content
-                    .ReadFromJsonAsync<CalculationArtifactManifestDto>();
+                    .ReadFromJsonAsync<ScientificArtifactManifestDto>();
 
-            if (manifest == null || manifest.Files.Count == 0)
+            if (manifest == null || manifest.Points.Count == 0)
             {
-                AppendMessage("error", "服务器没有返回可下载的计算文件。");
+                AppendMessage("error", "服务器没有返回科学点文件清单。");
                 return;
             }
 
-            int savedCount = 0;
+            string rootJobId = GetSafePathSegment(
+                string.IsNullOrWhiteSpace(manifest.RootJobId)
+                    ? _latestArtifactJobId
+                    : manifest.RootJobId,
+                "job");
+            string packageDirectory = Path.Combine(
+                targetDirectory,
+                "scientific-result-" + rootJobId);
+            string pointsDirectory = Path.Combine(
+                packageDirectory,
+                "points");
+            string narrativeDirectory = Path.Combine(
+                packageDirectory,
+                "narrative");
+            Directory.CreateDirectory(pointsDirectory);
+            Directory.CreateDirectory(narrativeDirectory);
 
-            for (int index = 0; index < manifest.Files.Count; index++)
+            int downloadedCount = 0;
+            int skippedCount = 0;
+
+            for (int pointIndex = 0;
+                pointIndex < manifest.Points.Count;
+                pointIndex++)
             {
-                CalculationArtifactFileDto file = manifest.Files[index];
-                HttpResponseMessage fileResponse =
-                    await _http.GetAsync(Endpoint(file.DownloadPath));
+                ScientificArtifactPointDto point =
+                    manifest.Points[pointIndex];
+                string pointDirectoryName = GetSafePathSegment(
+                    point.DirectoryName,
+                    "point-" +
+                    point.Sequence.ToString("D2"));
+                string pointDirectory = Path.Combine(
+                    pointsDirectory,
+                    pointDirectoryName);
+                Directory.CreateDirectory(pointDirectory);
 
-                if (!fileResponse.IsSuccessStatusCode)
+                for (int fileIndex = 0;
+                    fileIndex < point.Files.Count;
+                    fileIndex++)
                 {
+                    ScientificArtifactFileDto file =
+                        point.Files[fileIndex];
+
+                    if (!file.IsAvailable)
+                    {
+                        skippedCount++;
+                        AppendMessage(
+                            "error",
+                            "跳过不可用文件：" +
+                            pointDirectoryName +
+                            "/" +
+                            file.DownloadFileName +
+                            "；" +
+                            file.Error);
+                        continue;
+                    }
+
+                    string downloadFileName = GetSafePathSegment(
+                        file.DownloadFileName,
+                        "artifact");
+                    HttpResponseMessage fileResponse =
+                        await _http.GetAsync(
+                            Endpoint(file.DownloadPath));
+
+                    if (!fileResponse.IsSuccessStatusCode)
+                    {
+                        skippedCount++;
+                        string errorText =
+                            await fileResponse.Content
+                                .ReadAsStringAsync();
+                        AppendMessage(
+                            "error",
+                            "下载失败：" +
+                            pointDirectoryName +
+                            "/" +
+                            downloadFileName +
+                            "；" +
+                            errorText);
+                        continue;
+                    }
+
+                    string targetPath = Path.Combine(
+                        pointDirectory,
+                        downloadFileName);
+
+                    using (FileStream output = new FileStream(
+                        targetPath,
+                        FileMode.Create,
+                        FileAccess.Write,
+                        FileShare.None))
+                    {
+                        await fileResponse.Content
+                            .CopyToAsync(output);
+                    }
+
+                    downloadedCount++;
                     AppendMessage(
-                        "error",
-                        "下载失败：" + file.FileName);
-                    continue;
+                        "hint",
+                        "已保存：" +
+                        Path.GetRelativePath(
+                            packageDirectory,
+                            targetPath));
                 }
-
-                string targetPath = Path.Combine(
-                    targetDirectory,
-                    Path.GetFileName(file.FileName));
-
-                using (FileStream output = new FileStream(
-                    targetPath,
-                    FileMode.Create,
-                    FileAccess.Write,
-                    FileShare.None))
-                {
-                    await fileResponse.Content.CopyToAsync(output);
-                }
-
-                savedCount++;
-                AppendMessage("hint", "已保存：" + targetPath);
             }
+
+            await WriteArtifactManifestAsync(
+                packageDirectory,
+                manifest);
+            await WriteEmptyJsonArrayAsync(
+                Path.Combine(
+                    packageDirectory,
+                    "relations.json"));
+            await WriteEmptyJsonArrayAsync(
+                Path.Combine(
+                    packageDirectory,
+                    "observables.json"));
+            await WriteTextAsync(
+                Path.Combine(
+                    narrativeDirectory,
+                    "final-summary.txt"),
+                BuildFinalSummaryText(_latestArtifactJobId));
+            await WriteTextAsync(
+                Path.Combine(
+                    narrativeDirectory,
+                    "conversation.txt"),
+                BuildConversationText(_latestArtifactJobId));
+            await WriteTextAsync(
+                Path.Combine(
+                    narrativeDirectory,
+                    "organization.txt"),
+                BuildOrganizationText(manifest));
 
             AppendMessage(
                 "system",
-                "计算文件下载完成，共保存 " +
-                savedCount.ToString() +
+                "成果包保存完成：" +
+                packageDirectory +
+                "；已下载 " +
+                downloadedCount.ToString() +
+                " 个文件；跳过 " +
+                skippedCount.ToString() +
                 " 个文件。");
+            MessageBox.Show(
+                this,
+                "成果包已保存到：" +
+                Environment.NewLine +
+                packageDirectory,
+                "ChemSculptor");
         }
         catch (Exception ex)
         {
-            AppendMessage("error", "保存计算文件失败：" + ex.Message);
+            AppendMessage("error", "保存成果包失败：" + ex.Message);
         }
+        finally
+        {
+            _saveResultButton.Enabled =
+                !string.IsNullOrWhiteSpace(_latestArtifactJobId);
+        }
+    }
+
+    private static async Task WriteArtifactManifestAsync(
+        string packageDirectory,
+        ScientificArtifactManifestDto manifest)
+    {
+        JsonSerializerOptions options =
+            new JsonSerializerOptions(
+                JsonSerializerDefaults.Web);
+        options.WriteIndented = true;
+        string json = JsonSerializer.Serialize(
+            manifest,
+            options);
+        await WriteTextAsync(
+            Path.Combine(
+                packageDirectory,
+                "artifact-manifest.json"),
+            json);
+    }
+
+    private static Task WriteEmptyJsonArrayAsync(string path)
+    {
+        return WriteTextAsync(
+            path,
+            "[]" + Environment.NewLine);
+    }
+
+    private static async Task WriteTextAsync(
+        string path,
+        string text)
+    {
+        await File.WriteAllTextAsync(
+            path,
+            text,
+            Encoding.UTF8);
+    }
+
+    private string BuildFinalSummaryText(string jobId)
+    {
+        CalculationJobItem? calculation = null;
+
+        if (!string.IsNullOrWhiteSpace(jobId))
+        {
+            _calculations.TryGetValue(
+                jobId,
+                out calculation);
+        }
+
+        if (calculation != null
+            && !string.IsNullOrWhiteSpace(
+                calculation.ClientSummaryText))
+        {
+            return calculation.ClientSummaryText;
+        }
+
+        if (calculation != null
+            && !string.IsNullOrWhiteSpace(
+                calculation.ResultText))
+        {
+            return calculation.ResultText;
+        }
+
+        if (!string.IsNullOrWhiteSpace(_latestResultText))
+        {
+            return _latestResultText;
+        }
+
+        return "当前没有可用的最终摘要。";
+    }
+
+    private string BuildConversationText(string jobId)
+    {
+        ChatSession? session = FindSessionForJob(jobId);
+
+        if (session == null || session.Messages.Count == 0)
+        {
+            return "当前会话没有可保存的消息。";
+        }
+
+        StringBuilder builder = new StringBuilder();
+
+        for (int index = 0;
+            index < session.Messages.Count;
+            index++)
+        {
+            ChatMessage message = session.Messages[index];
+            builder.Append('[');
+            builder.Append(
+                message.Timestamp.ToString(
+                    "yyyy-MM-dd HH:mm:ss"));
+            builder.Append("] ");
+            builder.Append(message.Role);
+            builder.AppendLine("：");
+            builder.AppendLine(message.Text);
+            builder.AppendLine();
+        }
+
+        return builder.ToString().TrimEnd();
+    }
+
+    private ChatSession? FindSessionForJob(string jobId)
+    {
+        CalculationJobItem? calculation = null;
+
+        if (!string.IsNullOrWhiteSpace(jobId))
+        {
+            _calculations.TryGetValue(
+                jobId,
+                out calculation);
+        }
+
+        if (calculation != null
+            && !string.IsNullOrWhiteSpace(
+                calculation.ClientId))
+        {
+            for (int index = 0;
+                index < _sessions.Count;
+                index++)
+            {
+                ChatSession session = _sessions[index];
+
+                if (string.Equals(
+                    session.Id,
+                    calculation.ClientId,
+                    StringComparison.OrdinalIgnoreCase))
+                {
+                    return session;
+                }
+            }
+        }
+
+        return _activeSession;
+    }
+
+    private static string BuildOrganizationText(
+        ScientificArtifactManifestDto manifest)
+    {
+        StringBuilder builder = new StringBuilder();
+        builder.AppendLine("科学成果：" + manifest.ResultId);
+        builder.AppendLine("根作业：" + manifest.RootJobId);
+        builder.AppendLine();
+
+        for (int pointIndex = 0;
+            pointIndex < manifest.Points.Count;
+            pointIndex++)
+        {
+            ScientificArtifactPointDto point =
+                manifest.Points[pointIndex];
+            builder.Append(point.Sequence.ToString("D2"));
+            builder.Append(". ");
+            builder.Append(point.DirectoryName);
+            builder.Append("；状态：");
+            builder.Append(point.Status);
+            builder.Append("；多重度：");
+            builder.AppendLine(
+                point.Multiplicity.ToString());
+
+            for (int fileIndex = 0;
+                fileIndex < point.Files.Count;
+                fileIndex++)
+            {
+                ScientificArtifactFileDto file =
+                    point.Files[fileIndex];
+                builder.Append("   - ");
+                builder.Append(file.DownloadFileName);
+                builder.Append("；类别：");
+                builder.Append(file.Kind);
+                builder.Append("；可用：");
+                builder.AppendLine(
+                    file.IsAvailable.ToString());
+            }
+
+            builder.AppendLine();
+        }
+
+        return builder.ToString().TrimEnd();
+    }
+
+    private static string GetSafePathSegment(
+        string? value,
+        string fallback)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return fallback;
+        }
+
+        string candidate = value.Trim();
+
+        if (candidate == "."
+            || candidate == ".."
+            || Path.IsPathRooted(candidate)
+            || candidate.IndexOfAny(
+                Path.GetInvalidFileNameChars()) >= 0
+            || !string.Equals(
+                candidate,
+                Path.GetFileName(candidate),
+                StringComparison.Ordinal))
+        {
+            return fallback;
+        }
+
+        return candidate;
     }
 
     /// <summary>检查是否已选择有效文件，并返回其路径。</summary>
