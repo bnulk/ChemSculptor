@@ -5,6 +5,100 @@
 
 ---
 
+## v0.44.0（2026-10-07）：提取器填充完整文件引用
+
+### 版本
+
+- 当前版本：`0.44.0`
+- 日期：2026-10-07
+- 版本类型：功能完善
+
+### 改动目的
+
+完成阶段 2“提取器填充文件引用”。
+
+让科学结果提取器从计算作业和 `CalculationResult` 中复制文件清单，
+并把清单分别挂到原始点和恢复点上。
+
+### 提取规则
+
+```text
+原始点
+  ← 原始作业对应的 CalculationResult.Artifacts
+
+恢复点
+  ← 恢复作业对应的 CalculationResult.Artifacts
+```
+
+每个科学点设置自己的 `CalculationJobId`。
+
+每项 `PointArtifactReference` 也记录产生该文件的
+`CalculationJobId`。
+
+### 文件名
+
+提取器继续生成规范逻辑文件名：
+
+```text
+O2-original-m1.gjf
+O2-original-m1.fchk
+O2-original-m1.log
+
+O2-recovery-m3.gjf
+O2-recovery-m3.fchk
+O2-recovery-m3.log
+```
+
+文件引用保存：
+
+```text
+CanonicalStem
+CanonicalExtension
+DownloadFileName
+RelativePath
+```
+
+### 文件处理边界
+
+提取器只把计算结果的 `Artifacts` 转换为引用。
+
+本阶段不复制文件，不创建目标文件，也不修改原始计算目录。
+
+### 测试
+
+新增独立验收测试：
+
+```text
+原始点文件引用清单完整
+恢复点文件引用清单完整
+原始点和恢复点分别使用自己的 CalculationJobId
+每项文件引用的 CanonicalStem 和 CanonicalExtension 正确
+restart 状态文件正确标记 CanUseForRestart
+模拟原始和恢复目录的文件集合与内容保持不变
+```
+
+验证结果：
+
+```text
+Release 构建：0 警告，0 错误
+测试：84/84 通过
+```
+
+### 当前边界
+
+本阶段不修改：
+
+```text
+计算层
+工作流
+Api
+WinForms
+```
+
+完整成果包生成和下载仍未实现。
+
+---
+
 ## v0.43.0（2026-10-06）：完成科学点文件引用模型
 
 ### 版本

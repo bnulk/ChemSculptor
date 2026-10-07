@@ -2,34 +2,31 @@
 
 ## 当前阶段
 
-阶段 1：扩展科学点模型。已完成。
+阶段 2：提取器填充文件引用。已完成。
 
 ```text
-CalculationPoint 保存 CalculationJobId、ProgramData 和 Artifacts
-PointArtifactReference 保存规范文件主体和规范扩展名
-Artifact 模型支持 JSON 序列化和反序列化
-旧科学成果 JSON 保持可读取
+原始点引用原始作业的完整文件清单
+恢复点引用恢复作业的完整文件清单
+每个点和每项引用都记录自己的 CalculationJobId
+只保存文件引用，不复制文件
+不修改原始计算目录
 ```
 
 ## 已完成
 
 ```text
-CalculationPoint 已增加 CalculationJobId
-CalculationPoint 已增加 ProgramData
-CalculationPoint 已增加 Artifacts
-PointArtifactReference 已增加 CanonicalStem
-PointArtifactReference 已增加 CanonicalExtension
-提取器已填写规范文件名主体和扩展名
-旧数据兼容读取已由测试覆盖
+ScientificResultExtractor 已把原始作业文件清单写入原始点
+ScientificResultExtractor 已把恢复作业文件清单写入恢复点
+文件引用已填写 CalculationJobId、RelativePath、CanonicalStem、
+CanonicalExtension 和 DownloadFileName
+restart 状态文件的 CanUseForRestart 已由测试覆盖
+模拟原始和恢复目录的文件集合与内容保持不变
 ```
 
 ## 修改文件
 
 ```text
-src/ChemSculptor.ScientificData/Models/PointArtifactReference.cs
-src/ChemSculptor.ScientificData.Extraction/ScientificResultExtractor.cs
 tests/ChemSculptor.Core.Tests/ScientificResultExtractorTests.cs
-tests/ChemSculptor.Core.Tests/FileScientificDataRepositoryTests.cs
 docs/Scientific-Point-Artifact-Package-Spec.md
 docs/PROJECT_STATE.md
 docs/CHANGES.md
@@ -40,20 +37,20 @@ docs/HANDOFF.md
 
 ```text
 Release 构建：0 警告，0 错误
-测试：83/83 通过
+测试：84/84 通过
 ```
 
 ## 尚未完成
 
 ```text
-阶段 1 没有遗留项。
+阶段 2 没有遗留项。
 
-阶段 2 尚未开始。
+阶段 3 尚未开始。
 ```
 
 ## 下一步精确任务
 
-建议的阶段 2：实现成果包清单和文件解析服务：
+建议的阶段 3：实现成果包清单和文件解析服务：
 
 ```text
 新增 ScientificArchiveManifest

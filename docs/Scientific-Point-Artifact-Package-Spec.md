@@ -138,6 +138,23 @@ DownloadFileName = CanonicalStem + CanonicalExtension
 如果同一科学点内出现扩展名冲突，工具可以在
 `CanonicalStem` 末尾增加数字后缀，但仍必须满足上述关系。
 
+## 6.1 提取规则
+
+科学结果提取器从计算作业及其 `CalculationResult.Artifacts`
+生成科学点文件引用。
+
+```text
+原始点
+  ← 原始作业对应的 CalculationResult.Artifacts
+
+恢复点
+  ← 恢复作业对应的 CalculationResult.Artifacts
+```
+
+每个文件引用记录产生它的 `CalculationJobId`。
+
+提取器只保存文件引用，不复制文件，不创建文件，也不修改原始计算目录。
+
 ## 7. 文件类别
 
 ```text

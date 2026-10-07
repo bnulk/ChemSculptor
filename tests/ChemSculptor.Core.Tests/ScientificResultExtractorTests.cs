@@ -120,6 +120,141 @@ public class ScientificResultExtractorTests
         }
     }
 
+    /// <summary>
+    /// 验证原始点和恢复点各自获得完整文件引用清单。
+    /// </summary>
+    [Fact]
+    public async Task PopulatesCompleteArtifactManifestForEachPoint()
+    {
+        string root = CreateTemporaryRoot();
+
+        try
+        {
+            string originalRunDirectory = Path.Combine(
+                root,
+                "original-run");
+            string recoveryRunDirectory = Path.Combine(
+                root,
+                "recovery-run");
+            Directory.CreateDirectory(originalRunDirectory);
+            Directory.CreateDirectory(recoveryRunDirectory);
+
+            string originalInputPath = Path.Combine(
+                originalRunDirectory,
+                "job-original.gjf");
+            string originalOutputPath = Path.Combine(
+                originalRunDirectory,
+                "output.log");
+            string recoveryInputPath = Path.Combine(
+                recoveryRunDirectory,
+                "job-recovery.gjf");
+            string recoveryOutputPath = Path.Combine(
+                recoveryRunDirectory,
+                "output.log");
+            await File.WriteAllTextAsync(
+                originalInputPath,
+                "original input");
+            await File.WriteAllTextAsync(
+                originalOutputPath,
+                "original output");
+            await File.WriteAllTextAsync(
+                recoveryInputPath,
+                "recovery input");
+            await File.WriteAllTextAsync(
+                recoveryOutputPath,
+                "recovery output");
+
+            string[] originalFilesBefore =
+                Directory.GetFiles(originalRunDirectory)
+                    .OrderBy(
+                        path => path,
+                        StringComparer.OrdinalIgnoreCase)
+                    .ToArray();
+            string[] recoveryFilesBefore =
+                Directory.GetFiles(recoveryRunDirectory)
+                    .OrderBy(
+                        path => path,
+                        StringComparer.OrdinalIgnoreCase)
+                    .ToArray();
+
+            ScientificResultExtractionRequest request =
+                CreateRecoveryRequest();
+            ScientificResultExtractor extractor =
+                new ScientificResultExtractor(
+                    new GeometryTextParser());
+
+            ScientificResultExtractionResult result =
+                await extractor.ExtractAsync(request);
+
+            Assert.True(result.Succeeded);
+            Assert.NotNull(result.Result);
+
+            CalculationPoint original =
+                FindPoint(
+                    result.Result,
+                    "point-job-original");
+            CalculationPoint recovery =
+                FindPoint(
+                    result.Result,
+                    "point-job-recovery");
+
+            AssertArtifactManifest(
+                original,
+                "job-original",
+                "O2-original-m1",
+                "job-original.gjf",
+                "output.log",
+                "job-original.fchk");
+            AssertArtifactManifest(
+                recovery,
+                "job-recovery",
+                "O2-recovery-m3",
+                "job-recovery.gjf",
+                "output.log",
+                "job-recovery.fchk");
+
+            Assert.False(
+                original.Artifacts[0].CanUseForRestart);
+            Assert.True(
+                original.Artifacts[2].CanUseForRestart);
+            Assert.False(
+                recovery.Artifacts[0].CanUseForRestart);
+            Assert.True(
+                recovery.Artifacts[2].CanUseForRestart);
+
+            Assert.Equal(
+                originalFilesBefore,
+                Directory.GetFiles(originalRunDirectory)
+                    .OrderBy(
+                        path => path,
+                        StringComparer.OrdinalIgnoreCase)
+                    .ToArray());
+            Assert.Equal(
+                recoveryFilesBefore,
+                Directory.GetFiles(recoveryRunDirectory)
+                    .OrderBy(
+                        path => path,
+                        StringComparer.OrdinalIgnoreCase)
+                    .ToArray());
+            Assert.Equal(
+                "original input",
+                await File.ReadAllTextAsync(originalInputPath));
+            Assert.Equal(
+                "original output",
+                await File.ReadAllTextAsync(originalOutputPath));
+            Assert.Equal(
+                "recovery input",
+                await File.ReadAllTextAsync(recoveryInputPath));
+            Assert.Equal(
+                "recovery output",
+                await File.ReadAllTextAsync(recoveryOutputPath));
+        }
+        finally
+        {
+            DeleteTemporaryRoot(root);
+        }
+    }
+
     private static ScientificResultExtractionRequest
         CreateRecoveryRequest()
     {
@@ -273,6 +408,45 @@ public class ScientificResultExtractorTests
 
         throw new InvalidOperationException(
             "没有找到计算点：" + pointId);
+    }
+
+    private static void AssertArtifactManifest(
+        CalculationPoint point,
+        string jobId,
+        string canonicalStem,
+        params string[] relativePaths)
+    {
+        Assert.Equal(jobId, point.CalculationJobId);
+        Assert.Equal(
+            relativePaths.Length,
+            point.Artifacts.Count);
+
+        for (int index = 0;
+            index < relativePaths.Length;
+            index++)
+        {
+            PointArtifactReference artifact =
+                point.Artifacts[index];
+            string extension =
+                Path.GetExtension(relativePaths[index]);
+
+            Assert.Equal(
+                jobId,
+                artifact.CalculationJobId);
+            Assert.Equal(
+                relativePaths[index],
+                artifact.RelativePath);
+            Assert.Equal(
+                canonicalStem,
+                artifact.CanonicalStem);
+            Assert.Equal(
+                extension,
+                artifact.CanonicalExtension);
+            Assert.Equal(
+                canonicalStem + extension,
+                artifact.DownloadFileName);
+            Assert.True(artifact.CanDownload);
+        }
     }
 
     private static string CreateTemporaryRoot()
