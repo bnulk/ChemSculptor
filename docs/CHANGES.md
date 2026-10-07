@@ -5,6 +5,108 @@
 
 ---
 
+## v0.49.1（2026-10-07）：阶段 8 氧气完整验证
+
+### 版本
+
+- 当前版本：`0.49.1`
+- 日期：2026-10-07
+- 版本类型：验证与文档
+
+### 验证目的
+
+完成阶段 8“完整验证”。
+
+使用真实氧气任务验证从客户端消息提交、单点计算、稳定性检查、
+矫正计算、科学数据仓储到成果包保存的完整链路。
+
+### 真实任务
+
+任务结果：
+
+```text
+原始点：01-original-m1
+原始点多重度：1
+原始点状态：Superseded
+
+恢复点：02-recovery-m3
+恢复点多重度：3
+恢复点状态：Accepted
+
+科学点数量：2
+每点文件数量：6
+```
+
+输入、fchk 和主要输出共享统一基本文件名：
+
+```text
+O2-original-m1.gjf
+O2-original-m1.fchk
+O2-original-m1.log
+
+O2-recovery-m3.gjf
+O2-recovery-m3.fchk
+O2-recovery-m3.log
+```
+
+### 成果包验证
+
+按 WinForms 保存按钮当前使用的清单、叙述和下载规则执行等价流程。
+
+生成目录：
+
+```text
+scientific-result-<rootJobId>/
+  points/
+    01-original-m1/
+      point-summary.txt
+      provenance.txt
+      O2-original-m1.gjf
+      O2-original-m1.fchk
+      O2-original-m1.log
+      ...
+    02-recovery-m3/
+      point-summary.txt
+      provenance.txt
+      O2-recovery-m3.gjf
+      O2-recovery-m3.fchk
+      O2-recovery-m3.log
+      ...
+  relations.json
+  observables.json
+  artifact-manifest.json
+  narrative/
+    final-summary.txt
+    conversation.txt
+    organization.txt
+```
+
+验证结果：
+
+```text
+原始点文件独立下载
+恢复点文件独立下载
+输入、fchk 和主要输出命名一致
+对话文本成功保存
+最终摘要成功保存
+```
+
+### 验证限制
+
+当前环境无法自动点击 WinForms 保存按钮。
+
+本次执行的是保存按钮所依赖的同一组 API 和目录写入规则，
+不是实际鼠标点击 GUI 按钮。
+
+### 构建与测试
+
+```text
+Release 构建：0 警告，0 错误
+测试：93/93 通过
+```
+
+---
+
 ## v0.49.0（2026-10-07）：兼容和历史数据迁移
 
 ### 版本

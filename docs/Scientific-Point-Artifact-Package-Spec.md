@@ -382,6 +382,39 @@ POST /scientific-results/{resultId}/artifact-backfill
 POST /scientific-artifacts/backfill
 ```
 
+## 6.7 氧气端到端验证
+
+已使用 O2 单点计算验证：
+
+```text
+客户端消息提交
+单点计算
+波函数稳定性检查
+自旋多重度矫正
+恢复点计算
+科学数据仓储
+成果包清单和叙述生成
+成果包目录保存
+```
+
+结果：
+
+```text
+01-original-m1
+  O2-original-m1.gjf
+  O2-original-m1.fchk
+  O2-original-m1.log
+
+02-recovery-m3
+  O2-recovery-m3.gjf
+  O2-recovery-m3.fchk
+  O2-recovery-m3.log
+```
+
+每个点还包含点说明、来源说明和补充日志。
+
+当前验证通过等价保存流程执行，尚未自动点击 WinForms 保存按钮。
+
 ## 7. 文件类别
 
 ```text

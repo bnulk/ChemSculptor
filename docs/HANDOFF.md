@@ -2,52 +2,37 @@
 
 ## 当前阶段
 
-阶段 7：兼容和历史数据迁移。已完成。
+阶段 8：完整验证。已完成。
 
 ```text
-旧 ScientificResult 没有文件清单时不报错
-旧点在清单中显示“没有文件清单”
-从 CalculationJob 和 CalculationResult 回填引用
-回填幂等，可逐项执行
-新结果和历史回填共用文件引用工厂
+真实氧气任务完成
+单点计算和稳定性检查完成
+单重态原始点被三重态恢复点取代
+科学数据仓储生成两个科学点
+两个点各有独立文件和统一命名
+成果包目录和文本保存成功
 ```
 
 ## 已完成
 
 ```text
-新增 ScientificArtifactReferenceFactory
-新增 IScientificArtifactBackfillService
-新增 ScientificArtifactBackfillService
-新增 POST /scientific-results/{resultId}/artifact-backfill
-新增 POST /scientific-artifacts/backfill
-清单增加 HasArtifactManifest 和 ArtifactManifestMessage
-WinForms 显示旧点没有文件清单
-点叙述显示文件清单状态
+真实任务 JobId：job-324b2410b6904f0e8298727b9fdef343
+结果 Id：scientific-result-job-324b2410b6904f0e8298727b9fdef343
+原始点：01-original-m1
+恢复点：02-recovery-m3
+每点文件数：6
+下载文件总数：12
+对话文本和最终摘要均成功写出
+当前没有自动化点击 WinForms 保存按钮
 ```
 
 ## 修改文件
 
 ```text
-src/ChemSculptor.ScientificData.Extraction/ArtifactResolution/ScientificArtifactReferenceFactory.cs
-src/ChemSculptor.ScientificData.Extraction/ArtifactResolution/Backfill/IScientificArtifactBackfillService.cs
-src/ChemSculptor.ScientificData.Extraction/ArtifactResolution/Backfill/ScientificArtifactBackfillService.cs
-src/ChemSculptor.ScientificData.Extraction/ArtifactResolution/Backfill/Models/ScientificArtifactBackfillResult.cs
-src/ChemSculptor.ScientificData.Extraction/ArtifactResolution/Backfill/Models/ScientificArtifactBackfillPointResult.cs
-src/ChemSculptor.Api/Endpoints/ScientificArtifactBackfillEndpoints.cs
-src/ChemSculptor.Api/Program.cs
-src/ChemSculptor.Api/Contracts.cs
-src/ChemSculptor.Api/ScientificArtifactResponseMapper.cs
-src/ChemSculptor.ScientificData.Extraction/ArtifactResolution/Models/ScientificArtifactPointManifest.cs
-src/ChemSculptor.ScientificData.Extraction/ArtifactResolution/ScientificArtifactResolver.cs
-src/ChemSculptor.ScientificSummary/DefaultScientificNarrativeBuilder.cs
-src/ChemSculptor.WinForms/MainForm.cs
-src/ChemSculptor.WinForms/Models/Responses/ResponseModels.cs
-tests/ChemSculptor.Core.Tests/ScientificArtifactBackfillServiceTests.cs
-tests/ChemSculptor.Core.Tests/ScientificArtifactResolverTests.cs
-docs/Scientific-Point-Artifact-Package-Spec.md
-docs/PROJECT_STATE.md
 docs/CHANGES.md
+docs/PROJECT_STATE.md
 docs/HANDOFF.md
+docs/Scientific-Point-Artifact-Package-Spec.md
 ```
 
 ## 验证结果
@@ -60,8 +45,8 @@ Release 构建：0 警告，0 错误
 ## 尚未完成
 
 ```text
-阶段 7 没有代码遗留项
-尚未通过实际 GUI 点击完成端到端成果包保存验证
+阶段 8 已通过等价保存流程完成
+尚未自动点击 WinForms 保存按钮
 尚未生成完整成果包 checksums
 尚未实现压缩和断点续传
 ```
@@ -71,10 +56,18 @@ Release 构建：0 警告，0 错误
 下一阶段由用户指定。建议：
 
 ```text
-选择一个没有 Artifacts 的旧 ScientificResult
-调用 artifact-backfill 回填
-确认第二次调用不回填
-确认旧记录不调用回填也可显示“没有文件清单”
+人工点击 WinForms 保存按钮复核同一氧气结果
+核对临时成果包和 GUI 保存结果一致
+增加 checksums 和压缩
+```
+
+候选实现内容：
+
+```text
+GUI 自动化或人工点击验证
+成果包 checksums.sha256
+压缩归档
+断点续传
 ```
 
 ## 注意事项
@@ -87,6 +80,7 @@ Release 构建：0 警告，0 错误
 conversation.txt 是客户端会话记录
 原始点、被取代点和失败点都应保留
 回填依赖旧 CalculationJob 和 CalculationResult 仍然存在
+本次成果包为等价流程验证，不是实际 GUI 点击
 ```
 
 ## 强制文档规则
