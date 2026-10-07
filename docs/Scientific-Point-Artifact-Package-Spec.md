@@ -155,6 +155,54 @@ DownloadFileName = CanonicalStem + CanonicalExtension
 
 提取器只保存文件引用，不复制文件，不创建文件，也不修改原始计算目录。
 
+## 6.2 文件解析服务
+
+科学点文件解析服务负责把成果中的文件引用解析为服务器真实文件。
+
+实现位置：
+
+```text
+ChemSculptor.ScientificData.Extraction.ArtifactResolution
+```
+
+接口：
+
+```text
+IScientificArtifactResolver
+  ResolveManifestAsync(resultId)
+  OpenArtifactAsync(resultId, pointId, artifactId)
+```
+
+解析清单时，服务执行：
+
+```text
+读取 ScientificResult
+遍历 PointSet.Points
+验证科学点和文件引用的 CalculationJobId
+通过计算工作区解析对应作业的 run 目录
+检查文件是否存在
+计算并验证 SHA-256
+生成客户端下载名
+```
+
+安全规则：
+
+```text
+只允许访问对应作业的 run 目录
+拒绝绝对路径
+拒绝规范化后越出 run 目录的相对路径
+拒绝包含文件系统链接的路径
+不把服务器真实路径交给客户端
+```
+
+单个文件缺失时：
+
+```text
+清单中该文件标记为不可用并给出错误
+科学点和其它存在的文件继续参与解析
+其它文件仍可单独下载
+```
+
 ## 7. 文件类别
 
 ```text

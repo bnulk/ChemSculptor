@@ -5,6 +5,139 @@
 
 ---
 
+## v0.45.0（2026-10-07）：建立科学点文件解析服务
+
+### 版本
+
+- 当前版本：`0.45.0`
+- 日期：2026-10-07
+- 版本类型：功能新增
+
+### 改动目的
+
+完成阶段 3“建立科学点文件解析服务”。
+
+把科学成果中的相对文件引用解析为服务器上的真实文件，
+同时保证客户端不能利用相对路径访问任意服务器目录。
+
+### 新增接口
+
+```text
+IScientificArtifactResolver
+  ResolveManifestAsync(resultId)
+  OpenArtifactAsync(resultId, pointId, artifactId)
+```
+
+接口位于：
+
+```text
+ChemSculptor.ScientificData.Extraction.ArtifactResolution
+```
+
+### 清单解析
+
+`ScientificArtifactResolver` 执行：
+
+```text
+读取 ScientificResult
+遍历 PointSet.Points
+验证科学点和文件引用的 CalculationJobId
+解析对应作业的 run 目录
+检查文件是否存在
+计算并验证 SHA-256
+生成下载文件名清单
+```
+
+解析结果逐文件报告：
+
+```text
+IsAvailable
+IsSha256Valid
+ExpectedSha256
+ActualSha256
+Error
+```
+
+### 单文件打开
+
+`OpenArtifactAsync` 在打开文件前重新执行：
+
+```text
+成果、科学点和文件引用查询
+CalculationJobId 一致性校验
+run 目录定位
+相对路径越界检查
+文件系统链接检查
+文件存在性检查
+SHA-256 校验
+```
+
+校验通过后，返回从文件起点开始的可读流。
+
+### 路径安全
+
+服务不直接拼接客户端提供的路径，而是：
+
+```text
+先通过 ICalculationWorkspace.GetRunDirectory(jobId) 确定运行目录
+再规范化相对路径
+再确认最终路径位于运行目录之内
+```
+
+以下情况被拒绝：
+
+```text
+绝对路径
+规范化后越出 run 目录的路径
+路径中包含文件系统链接
+文件引用的 CalculationJobId 与科学点不一致
+未标记 CanDownload 的文件
+```
+
+### 部分缺失
+
+一个文件缺失时，清单整体仍然成功：
+
+```text
+缺失文件标记 IsAvailable = false
+缺失文件给出明确错误
+其它存在的文件继续解析
+其它文件仍可通过 OpenArtifactAsync 打开
+```
+
+### 测试
+
+新增测试：
+
+```text
+完整文件解析、SHA-256 校验和打开
+缺失 fchk 不影响 gjf 和 log
+拒绝 run 目录之外的相对路径
+拒绝文件引用与科学点 CalculationJobId 不一致
+```
+
+验证结果：
+
+```text
+Release 构建：0 警告，0 错误
+测试：88/88 通过
+```
+
+### 当前边界
+
+本阶段不修改：
+
+```text
+计算层
+工作流
+Api
+WinForms
+```
+
+完整成果包清单 API 和客户端成果包下载尚未实现。
+
+---
+
 ## v0.44.0（2026-10-07）：提取器填充完整文件引用
 
 ### 版本

@@ -2,31 +2,39 @@
 
 ## 当前阶段
 
-阶段 2：提取器填充文件引用。已完成。
+阶段 3：建立科学点文件解析服务。已完成。
 
 ```text
-原始点引用原始作业的完整文件清单
-恢复点引用恢复作业的完整文件清单
-每个点和每项引用都记录自己的 CalculationJobId
-只保存文件引用，不复制文件
-不修改原始计算目录
+根据 PointArtifactReference 解析服务器真实文件
+解析清单并逐文件报告可用性
+打开经过完整验证的单个文件
+拒绝 run 目录之外的服务器路径
+缺失文件不影响其它文件下载
 ```
 
 ## 已完成
 
 ```text
-ScientificResultExtractor 已把原始作业文件清单写入原始点
-ScientificResultExtractor 已把恢复作业文件清单写入恢复点
-文件引用已填写 CalculationJobId、RelativePath、CanonicalStem、
-CanonicalExtension 和 DownloadFileName
-restart 状态文件的 CanUseForRestart 已由测试覆盖
-模拟原始和恢复目录的文件集合与内容保持不变
+新增 IScientificArtifactResolver
+新增 ScientificArtifactResolver
+新增清单、科学点、文件和打开结果模型
+服务已在科学数据提取项目注册
+路径越界、链接、JobId 不一致和 SHA-256 均被验证
+缺失文件只影响自身，不影响同一成果中的其它文件
 ```
 
 ## 修改文件
 
 ```text
-tests/ChemSculptor.Core.Tests/ScientificResultExtractorTests.cs
+src/ChemSculptor.ScientificData.Extraction/ArtifactResolution/IScientificArtifactResolver.cs
+src/ChemSculptor.ScientificData.Extraction/ArtifactResolution/ScientificArtifactResolver.cs
+src/ChemSculptor.ScientificData.Extraction/ArtifactResolution/Models/ScientificArtifactManifest.cs
+src/ChemSculptor.ScientificData.Extraction/ArtifactResolution/Models/ScientificArtifactPointManifest.cs
+src/ChemSculptor.ScientificData.Extraction/ArtifactResolution/Models/ScientificArtifactFileManifest.cs
+src/ChemSculptor.ScientificData.Extraction/ArtifactResolution/Models/ScientificArtifactContent.cs
+src/ChemSculptor.ScientificData.Extraction/ArtifactResolution/Models/ScientificArtifactOpenResult.cs
+src/ChemSculptor.ScientificData.Extraction/ScientificDataExtractionServiceRegistration.cs
+tests/ChemSculptor.Core.Tests/ScientificArtifactResolverTests.cs
 docs/Scientific-Point-Artifact-Package-Spec.md
 docs/PROJECT_STATE.md
 docs/CHANGES.md
@@ -37,32 +45,26 @@ docs/HANDOFF.md
 
 ```text
 Release 构建：0 警告，0 错误
-测试：84/84 通过
+测试：88/88 通过
 ```
 
 ## 尚未完成
 
 ```text
-阶段 2 没有遗留项。
+阶段 3 没有遗留项。
 
-阶段 3 尚未开始。
+阶段 4 尚未开始。
 ```
 
 ## 下一步精确任务
 
-建议的阶段 3：实现成果包清单和文件解析服务：
+下一阶段由用户指定。当前建议继续实现成果包清单和下载 API：
 
 ```text
-新增 ScientificArchiveManifest
-新增 ScientificArchivePoint
-新增 ScientificArchiveFile
-新增 IScientificArchiveService
-
-服务根据 ScientificResult 和 CalculationPoint.Artifacts
-解析服务器 run 目录中的真实文件
-
-本阶段先不增加 API
-本阶段先不修改 WinForms
+组合 ScientificArtifactManifest 形成成果包清单
+新增成果包清单端点
+新增按科学点下载端点
+客户端领取完整科学点文件成果包
 ```
 
 候选实现内容：
