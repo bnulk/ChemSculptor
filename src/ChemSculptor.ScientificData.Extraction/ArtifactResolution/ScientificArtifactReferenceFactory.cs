@@ -87,6 +87,11 @@ public static class ScientificArtifactReferenceFactory
                 continue;
             }
 
+            if (artifact.Length == 0)
+            {
+                continue;
+            }
+
             string extension = Path.GetExtension(
                 artifact.RelativePath);
             string fileStem = canonicalStem;

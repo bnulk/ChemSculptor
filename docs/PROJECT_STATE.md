@@ -3,7 +3,7 @@
 ## 当前版本
 
 ```text
-0.50.0
+0.50.2
 ```
 
 ## 文档维护原则
@@ -35,7 +35,7 @@ HANDOFF.md
 
 ```text
 Release 构建：0 警告，0 错误
-测试：90/90 通过
+测试：91/91 通过
 ```
 
 ## 总体架构
@@ -211,6 +211,8 @@ point-summary 和 provenance 明确引用 PointId
 输入、fchk、主要输出基本文件名一致
 conversation.txt 和 final-summary.txt 成功保存
 当前没有自动化点击 WinForms 保存按钮
+空 stdout/stderr 不再进入文件清单
+文件清单由适配器上下文动态发现
 ```
 
 阶段 1 验收结果：

@@ -50,6 +50,56 @@ public class CalculationArtifactCollectorTests
         }
     }
 
+    /// <summary>验证空文件不会进入计算产物清单。</summary>
+    [Fact]
+    public async Task IgnoresEmptyArtifacts()
+    {
+        string root = CreateTemporaryRoot();
+
+        try
+        {
+            string emptyPath = Path.Combine(
+                root,
+                "stdout.log");
+            string nonEmptyPath = Path.Combine(
+                root,
+                "stderr.log");
+            await File.WriteAllTextAsync(
+                emptyPath,
+                string.Empty);
+            await File.WriteAllTextAsync(
+                nonEmptyPath,
+                "process error");
+
+            List<CalculationArtifactPattern> patterns =
+                new List<CalculationArtifactPattern>();
+            patterns.Add(CreatePattern(
+                "stdout.log",
+                CalculationArtifactKind.SupportingOutput,
+                "text/plain; charset=utf-8",
+                false));
+            patterns.Add(CreatePattern(
+                "stderr.log",
+                CalculationArtifactKind.SupportingOutput,
+                "text/plain; charset=utf-8",
+                false));
+
+            List<CalculationArtifactDescriptor> artifacts =
+                CalculationArtifactCollector.Collect(
+                    root,
+                    patterns);
+
+            Assert.Single(artifacts);
+            Assert.Equal(
+                "stderr.log",
+                artifacts[0].FileName);
+        }
+        finally
+        {
+            DeleteTemporaryRoot(root);
+        }
+    }
+
     /// <summary>验证结果文件不能借相对路径读取运行目录之外的文件。</summary>
     [Fact]
     public void RejectsPathTraversal()

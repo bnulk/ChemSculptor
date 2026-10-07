@@ -268,10 +268,14 @@ public sealed class RecoveryJobExecutionSkill : ISkill
             recoveryJob.Spec.Multiplicity;
         calculationResult.OutputFilePath =
             recoveryJob.OutputFilePath;
+        CalculationArtifactDiscoveryContext artifactContext =
+            new CalculationArtifactDiscoveryContext();
+        artifactContext.Job = recoveryJob;
+        artifactContext.Result = calculationResult;
         calculationResult.Artifacts =
             CalculationArtifactCollector.Collect(
                 recoveryJob.RunDirectory,
-                adapter.GetArtifactPatterns());
+                adapter.GetArtifactPatterns(artifactContext));
 
         await _calculationRepository.SaveResultAsync(
             calculationResult,

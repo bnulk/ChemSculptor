@@ -98,8 +98,12 @@ public sealed class CalculationResultExtractionWorkflowSkill : ISkill
         result.Multiplicity = job.Spec.Multiplicity;
         result.OutputFilePath = job.OutputFilePath;
 
+        CalculationArtifactDiscoveryContext artifactContext =
+            new CalculationArtifactDiscoveryContext();
+        artifactContext.Job = job;
+        artifactContext.Result = result;
         IReadOnlyList<CalculationArtifactPattern> artifactPatterns =
-            adapter.GetArtifactPatterns();
+            adapter.GetArtifactPatterns(artifactContext);
         result.Artifacts = CalculationArtifactCollector.Collect(
             job.RunDirectory,
             artifactPatterns);

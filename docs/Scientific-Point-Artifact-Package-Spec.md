@@ -354,6 +354,24 @@ scientific-result-<rootJobId>/
 
 当前验证通过等价保存流程执行，尚未自动点击 WinForms 保存按钮。
 
+空文件规则：
+
+```text
+计算产物收集时忽略 0 字节文件
+文件引用生成时再次忽略 Length == 0 的描述
+stdout/stderr 非空时仍然保留
+```
+
+清单可变规则：
+
+```text
+通用层不固定文件数量
+通用层不固定扩展名
+适配器根据 CalculationJob 和 CalculationResult 动态返回候选规则
+实际清单取候选规则与实际文件的交集
+程序新版本可以增加新的产物规则
+```
+
 ## 7. 文件类别
 
 ```text

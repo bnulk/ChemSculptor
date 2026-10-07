@@ -454,6 +454,21 @@ public enum CalculationArtifactKind
 }
 
 /// <summary>
+/// 计算产物发现上下文。
+/// 具体程序适配器根据作业状态和已解析结果决定候选产物规则。
+/// </summary>
+public sealed class CalculationArtifactDiscoveryContext
+{
+    /// <summary>当前计算作业。</summary>
+    public CalculationJob Job { get; set; } =
+        new CalculationJob();
+
+    /// <summary>已经解析出的通用计算结果。</summary>
+    public CalculationResult Result { get; set; } =
+        new CalculationResult();
+}
+
+/// <summary>
 /// 适配器声明的产物匹配规则。
 /// 通用层只认识这些规则和用途，不直接理解具体程序的扩展名。
 /// </summary>

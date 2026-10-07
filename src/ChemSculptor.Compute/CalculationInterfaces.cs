@@ -25,10 +25,11 @@ public interface IQuantumProgramAdapter
     string GetInputFileName(string jobId);
 
     /// <summary>
-    /// 获取当前程序允许下载的产物规则。
-    /// 规则包含文件匹配模式以及通用层可理解的用途信息。
+    /// 根据运行上下文获取当前程序允许下载的产物规则。
+    /// 规则数量、匹配方式和用途由适配器根据实际运行状态决定。
     /// </summary>
-    IReadOnlyList<CalculationArtifactPattern> GetArtifactPatterns();
+    IReadOnlyList<CalculationArtifactPattern> GetArtifactPatterns(
+        CalculationArtifactDiscoveryContext context);
 
     /// <summary>
     /// 计算正常结束后执行程序专用后处理。

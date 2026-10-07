@@ -5,6 +5,141 @@
 
 ---
 
+## v0.50.2（2026-10-07）：可变产物清单
+
+### 版本
+
+- 当前版本：`0.50.2`
+- 日期：2026-10-07
+- 版本类型：架构完善
+
+### 改动目的
+
+文件清单的数量和内容不能固定。
+
+```text
+通用层：只负责按适配器规则发现实际文件
+Gaussian 层：根据作业和结果状态动态生成候选规则
+```
+
+### 新接口
+
+```text
+IQuantumProgramAdapter.GetArtifactPatterns(
+    CalculationArtifactDiscoveryContext context)
+```
+
+上下文包含：
+
+```text
+CalculationJob
+CalculationResult
+```
+
+### Gaussian 动态规则
+
+Gaussian 适配器现在根据实际文件名生成规则：
+
+```text
+输出文件：job.OutputFilePath
+输入文件：job.InputFilePath
+chk：由输入文件推导
+fchk：由输入文件推导
+stdout/stderr：存在且非空时保留
+```
+
+不再使用脱离上下文的固定规则列表。
+
+### 数量规则
+
+正常 Gaussian 单点计算通常有：
+
+```text
+.gjf
+.log
+.chk
+.fchk
+```
+
+但这是常见结果，不是固定数量。
+
+实际清单由以下因素决定：
+
+```text
+适配器候选规则
+实际存在的文件
+空文件过滤
+程序运行状态
+未来的额外产物规则
+```
+
+### 验证
+
+```text
+Release 构建：0 警告，0 错误
+测试：91/91 通过
+```
+
+---
+
+## v0.50.1（2026-10-07）：忽略空产物文件
+
+### 版本
+
+- 当前版本：`0.50.1`
+- 日期：2026-10-07
+- 版本类型：修复
+
+### 改动目的
+
+Gaussian 正常运行后：
+
+```text
+stdout.log = 0 字节
+stderr.log = 0 字节
+```
+
+空的标准输出和标准错误文件没有科学内容，也没有诊断价值，
+不应进入科学点文件清单。
+
+### 收集规则
+
+`CalculationArtifactCollector` 现在：
+
+```text
+枚举适配器声明的产物
+检查文件长度
+忽略 0 字节文件
+保留非空文件
+```
+
+### 防御性过滤
+
+`ScientificArtifactReferenceFactory` 也忽略 `Length == 0` 的描述，
+避免空文件描述进入科学点。
+
+### 结果
+
+Gaussian 正常单点计算通常保留：
+
+```text
+.gjf
+.log
+.chk
+.fchk
+```
+
+stdout/stderr 非空时仍然保留，因为它们可能包含启动或环境错误信息。
+
+### 验证
+
+```text
+Release 构建：0 警告，0 错误
+测试：91/91 通过
+```
+
+---
+
 ## v0.50.0（2026-10-07）：统一发布基线
 
 ### 版本

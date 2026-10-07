@@ -53,7 +53,8 @@ internal sealed class TestQuantumProgramAdapter : IQuantumProgramAdapter
         return jobId + ".inp";
     }
 
-    public IReadOnlyList<CalculationArtifactPattern> GetArtifactPatterns()
+    public IReadOnlyList<CalculationArtifactPattern> GetArtifactPatterns(
+        CalculationArtifactDiscoveryContext context)
     {
         List<CalculationArtifactPattern> patterns =
             new List<CalculationArtifactPattern>();

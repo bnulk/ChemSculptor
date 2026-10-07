@@ -119,28 +119,47 @@ public sealed class Gaussian16ProgramAdapter : IQuantumProgramAdapter
         return jobId + ".gjf";
     }
 
-    /// <summary>获取 Gaussian 允许下载的文件规则。</summary>
-    public IReadOnlyList<CalculationArtifactPattern> GetArtifactPatterns()
+    /// <summary>根据作业上下文获取 Gaussian 候选产物规则。</summary>
+    public IReadOnlyList<CalculationArtifactPattern> GetArtifactPatterns(
+        CalculationArtifactDiscoveryContext context)
     {
+        if (context == null)
+        {
+            throw new ArgumentNullException(nameof(context));
+        }
+
+        CalculationJob job = context.Job;
+        string inputFileName =
+            string.IsNullOrWhiteSpace(job.InputFilePath)
+                ? GetInputFileName(job.JobId)
+                : Path.GetFileName(job.InputFilePath);
+        string outputFileName =
+            string.IsNullOrWhiteSpace(job.OutputFilePath)
+                ? "output.log"
+                : Path.GetFileName(job.OutputFilePath);
+        string checkpointFileName =
+            Path.ChangeExtension(inputFileName, ".chk");
+        string formattedCheckpointFileName =
+            Path.ChangeExtension(inputFileName, ".fchk");
         List<CalculationArtifactPattern> patterns =
             new List<CalculationArtifactPattern>();
         patterns.Add(CreateArtifactPattern(
-            "output.log",
+            outputFileName,
             CalculationArtifactKind.PrimaryOutput,
             "text/plain; charset=utf-8",
             false));
         patterns.Add(CreateArtifactPattern(
-            "*.gjf",
+            inputFileName,
             CalculationArtifactKind.Input,
             "text/plain; charset=utf-8",
             false));
         patterns.Add(CreateArtifactPattern(
-            "*.fchk",
+            formattedCheckpointFileName,
             CalculationArtifactKind.RestartState,
             "application/octet-stream",
             true));
         patterns.Add(CreateArtifactPattern(
-            "*.chk",
+            checkpointFileName,
             CalculationArtifactKind.RestartState,
             "application/octet-stream",
             true));

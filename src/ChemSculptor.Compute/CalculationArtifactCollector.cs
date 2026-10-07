@@ -75,6 +75,12 @@ public static class CalculationArtifactCollector
             CalculationArtifactPattern pattern = matchedPatterns[fileName];
             FileInfo fileInfo = new FileInfo(fullPath);
 
+            // 空的标准输出/标准错误文件没有科学或诊断价值。
+            if (fileInfo.Length == 0)
+            {
+                continue;
+            }
+
             CalculationArtifactDescriptor descriptor =
                 new CalculationArtifactDescriptor();
             descriptor.FileName = fileName;

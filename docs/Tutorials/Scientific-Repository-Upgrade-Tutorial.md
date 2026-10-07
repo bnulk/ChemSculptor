@@ -620,15 +620,20 @@ LLM 外部知识
   能量：-150.274273534 Hartree
 ```
 
-每个点有 6 个计算文件：
+正常 Gaussian 单点计算通常保留 4 个有效文件：
 
 ```text
 .gjf
 .fchk
 .log
 .chk
-补充日志
 ```
+
+`stdout.log` 和 `stderr.log` 为空时会被忽略；
+只有包含内容时才作为辅助诊断文件保留。
+
+这 4 个不是固定契约。适配器根据 `CalculationJob` 和
+`CalculationResult` 动态返回候选规则，最终清单由实际文件决定。
 
 成果包中可以看到：
 
