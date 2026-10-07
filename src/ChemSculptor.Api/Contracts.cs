@@ -219,6 +219,71 @@ public sealed class CalculationArtifactFileResponse
     public string DownloadPath { get; set; } = string.Empty;
 }
 
+/// <summary>科学点文件成果包清单响应。</summary>
+public sealed class ScientificArtifactManifestResponse
+{
+    /// <summary>科学成果标识。</summary>
+    public string ResultId { get; set; } = string.Empty;
+
+    /// <summary>根计算作业标识。</summary>
+    public string RootJobId { get; set; } = string.Empty;
+
+    /// <summary>科学点清单。</summary>
+    public List<ScientificArtifactPointResponse> Points { get; set; } =
+        new List<ScientificArtifactPointResponse>();
+}
+
+/// <summary>成果包中的单个科学点。</summary>
+public sealed class ScientificArtifactPointResponse
+{
+    /// <summary>科学点标识。</summary>
+    public string PointId { get; set; } = string.Empty;
+
+    /// <summary>科学点在成果中的顺序。</summary>
+    public int Sequence { get; set; }
+
+    /// <summary>成果包中使用的科学点目录名。</summary>
+    public string DirectoryName { get; set; } = string.Empty;
+
+    /// <summary>科学点接受状态。</summary>
+    public string Status { get; set; } = string.Empty;
+
+    /// <summary>自旋多重度。</summary>
+    public int Multiplicity { get; set; }
+
+    /// <summary>该科学点的文件清单。</summary>
+    public List<ScientificArtifactFileResponse> Files { get; set; } =
+        new List<ScientificArtifactFileResponse>();
+}
+
+/// <summary>成果包中的单个文件。</summary>
+public sealed class ScientificArtifactFileResponse
+{
+    /// <summary>文件引用标识。</summary>
+    public string ArtifactId { get; set; } = string.Empty;
+
+    /// <summary>文件类别。</summary>
+    public string Kind { get; set; } = string.Empty;
+
+    /// <summary>客户端保存时使用的文件名。</summary>
+    public string DownloadFileName { get; set; } = string.Empty;
+
+    /// <summary>文件字节数。</summary>
+    public long Length { get; set; }
+
+    /// <summary>文件引用中记录的 SHA-256 摘要。</summary>
+    public string Sha256 { get; set; } = string.Empty;
+
+    /// <summary>文件当前是否可下载。</summary>
+    public bool IsAvailable { get; set; }
+
+    /// <summary>文件不可用时的说明。</summary>
+    public string Error { get; set; } = string.Empty;
+
+    /// <summary>下载该文件的 API 路径。</summary>
+    public string DownloadPath { get; set; } = string.Empty;
+}
+
 /// <summary>计算作业状态响应。</summary>
 public sealed class CalculationStatusResponse
 {

@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Security.Cryptography;
 using ChemSculptor.Compute;
 using ChemSculptor.ScientificData.Extraction.ArtifactResolution.Models;
@@ -283,6 +284,12 @@ public sealed class ScientificArtifactResolver
         manifest.PointId = point.Id;
         manifest.CalculationJobId =
             point.CalculationJobId;
+        manifest.DirectoryName = BuildDirectoryName(
+            sequence,
+            point);
+        manifest.Status = point.Status;
+        manifest.Multiplicity =
+            point.ElectronicState.Multiplicity;
 
         if (string.IsNullOrWhiteSpace(point.Id))
         {
@@ -738,5 +745,23 @@ public sealed class ScientificArtifactResolver
         }
 
         return string.Empty;
+    }
+
+    private static string BuildDirectoryName(
+        int sequence,
+        CalculationPoint point)
+    {
+        string role = string.IsNullOrWhiteSpace(
+            point.Provenance.ParentPointId)
+                ? "original"
+                : "recovery";
+        return sequence.ToString(
+                "D2",
+                CultureInfo.InvariantCulture) +
+            "-" +
+            role +
+            "-m" +
+            point.ElectronicState.Multiplicity.ToString(
+                CultureInfo.InvariantCulture);
     }
 }

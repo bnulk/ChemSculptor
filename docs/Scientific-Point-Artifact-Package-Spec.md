@@ -203,6 +203,50 @@ IScientificArtifactResolver
 其它文件仍可单独下载
 ```
 
+## 6.3 成果包 API
+
+客户端通过以下端点取得成果包清单和单文件内容：
+
+```text
+GET /scientific-results/{resultId}/artifact-manifest
+GET /scientific-results/{resultId}/artifacts/{pointId}/{artifactId}
+GET /calculations/{jobId}/artifact-manifest
+```
+
+`artifact-manifest` 返回：
+
+```text
+ResultId
+RootJobId
+Points[]
+  PointId
+  Sequence
+  DirectoryName
+  Status
+  Multiplicity
+  Files[]
+    ArtifactId
+    Kind
+    DownloadFileName
+    Length
+    Sha256
+    IsAvailable
+    Error
+    DownloadPath
+```
+
+`DownloadPath` 指向科学点成果包的单文件下载端点。
+
+`/calculations/{jobId}/artifact-manifest` 先根据计算作业查找
+所属科学成果，再返回相同结构的清单。
+
+原有的计算产物端点保持兼容：
+
+```text
+GET /calculations/{jobId}/artifacts
+GET /calculations/{jobId}/artifacts/{fileName}
+```
+
 ## 7. 文件类别
 
 ```text

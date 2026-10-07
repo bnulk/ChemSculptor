@@ -2,39 +2,42 @@
 
 ## 当前阶段
 
-阶段 3：建立科学点文件解析服务。已完成。
+阶段 4：增加成果包 API。已完成。
 
 ```text
-根据 PointArtifactReference 解析服务器真实文件
-解析清单并逐文件报告可用性
-打开经过完整验证的单个文件
-拒绝 run 目录之外的服务器路径
-缺失文件不影响其它文件下载
+按 resultId 返回成果包清单
+按 jobId 返回所属成果包清单
+按科学点和文件标识下载单个文件
+原始点和恢复点都进入清单
+旧 artifacts 端点保持兼容
 ```
 
 ## 已完成
 
 ```text
-新增 IScientificArtifactResolver
-新增 ScientificArtifactResolver
-新增清单、科学点、文件和打开结果模型
-服务已在科学数据提取项目注册
-路径越界、链接、JobId 不一致和 SHA-256 均被验证
-缺失文件只影响自身，不影响同一成果中的其它文件
+新增 ScientificArtifactEndpoints
+新增 ScientificArtifactManifestResponse
+新增 ScientificArtifactPointResponse
+新增 ScientificArtifactFileResponse
+新增 ScientificArtifactResponseMapper
+新增 ScientificResultLookup
+清单包含 DirectoryName、Status 和 Multiplicity
+恢复作业可以定位所属科学成果
 ```
 
 ## 修改文件
 
 ```text
-src/ChemSculptor.ScientificData.Extraction/ArtifactResolution/IScientificArtifactResolver.cs
-src/ChemSculptor.ScientificData.Extraction/ArtifactResolution/ScientificArtifactResolver.cs
-src/ChemSculptor.ScientificData.Extraction/ArtifactResolution/Models/ScientificArtifactManifest.cs
+src/ChemSculptor.Api/Endpoints/ScientificArtifactEndpoints.cs
+src/ChemSculptor.Api/ScientificArtifactResponseMapper.cs
+src/ChemSculptor.Api/ScientificResultLookup.cs
+src/ChemSculptor.Api/Contracts.cs
+src/ChemSculptor.Api/Program.cs
+src/ChemSculptor.Api/Endpoints/ClientSummaryEndpoints.cs
 src/ChemSculptor.ScientificData.Extraction/ArtifactResolution/Models/ScientificArtifactPointManifest.cs
-src/ChemSculptor.ScientificData.Extraction/ArtifactResolution/Models/ScientificArtifactFileManifest.cs
-src/ChemSculptor.ScientificData.Extraction/ArtifactResolution/Models/ScientificArtifactContent.cs
-src/ChemSculptor.ScientificData.Extraction/ArtifactResolution/Models/ScientificArtifactOpenResult.cs
-src/ChemSculptor.ScientificData.Extraction/ScientificDataExtractionServiceRegistration.cs
-tests/ChemSculptor.Core.Tests/ScientificArtifactResolverTests.cs
+src/ChemSculptor.ScientificData.Extraction/ArtifactResolution/ScientificArtifactResolver.cs
+tests/ChemSculptor.Core.Tests/ScientificArtifactApiTests.cs
+tests/ChemSculptor.Core.Tests/ChemSculptor.Core.Tests.csproj
 docs/Scientific-Point-Artifact-Package-Spec.md
 docs/PROJECT_STATE.md
 docs/CHANGES.md
@@ -45,36 +48,35 @@ docs/HANDOFF.md
 
 ```text
 Release 构建：0 警告，0 错误
-测试：88/88 通过
+测试：90/90 通过
 ```
 
 ## 尚未完成
 
 ```text
-阶段 3 没有遗留项。
+阶段 4 没有遗留项。
 
-阶段 4 尚未开始。
+阶段 5 尚未开始。
 ```
 
 ## 下一步精确任务
 
-下一阶段由用户指定。当前建议继续实现成果包清单和下载 API：
+下一阶段由用户指定。当前建议让 WinForms 领取清单并保存成果包：
 
 ```text
-组合 ScientificArtifactManifest 形成成果包清单
-新增成果包清单端点
-新增按科学点下载端点
-客户端领取完整科学点文件成果包
+客户端请求 artifact-manifest
+按 DownloadPath 下载全部文件
+按 DirectoryName 分目录保存
+保存对话文本和点摘要文本
 ```
 
 候选实现内容：
 
 ```text
-ScientificArchiveManifest
-ScientificArchivePoint
-ScientificArchiveFile
-IScientificArchiveService
-根据 ScientificResult 和 CalculationPoint.Artifacts 解析 run 目录文件
+WinForms 成果包保存流程
+下载进度和错误提示
+成果包目录结构验证
+未来压缩和断点续传预留
 ```
 
 ## 注意事项

@@ -145,39 +145,8 @@ public static class ClientSummaryEndpoints
         IScientificDataRepository repository,
         string jobId)
     {
-        if (string.IsNullOrWhiteSpace(jobId))
-        {
-            return null;
-        }
-
-        IReadOnlyList<ScientificResult> results =
-            repository.List();
-
-        for (int index = 0; index < results.Count; index++)
-        {
-            ScientificResult result = results[index];
-            string? rootWorkflowId;
-
-            if (result.Metadata.TryGetValue(
-                "rootWorkflowId",
-                out rootWorkflowId)
-                && string.Equals(
-                    rootWorkflowId,
-                    jobId,
-                    StringComparison.OrdinalIgnoreCase))
-            {
-                return result;
-            }
-
-            if (string.Equals(
-                result.Id,
-                "scientific-result-" + jobId,
-                StringComparison.OrdinalIgnoreCase))
-            {
-                return result;
-            }
-        }
-
-        return null;
+        return ScientificResultLookup.FindByJobId(
+            repository,
+            jobId);
     }
 }

@@ -5,6 +5,142 @@
 
 ---
 
+## v0.46.0（2026-10-07）：增加成果包 API
+
+### 版本
+
+- 当前版本：`0.46.0`
+- 日期：2026-10-07
+- 版本类型：功能新增
+
+### 改动目的
+
+完成阶段 4“增加成果包 API”。
+
+客户端可以通过一个清单获取全部科学点的文件信息，
+再按科学点和文件标识下载单个文件。
+
+### 新增端点
+
+```text
+GET /scientific-results/{resultId}/artifact-manifest
+GET /scientific-results/{resultId}/artifacts/{pointId}/{artifactId}
+GET /calculations/{jobId}/artifact-manifest
+```
+
+### 清单结构
+
+```text
+ResultId
+RootJobId
+Points[]
+  PointId
+  Sequence
+  DirectoryName
+  Status
+  Multiplicity
+  Files[]
+    ArtifactId
+    Kind
+    DownloadFileName
+    Length
+    Sha256
+    IsAvailable
+    Error
+    DownloadPath
+```
+
+`DirectoryName` 使用：
+
+```text
+<Sequence>-<Role>-m<Multiplicity>
+```
+
+当前角色：
+
+```text
+original
+  原始点
+
+recovery
+  派生修正点
+```
+
+示例：
+
+```text
+01-original-m1
+02-recovery-m3
+```
+
+### 按作业查询
+
+`GET /calculations/{jobId}/artifact-manifest` 会先查找该作业
+所属的科学成果。
+
+查找支持：
+
+```text
+根工作流作业
+科学成果中任意计算点的作业
+恢复或派生作业
+```
+
+### 下载
+
+清单中的 `DownloadPath` 指向：
+
+```text
+GET /scientific-results/{resultId}/artifacts/{pointId}/{artifactId}
+```
+
+下载端点复用阶段 3 的解析服务，因此仍然执行：
+
+```text
+run 目录限制
+路径越界检查
+链接检查
+文件存在性检查
+SHA-256 校验
+```
+
+### 旧端点兼容
+
+原有端点未修改：
+
+```text
+GET /calculations/{jobId}/artifacts
+GET /calculations/{jobId}/artifacts/{fileName}
+```
+
+### 测试
+
+新增 API 合同测试：
+
+```text
+原始点和恢复点都进入清单
+DirectoryName 和 Status 正确
+Multiplicity 正确
+统一文件命名正确
+DownloadPath 正确
+恢复作业可以定位所属科学成果
+```
+
+验证结果：
+
+```text
+Release 构建：0 警告，0 错误
+测试：90/90 通过
+```
+
+### 当前边界
+
+本阶段不修改 WinForms。
+
+客户端保存完整成果包尚未实现。
+
+---
+
 ## v0.45.0（2026-10-07）：建立科学点文件解析服务
 
 ### 版本
