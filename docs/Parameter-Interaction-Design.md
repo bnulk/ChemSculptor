@@ -553,6 +553,8 @@ ParameterIntents
 
 ## 12. 第八步：接入 SinglePointCalculationService
 
+实现状态：ResolvedSpec 和 ResolvedParameters 已接入服务层；Gaussian 输入翻译尚未实现。
+
 当前：
 
 ```text

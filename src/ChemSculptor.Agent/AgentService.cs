@@ -242,6 +242,11 @@ public sealed class AgentService : IAgentService
         calculationRequest.ResolvedSpec = turn.Resolution == null
             ? CalculationDefaults.CreateDefaultSinglePoint()
             : turn.Resolution.Spec;
+        calculationRequest.ResolvedParameters =
+            turn.Resolution == null
+                ? new List<ResolvedCalculationParameter>()
+                : new List<ResolvedCalculationParameter>(
+                    turn.Resolution.AppliedParameters);
 
         if (conversationReply != null)
         {

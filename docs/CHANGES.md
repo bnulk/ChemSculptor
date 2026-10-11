@@ -99,6 +99,17 @@ src/ChemSculptor.Compute/CalculationModels.cs
 AgentService 现在会在需要时返回 Clarification 或 Rejected，不创建作业；
 参数完成后把 ResolvedSpec 写入 CalculationRequest 并提交单点计算。
 
+接入 SinglePointCalculationService：
+
+```text
+src/ChemSculptor.Compute/CalculationModels.cs
+src/ChemSculptor.Agent/SinglePointCalculationService.cs
+```
+
+CalculationRequest 现在保存 ResolvedSpec 和 ResolvedParameters。
+SinglePointCalculationService 优先使用 ResolvedSpec 创建作业，保证参数
+问询结果进入实际计算链路。
+
 新增测试：
 
 ```text
@@ -109,13 +120,14 @@ tests/ChemSculptor.Core.Tests/RuleBasedCalculationParameterExtractorTests.cs
 tests/ChemSculptor.Core.Tests/CalculationParameterResolverTests.cs
 tests/ChemSculptor.Core.Tests/CalculationParameterConversationServiceTests.cs
 tests/ChemSculptor.Core.Tests/AgentServiceTests.cs
+tests/ChemSculptor.Core.Tests/SinglePointCalculationServiceTests.cs
 ```
 
 ### 验证
 
 ```text
 Release 构建：0 警告，0 错误
-测试：112/112 通过
+测试：113/113 通过
 ```
 
 ---

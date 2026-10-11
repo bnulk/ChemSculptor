@@ -288,6 +288,13 @@ public sealed class CalculationRequest
 
     /// <summary>已经由参数 Resolver 解析完成的计算方案。</summary>
     public CalculationSpec? ResolvedSpec { get; set; }
+
+    /// <summary>已经由参数 Resolver 解析完成的规范参数。</summary>
+    public List<ResolvedCalculationParameter> ResolvedParameters
+    {
+        get;
+        set;
+    } = new List<ResolvedCalculationParameter>();
 }
 
 /// <summary>

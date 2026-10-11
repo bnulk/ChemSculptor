@@ -174,6 +174,85 @@ public class SinglePointCalculationServiceTests
         }
     }
 
+    /// <summary>验证服务优先使用请求中的已解析计算方案。</summary>
+    [Fact]
+    public async Task UsesResolvedSpecFromRequest()
+    {
+        string root = CreateTemporaryRoot();
+
+        try
+        {
+            CalculationWorkspaceOptions workspaceOptions =
+                new CalculationWorkspaceOptions();
+            workspaceOptions.RootDirectory = root;
+
+            WorkspaceManager workspace =
+                new WorkspaceManager(workspaceOptions);
+            TestQuantumProgramAdapterRegistry adapterRegistry =
+                new TestQuantumProgramAdapterRegistry();
+            FileCalculationRepository repository =
+                new FileCalculationRepository(workspace);
+            RecordingComputeBackend backend =
+                new RecordingComputeBackend();
+            RecordingWorkflowEngine workflowEngine =
+                new RecordingWorkflowEngine();
+
+            SinglePointCalculationService service =
+                new SinglePointCalculationService(
+                    workspace,
+                    backend,
+                    adapterRegistry,
+                    repository,
+                    workflowEngine);
+
+            CalculationSpec resolvedSpec =
+                CalculationDefaults.CreateDefaultSinglePoint();
+            resolvedSpec.ExtraOptions[
+                CalculationOptionKeys.DispersionCorrection] = "GD3BJ";
+            resolvedSpec.ExtraOptions[
+                CalculationOptionKeys.Symmetry] = "Ignore";
+            resolvedSpec.ExtraOptions[
+                CalculationOptionKeys.ScfIterationLimit] = "300";
+            resolvedSpec.Solvent = "Water";
+            resolvedSpec.Multiplicity = 3;
+
+            CalculationRequest request = new CalculationRequest();
+            request.SessionId = "session-resolved";
+            request.Goal = "使用已解析参数提交单点计算";
+            request.CoordinateText =
+                "O 0.000000 0.000000 0.117300\n" +
+                "H 0.000000 0.757200 -0.469200\n" +
+                "H 0.000000 -0.757200 -0.469200";
+            request.ResolvedSpec = resolvedSpec;
+
+            SinglePointCalculationSubmissionResult submission =
+                await service.SubmitAsync(request);
+
+            Assert.True(submission.Succeeded);
+            Assert.NotNull(workflowEngine.LastJob);
+            Assert.Equal(
+                "GD3BJ",
+                workflowEngine.LastJob.Spec.ExtraOptions[
+                    CalculationOptionKeys.DispersionCorrection]);
+            Assert.Equal(
+                "Ignore",
+                workflowEngine.LastJob.Spec.ExtraOptions[
+                    CalculationOptionKeys.Symmetry]);
+            Assert.Equal(
+                "300",
+                workflowEngine.LastJob.Spec.ExtraOptions[
+                    CalculationOptionKeys.ScfIterationLimit]);
+            Assert.Equal(
+                "Water",
+                workflowEngine.LastJob.Spec.Solvent);
+            Assert.Equal(3, workflowEngine.LastJob.Spec.Multiplicity);
+        }
+        finally
+        {
+            DeleteTemporaryRoot(root);
+        }
+    }
+
     private static void AddOverride(
         CalculationRequest request,
         string name,
@@ -241,6 +320,8 @@ public class SinglePointCalculationServiceTests
     {
         public string StartedJobId { get; private set; } = string.Empty;
 
+        public CalculationJob? LastJob { get; private set; }
+
         public Task<WorkflowRun> StartAsync(
             WorkflowDefinition definition,
             IReadOnlyDictionary<string, string> inputs,
@@ -248,6 +329,7 @@ public class SinglePointCalculationServiceTests
             CancellationToken cancellationToken = default)
         {
             StartedJobId = job.JobId;
+            LastJob = job;
 
             WorkflowRun run = new WorkflowRun();
             run.Id = definition.Id;
