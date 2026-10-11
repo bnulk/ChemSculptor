@@ -13,6 +13,7 @@
 > 单点计算 Skill 分层见 [docs/SinglePoint-Skill-Architecture.md](docs/SinglePoint-Skill-Architecture.md)。
 > Codex Skill 编写规矩见 [docs/Tutorials/Codex-Skill-Authoring-Tutorial.md](docs/Tutorials/Codex-Skill-Authoring-Tutorial.md)。
 > 对话式计算参数方案见 [docs/Parameter-Interaction-Design.md](docs/Parameter-Interaction-Design.md)。
+> 项目级 Codex Skill 位于 `.agents/skills/single-point-calculation/`。
 > 单点计算完整调用链说明见 [docs/SinglePoint-Calculation-Walkthrough.md](docs/SinglePoint-Calculation-Walkthrough.md)。
 > 版本与改动记录见 [docs/CHANGES.md](docs/CHANGES.md)。
 

@@ -1,0 +1,3 @@
+interface:
+  display_name: "Single Point Calculation"
+  short_description: "Run stable single-point calculations"

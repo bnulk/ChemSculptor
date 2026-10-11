@@ -162,6 +162,18 @@ tests/ChemSculptor.Core.Tests/ParameterPipelineEndToEndTests.cs
 覆盖未知 raw keyword 拒绝、参数来源保留、Gaussian route 关键词和
 端到端“对话参数 -> 规范参数 -> Gaussian route”链路。
 
+同步 Codex Skill：
+
+```text
+.agents/skills/single-point-calculation/SKILL.md
+.agents/skills/single-point-calculation/agents/openai.yaml
+.agents/skills/single-point-calculation/references/parameters.md
+.agents/skills/single-point-calculation/references/gaussian.md
+.agents/skills/single-point-calculation/references/validation-rules.md
+```
+
+Skill 现在说明单点计算边界、输入契约、执行链路、停止条件和参考文件。
+
 新增测试：
 
 ```text

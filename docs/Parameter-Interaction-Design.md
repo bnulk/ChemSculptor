@@ -791,6 +791,8 @@ SinglePointCalculationServiceTests
 
 ## 17. 第十三步：同步 Codex Skill
 
+实现状态：项目级 single-point-calculation Skill 和 references 已完成。
+
 Codex Skill `single-point-calculation` 增加：
 
 ```text

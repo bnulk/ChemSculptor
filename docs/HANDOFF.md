@@ -2,7 +2,7 @@
 
 ## 当前阶段
 
-对话式计算参数方案已落地前十二步。
+对话式计算参数方案已落地前十三步。
 
 ```text
 calculation.single-point 保持现有分层
@@ -17,6 +17,7 @@ Gaussian route 关键词翻译已实现
 参数审计已写入 parameters.json
 参数问题和已应用参数已显示到客户端对话区
 第十二步测试矩阵已补齐
+项目级 Codex Skill 已同步
 ```
 
 ## 当前边界
