@@ -145,6 +145,18 @@ public sealed class SinglePointCalculationService : ISinglePointCalculationServi
             job.InputFilePath = runInputPath;
             job.OutputFilePath = outputPath;
 
+            IReadOnlyList<ProgramParameterTranslation> translations =
+                adapter.GetParameterTranslations(spec);
+            CalculationParameterAudit parameterAudit =
+                BuildParameterAudit(
+                    job,
+                    spec,
+                    request.ResolvedParameters,
+                    translations);
+            await _repository.SaveParameterAuditAsync(
+                parameterAudit,
+                cancellationToken);
+
             CalculationInputGenerationRequest inputRequest =
                 new CalculationInputGenerationRequest();
             inputRequest.Job = job;
@@ -306,6 +318,68 @@ public sealed class SinglePointCalculationService : ISinglePointCalculationServi
         JsonSerializerOptions options =
             new JsonSerializerOptions(JsonSerializerDefaults.Web);
         return JsonSerializer.Serialize(value, options);
+    }
+
+    private static CalculationParameterAudit BuildParameterAudit(
+        CalculationJob job,
+        CalculationSpec spec,
+        List<ResolvedCalculationParameter> resolvedParameters,
+        IReadOnlyList<ProgramParameterTranslation> translations)
+    {
+        CalculationParameterAudit audit =
+            new CalculationParameterAudit();
+        audit.JobId = job.JobId;
+        audit.Engine = spec.Program;
+        audit.TaskType = spec.TaskType;
+        audit.ResolvedParameters =
+            resolvedParameters != null
+                && resolvedParameters.Count > 0
+                ? new List<ResolvedCalculationParameter>(
+                    resolvedParameters)
+                : BuildResolvedParametersFromSpec(spec);
+        audit.ProgramKeywords =
+            translations == null
+                ? new List<ProgramParameterTranslation>()
+                : new List<ProgramParameterTranslation>(
+                    translations);
+        audit.CreatedAt = DateTimeOffset.UtcNow;
+        audit.UpdatedAt = audit.CreatedAt;
+
+        if (audit.ProgramKeywords.Count > 0)
+        {
+            audit.TranslatorName =
+                audit.ProgramKeywords[0].TranslatorName;
+            audit.TranslatorVersion =
+                audit.ProgramKeywords[0].TranslatorVersion;
+        }
+
+        return audit;
+    }
+
+    private static List<ResolvedCalculationParameter>
+        BuildResolvedParametersFromSpec(CalculationSpec spec)
+    {
+        List<ResolvedCalculationParameter> parameters =
+            new List<ResolvedCalculationParameter>();
+
+        for (int index = 0;
+            index < spec.Parameters.Count;
+            index++)
+        {
+            CalculationParameter source = spec.Parameters[index];
+            ResolvedCalculationParameter parameter =
+                new ResolvedCalculationParameter();
+            parameter.Key = source.Name;
+            parameter.Value = source.CurrentValue;
+            parameter.RawText = string.Empty;
+            parameter.Source = source.Source;
+            parameter.Confidence = 1.0;
+            parameter.RiskLevel = source.RiskLevel;
+            parameter.RequiresApproval = source.RequiresApproval;
+            parameters.Add(parameter);
+        }
+
+        return parameters;
     }
 
     private static bool ApplyOverride(

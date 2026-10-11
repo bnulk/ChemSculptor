@@ -18,6 +18,9 @@ public static class CalculationWorkspacePaths
     /// <summary>作业清单文件名称。</summary>
     public const string JobManifestFileName = "manifest.json";
 
+    /// <summary>参数审计文件名称。</summary>
+    public const string JobParametersFileName = "parameters.json";
+
     /// <summary>本次计算使用的坐标文件名称。</summary>
     public const string JobCoordinatesFileName = "molecule.xyz";
 

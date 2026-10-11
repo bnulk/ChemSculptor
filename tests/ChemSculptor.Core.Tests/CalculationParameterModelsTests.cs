@@ -43,4 +43,79 @@ public class CalculationParameterModelsTests
             parameter.TranslatedKeyword,
             restored.TranslatedKeyword);
     }
+
+    /// <summary>验证参数审计可以通过文件仓储保存和读取。</summary>
+    [Fact]
+    public async Task ParameterAuditRoundTripsThroughRepository()
+    {
+        string root = Path.Combine(
+            Path.GetTempPath(),
+            "ChemSculptorTests",
+            Guid.NewGuid().ToString("N"));
+
+        Directory.CreateDirectory(root);
+
+        try
+        {
+            CalculationWorkspaceOptions options =
+                new CalculationWorkspaceOptions();
+            options.RootDirectory = root;
+            WorkspaceManager workspace =
+                new WorkspaceManager(options);
+            string jobId = "job-parameter-audit";
+            await workspace.EnsureJobWorkspaceAsync(jobId);
+            FileCalculationRepository repository =
+                new FileCalculationRepository(workspace);
+
+            CalculationParameterAudit audit =
+                new CalculationParameterAudit();
+            audit.JobId = jobId;
+            audit.Engine = CalculationDefaults.DefaultProgram;
+            audit.TaskType = CalculationTaskType.SinglePoint;
+            audit.InputHash = "ABC123";
+            audit.TranslatorName = "test-translator";
+            audit.TranslatorVersion = "1.0.0";
+            audit.ResolvedParameters.Add(
+                new ResolvedCalculationParameter
+                {
+                    Key = CalculationOptionKeys.DispersionCorrection,
+                    Value = "GD3BJ",
+                    RawText = "加色散",
+                    Source = ParameterSource.User,
+                    Confidence = 1.0
+                });
+            audit.ProgramKeywords.Add(
+                new ProgramParameterTranslation
+                {
+                    Key = CalculationOptionKeys.DispersionCorrection,
+                    Value = "GD3BJ",
+                    RawKeyword = "em=GD3BJ",
+                    TranslatorName = "test-translator",
+                    TranslatorVersion = "1.0.0"
+                });
+
+            await repository.SaveParameterAuditAsync(audit);
+            CalculationParameterAudit? restored =
+                await repository.GetParameterAuditAsync(jobId);
+
+            Assert.NotNull(restored);
+            Assert.Equal(jobId, restored.JobId);
+            Assert.Equal("ABC123", restored.InputHash);
+            Assert.Single(restored.ResolvedParameters);
+            Assert.Single(restored.ProgramKeywords);
+            Assert.Equal(
+                "em=GD3BJ",
+                restored.ProgramKeywords[0].RawKeyword);
+            Assert.True(
+                File.Exists(
+                    workspace.GetJobParametersPath(jobId)));
+        }
+        finally
+        {
+            if (Directory.Exists(root))
+            {
+                Directory.Delete(root, true);
+            }
+        }
+    }
 }

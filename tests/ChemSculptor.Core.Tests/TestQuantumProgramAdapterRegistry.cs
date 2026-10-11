@@ -78,6 +78,12 @@ internal sealed class TestQuantumProgramAdapter : IQuantumProgramAdapter
         return patterns;
     }
 
+    public IReadOnlyList<ProgramParameterTranslation>
+        GetParameterTranslations(CalculationSpec spec)
+    {
+        return new List<ProgramParameterTranslation>();
+    }
+
     public Task PostProcessAsync(
         CalculationJob job,
         CancellationToken cancellationToken = default)

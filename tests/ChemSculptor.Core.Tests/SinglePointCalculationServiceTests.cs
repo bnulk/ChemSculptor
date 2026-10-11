@@ -224,6 +224,15 @@ public class SinglePointCalculationServiceTests
                 "H 0.000000 0.757200 -0.469200\n" +
                 "H 0.000000 -0.757200 -0.469200";
             request.ResolvedSpec = resolvedSpec;
+            ResolvedCalculationParameter resolvedParameter =
+                new ResolvedCalculationParameter();
+            resolvedParameter.Key =
+                CalculationOptionKeys.DispersionCorrection;
+            resolvedParameter.Value = "GD3BJ";
+            resolvedParameter.RawText = "加色散";
+            resolvedParameter.Source = ParameterSource.User;
+            resolvedParameter.Confidence = 1.0;
+            request.ResolvedParameters.Add(resolvedParameter);
 
             SinglePointCalculationSubmissionResult submission =
                 await service.SubmitAsync(request);
@@ -246,6 +255,23 @@ public class SinglePointCalculationServiceTests
                 "Water",
                 workflowEngine.LastJob.Spec.Solvent);
             Assert.Equal(3, workflowEngine.LastJob.Spec.Multiplicity);
+
+            CalculationParameterAudit? audit =
+                await repository.GetParameterAuditAsync(
+                    submission.Job!.JobId);
+
+            Assert.NotNull(audit);
+            Assert.Contains(
+                audit.ResolvedParameters,
+                parameter =>
+                    parameter.Key
+                        == CalculationOptionKeys.DispersionCorrection
+                    && parameter.Value == "GD3BJ"
+                    && parameter.RawText == "加色散");
+            Assert.True(
+                File.Exists(
+                    workspace.GetJobParametersPath(
+                        submission.Job.JobId)));
         }
         finally
         {

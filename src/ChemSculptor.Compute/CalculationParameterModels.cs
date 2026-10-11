@@ -84,3 +84,66 @@ public sealed class ResolvedCalculationParameter
     /// <summary>翻译后的程序关键词。</summary>
     public string TranslatedKeyword { get; set; } = string.Empty;
 }
+
+/// <summary>程序参数翻译记录。</summary>
+public sealed class ProgramParameterTranslation
+{
+    /// <summary>规范参数键。</summary>
+    public string Key { get; set; } = string.Empty;
+
+    /// <summary>规范参数值。</summary>
+    public string Value { get; set; } = string.Empty;
+
+    /// <summary>程序关键词。</summary>
+    public string RawKeyword { get; set; } = string.Empty;
+
+    /// <summary>翻译器名称。</summary>
+    public string TranslatorName { get; set; } = string.Empty;
+
+    /// <summary>翻译器版本。</summary>
+    public string TranslatorVersion { get; set; } = string.Empty;
+}
+
+/// <summary>作业参数审计文档。</summary>
+public sealed class CalculationParameterAudit
+{
+    /// <summary>作业标识。</summary>
+    public string JobId { get; set; } = string.Empty;
+
+    /// <summary>计算引擎。</summary>
+    public string Engine { get; set; } = string.Empty;
+
+    /// <summary>任务类型。</summary>
+    public CalculationTaskType TaskType { get; set; }
+
+    /// <summary>最终规范参数。</summary>
+    public List<ResolvedCalculationParameter> ResolvedParameters
+    {
+        get;
+        set;
+    } = new List<ResolvedCalculationParameter>();
+
+    /// <summary>程序关键词翻译结果。</summary>
+    public List<ProgramParameterTranslation> ProgramKeywords
+    {
+        get;
+        set;
+    } = new List<ProgramParameterTranslation>();
+
+    /// <summary>输入文件 SHA-256。</summary>
+    public string InputHash { get; set; } = string.Empty;
+
+    /// <summary>翻译器名称。</summary>
+    public string TranslatorName { get; set; } = string.Empty;
+
+    /// <summary>翻译器版本。</summary>
+    public string TranslatorVersion { get; set; } = string.Empty;
+
+    /// <summary>创建时间。</summary>
+    public DateTimeOffset CreatedAt { get; set; } =
+        DateTimeOffset.UtcNow;
+
+    /// <summary>最后更新时间。</summary>
+    public DateTimeOffset UpdatedAt { get; set; } =
+        DateTimeOffset.UtcNow;
+}

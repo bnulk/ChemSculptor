@@ -2,6 +2,7 @@ using ChemSculptor.Compute;
 using ChemSculptor.InputProcessor;
 using ChemSculptor.InputProcessor.Chemistry;
 using ChemSculptor.InputProcessor.GeometryIntake;
+using System.Security.Cryptography;
 
 namespace ChemSculptor.Skills.Common.CalculationWorkflow;
 
@@ -14,12 +15,14 @@ public sealed class CalculationInputPreparationSkill
 {
     private readonly IGeometryTextParser _geometryParser;
     private readonly IQuantumProgramAdapterRegistry _adapterRegistry;
+    private readonly ICalculationRepository _repository;
     private readonly List<string> _capabilities;
 
     /// <summary>创建通用输入准备技能。</summary>
     public CalculationInputPreparationSkill(
         IGeometryTextParser geometryParser,
-        IQuantumProgramAdapterRegistry adapterRegistry)
+        IQuantumProgramAdapterRegistry adapterRegistry,
+        ICalculationRepository repository)
     {
         if (geometryParser == null)
         {
@@ -31,8 +34,14 @@ public sealed class CalculationInputPreparationSkill
             throw new ArgumentNullException(nameof(adapterRegistry));
         }
 
+        if (repository == null)
+        {
+            throw new ArgumentNullException(nameof(repository));
+        }
+
         _geometryParser = geometryParser;
         _adapterRegistry = adapterRegistry;
+        _repository = repository;
         _capabilities = new List<string>();
         _capabilities.Add("calculation.prepare-input");
         _capabilities.Add("workflow.calculation");
@@ -120,6 +129,10 @@ public sealed class CalculationInputPreparationSkill
             cancellationToken);
 
         File.Copy(request.InputFilePath, request.RunInputFilePath, true);
+        await UpdateParameterAuditHashAsync(
+            request.Job.JobId,
+            request.RunInputFilePath,
+            cancellationToken);
 
         CalculationJob job = request.Job;
         job.Spec = request.Spec;
@@ -141,6 +154,42 @@ public sealed class CalculationInputPreparationSkill
         CancellationToken cancellationToken = default)
     {
         return Task.FromResult(true);
+    }
+
+    private async Task UpdateParameterAuditHashAsync(
+        string jobId,
+        string inputPath,
+        CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(jobId)
+            || string.IsNullOrWhiteSpace(inputPath)
+            || !File.Exists(inputPath))
+        {
+            return;
+        }
+
+        CalculationParameterAudit? audit =
+            await _repository.GetParameterAuditAsync(
+                jobId,
+                cancellationToken);
+
+        if (audit == null)
+        {
+            return;
+        }
+
+        byte[] hash;
+
+        using (FileStream stream = File.OpenRead(inputPath))
+        {
+            hash = SHA256.HashData(stream);
+        }
+
+        audit.InputHash = Convert.ToHexString(hash);
+        audit.UpdatedAt = DateTimeOffset.UtcNow;
+        await _repository.SaveParameterAuditAsync(
+            audit,
+            cancellationToken);
     }
 
     private static void EnsureParentDirectory(string path)

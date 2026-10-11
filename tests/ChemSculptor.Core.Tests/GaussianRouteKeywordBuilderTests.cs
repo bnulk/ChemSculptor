@@ -37,6 +37,17 @@ public class GaussianRouteKeywordBuilderTests
         Assert.Contains("nosymm", result.RouteLine);
         Assert.Contains("scfcyc=300", result.RouteLine);
         Assert.Contains("SCRF=(Solvent=Water)", result.RouteLine);
+        Assert.Contains(
+            result.Translations,
+            translation =>
+                translation.Key
+                    == CalculationOptionKeys.DispersionCorrection
+                && translation.RawKeyword == "em=GD3BJ");
+        Assert.Contains(
+            result.Translations,
+            translation =>
+                translation.Key == CalculationOptionKeys.Symmetry
+                && translation.RawKeyword == "nosymm");
     }
 
     /// <summary>验证 GD3 和 None 的映射。</summary>

@@ -18,6 +18,13 @@ public sealed class GaussianRouteKeywordBuildResult
 
     /// <summary>完整 route line。</summary>
     public string RouteLine { get; set; } = string.Empty;
+
+    /// <summary>按规范参数记录的翻译结果。</summary>
+    public List<ProgramParameterTranslation> Translations
+    {
+        get;
+        set;
+    } = new List<ProgramParameterTranslation>();
 }
 
 /// <summary>把通用参数翻译为 Gaussian route 关键词。</summary>
@@ -41,10 +48,26 @@ public sealed class GaussianRouteKeywordBuilder
             spec.Method + "/" + spec.Basis;
         result.TaskKeyword = "SP";
 
-        AddDispersionKeyword(spec, result.Keywords);
-        AddSymmetryKeyword(spec, result.Keywords);
-        AddScfIterationKeyword(spec, result.Keywords);
-        AddSolventKeyword(spec, result.Keywords);
+        AddTranslation(
+            result,
+            CalculationOptionKeys.Method,
+            spec.Method,
+            spec.Method);
+        AddTranslation(
+            result,
+            CalculationOptionKeys.Basis,
+            spec.Basis,
+            spec.Basis);
+        AddTranslation(
+            result,
+            "task-type",
+            spec.TaskType.ToString(),
+            result.TaskKeyword);
+
+        AddDispersionKeyword(spec, result);
+        AddSymmetryKeyword(spec, result);
+        AddScfIterationKeyword(spec, result);
+        AddSolventKeyword(spec, result);
 
         result.RouteLine = BuildRouteLine(result);
         return result;
@@ -77,7 +100,7 @@ public sealed class GaussianRouteKeywordBuilder
 
     private static void AddDispersionKeyword(
         CalculationSpec spec,
-        List<string> keywords)
+        GaussianRouteKeywordBuildResult result)
     {
         string value = ReadExtraOption(
             spec,
@@ -97,7 +120,11 @@ public sealed class GaussianRouteKeywordBuilder
             "GD3",
             StringComparison.OrdinalIgnoreCase))
         {
-            keywords.Add("em=GD3");
+            AddKeyword(
+                result,
+                CalculationOptionKeys.DispersionCorrection,
+                value,
+                "em=GD3");
             return;
         }
 
@@ -106,7 +133,11 @@ public sealed class GaussianRouteKeywordBuilder
             "GD3BJ",
             StringComparison.OrdinalIgnoreCase))
         {
-            keywords.Add("em=GD3BJ");
+            AddKeyword(
+                result,
+                CalculationOptionKeys.DispersionCorrection,
+                value,
+                "em=GD3BJ");
             return;
         }
 
@@ -116,7 +147,7 @@ public sealed class GaussianRouteKeywordBuilder
 
     private static void AddSymmetryKeyword(
         CalculationSpec spec,
-        List<string> keywords)
+        GaussianRouteKeywordBuildResult result)
     {
         string value = ReadExtraOption(
             spec,
@@ -140,7 +171,11 @@ public sealed class GaussianRouteKeywordBuilder
             "Ignore",
             StringComparison.OrdinalIgnoreCase))
         {
-            keywords.Add("nosymm");
+            AddKeyword(
+                result,
+                CalculationOptionKeys.Symmetry,
+                value,
+                "nosymm");
             return;
         }
 
@@ -150,7 +185,7 @@ public sealed class GaussianRouteKeywordBuilder
 
     private static void AddScfIterationKeyword(
         CalculationSpec spec,
-        List<string> keywords)
+        GaussianRouteKeywordBuildResult result)
     {
         string value = ReadExtraOption(
             spec,
@@ -174,7 +209,10 @@ public sealed class GaussianRouteKeywordBuilder
                 "SCF 迭代上限必须是正整数。");
         }
 
-        keywords.Add(
+        AddKeyword(
+            result,
+            CalculationOptionKeys.ScfIterationLimit,
+            value,
             "scfcyc=" +
             iterationLimit.ToString(
                 CultureInfo.InvariantCulture));
@@ -182,7 +220,7 @@ public sealed class GaussianRouteKeywordBuilder
 
     private static void AddSolventKeyword(
         CalculationSpec spec,
-        List<string> keywords)
+        GaussianRouteKeywordBuildResult result)
     {
         string value = spec.Solvent;
 
@@ -200,7 +238,11 @@ public sealed class GaussianRouteKeywordBuilder
             "Water",
             StringComparison.OrdinalIgnoreCase))
         {
-            keywords.Add("SCRF=(Solvent=Water)");
+            AddKeyword(
+                result,
+                CalculationOptionKeys.Solvent,
+                value,
+                "SCRF=(Solvent=Water)");
             return;
         }
 
@@ -220,6 +262,33 @@ public sealed class GaussianRouteKeywordBuilder
         }
 
         return string.Empty;
+    }
+
+    private static void AddKeyword(
+        GaussianRouteKeywordBuildResult result,
+        string key,
+        string value,
+        string keyword)
+    {
+        result.Keywords.Add(keyword);
+        AddTranslation(result, key, value, keyword);
+    }
+
+    private static void AddTranslation(
+        GaussianRouteKeywordBuildResult result,
+        string key,
+        string value,
+        string keyword)
+    {
+        ProgramParameterTranslation translation =
+            new ProgramParameterTranslation();
+        translation.Key = key;
+        translation.Value = value;
+        translation.RawKeyword = keyword;
+        translation.TranslatorName =
+            "GaussianRouteKeywordBuilder";
+        translation.TranslatorVersion = "1.0.0";
+        result.Translations.Add(translation);
     }
 
     private static string BuildRouteLine(

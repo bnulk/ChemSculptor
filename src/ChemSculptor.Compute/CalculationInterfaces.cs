@@ -31,6 +31,10 @@ public interface IQuantumProgramAdapter
     IReadOnlyList<CalculationArtifactPattern> GetArtifactPatterns(
         CalculationArtifactDiscoveryContext context);
 
+    /// <summary>获取规范参数到程序关键词的翻译记录。</summary>
+    IReadOnlyList<ProgramParameterTranslation>
+        GetParameterTranslations(CalculationSpec spec);
+
     /// <summary>
     /// 计算正常结束后执行程序专用后处理。
     /// 通用工作流只调用该入口，不包含程序专用规则。
@@ -164,6 +168,9 @@ public interface ICalculationWorkspace
     /// <summary>获取作业清单文件路径。</summary>
     string GetJobManifestPath(string jobId);
 
+    /// <summary>获取参数审计文件路径。</summary>
+    string GetJobParametersPath(string jobId);
+
     /// <summary>获取规范化结果文件路径。</summary>
     string GetJobResultPath(string jobId);
 
@@ -220,6 +227,16 @@ public interface ICalculationRepository
 
     /// <summary>读取结果验证报告。</summary>
     Task<CalculationValidationReport?> GetValidationAsync(
+        string jobId,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>保存参数审计。</summary>
+    Task SaveParameterAuditAsync(
+        CalculationParameterAudit audit,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>读取参数审计。</summary>
+    Task<CalculationParameterAudit?> GetParameterAuditAsync(
         string jobId,
         CancellationToken cancellationToken = default);
 

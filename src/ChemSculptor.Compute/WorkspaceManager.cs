@@ -89,6 +89,14 @@ public sealed class WorkspaceManager : ICalculationWorkspace
         return Path.Combine(GetJobDirectory(jobId), CalculationWorkspacePaths.JobManifestFileName);
     }
 
+    /// <summary>获取作业参数审计文件路径。</summary>
+    public string GetJobParametersPath(string jobId)
+    {
+        return Path.Combine(
+            GetJobDirectory(jobId),
+            CalculationWorkspacePaths.JobParametersFileName);
+    }
+
     /// <summary>获取作业坐标文件路径。</summary>
     public string GetJobCoordinatesPath(string jobId)
     {

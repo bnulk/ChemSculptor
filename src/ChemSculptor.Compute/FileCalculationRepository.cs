@@ -124,6 +124,32 @@ public sealed class FileCalculationRepository : ICalculationRepository
         return ReadJsonAsync<CalculationValidationReport>(path, cancellationToken);
     }
 
+    /// <summary>保存参数审计。</summary>
+    public Task SaveParameterAuditAsync(
+        CalculationParameterAudit audit,
+        CancellationToken cancellationToken = default)
+    {
+        if (audit == null)
+        {
+            throw new ArgumentNullException(nameof(audit));
+        }
+
+        audit.UpdatedAt = DateTimeOffset.UtcNow;
+        string path = _workspace.GetJobParametersPath(audit.JobId);
+        return WriteJsonAsync(path, audit, cancellationToken);
+    }
+
+    /// <summary>读取参数审计。</summary>
+    public Task<CalculationParameterAudit?> GetParameterAuditAsync(
+        string jobId,
+        CancellationToken cancellationToken = default)
+    {
+        string path = _workspace.GetJobParametersPath(jobId);
+        return ReadJsonAsync<CalculationParameterAudit>(
+            path,
+            cancellationToken);
+    }
+
     private async Task WriteJsonAsync<T>(
         string path,
         T value,

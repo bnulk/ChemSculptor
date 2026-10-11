@@ -649,6 +649,8 @@ GaussianInputWriter.BuildRouteLine
 
 ## 14. 第十步：保存参数来源和翻译结果
 
+实现状态：parameters.json 与输入文件 SHA-256 已完成；API 和客户端读取尚未实现。
+
 每次作业至少保存：
 
 ```text

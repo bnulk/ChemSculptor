@@ -20,6 +20,7 @@ public sealed class Gaussian16ProgramAdapter : IQuantumProgramAdapter
     private readonly GaussianOutputParser _outputParser;
     private readonly GaussianResultTranslator _resultTranslator;
     private readonly GaussianProcessingPlanTranslator _processingPlanTranslator;
+    private readonly GaussianRouteKeywordBuilder _routeKeywordBuilder;
     private readonly Gaussian16ProgramAdapterOptions _options;
 
     /// <summary>创建 Gaussian 16 适配器。</summary>
@@ -28,6 +29,7 @@ public sealed class Gaussian16ProgramAdapter : IQuantumProgramAdapter
         GaussianOutputParser outputParser,
         GaussianResultTranslator resultTranslator,
         GaussianProcessingPlanTranslator processingPlanTranslator,
+        GaussianRouteKeywordBuilder routeKeywordBuilder,
         Gaussian16ProgramAdapterOptions options)
     {
         if (inputWriter == null)
@@ -50,6 +52,11 @@ public sealed class Gaussian16ProgramAdapter : IQuantumProgramAdapter
             throw new ArgumentNullException(nameof(processingPlanTranslator));
         }
 
+        if (routeKeywordBuilder == null)
+        {
+            throw new ArgumentNullException(nameof(routeKeywordBuilder));
+        }
+
         if (options == null)
         {
             throw new ArgumentNullException(nameof(options));
@@ -59,6 +66,7 @@ public sealed class Gaussian16ProgramAdapter : IQuantumProgramAdapter
         _outputParser = outputParser;
         _resultTranslator = resultTranslator;
         _processingPlanTranslator = processingPlanTranslator;
+        _routeKeywordBuilder = routeKeywordBuilder;
         _options = options;
     }
 
@@ -174,6 +182,16 @@ public sealed class Gaussian16ProgramAdapter : IQuantumProgramAdapter
             "text/plain; charset=utf-8",
             false));
         return patterns;
+    }
+
+    /// <summary>获取 Gaussian route 关键词翻译记录。</summary>
+    public IReadOnlyList<ProgramParameterTranslation>
+        GetParameterTranslations(CalculationSpec spec)
+    {
+        GaussianRouteKeywordBuildResult route =
+            _routeKeywordBuilder.Build(spec);
+        return new List<ProgramParameterTranslation>(
+            route.Translations);
     }
 
     /// <summary>检查检查点文件并调用 formchk 生成 fchk。</summary>

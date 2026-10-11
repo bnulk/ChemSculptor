@@ -121,6 +121,21 @@ src/ChemSculptor.Skills.Gaussian/GaussianSkillServiceRegistration.cs
 Gaussian 输入写入器现在把色散校正、对称性、SCF 迭代和溶剂翻译为
 em=...、nosymm、scfcyc=...、SCRF=...。
 
+新增参数审计：
+
+```text
+src/ChemSculptor.Compute/CalculationParameterModels.cs
+src/ChemSculptor.Compute/CalculationInterfaces.cs
+src/ChemSculptor.Compute/FileCalculationRepository.cs
+src/ChemSculptor.Compute/CalculationWorkspacePaths.cs
+src/ChemSculptor.Compute/WorkspaceManager.cs
+src/ChemSculptor.Agent/SinglePointCalculationService.cs
+src/ChemSculptor.Skills.Common/CalculationWorkflow/CalculationInputPreparationSkill.cs
+```
+
+每个作业现在写入 parameters.json，保存规范参数、来源、风险和程序
+关键词翻译结果；输入文件生成后会补充 SHA-256。
+
 新增测试：
 
 ```text
@@ -134,13 +149,14 @@ tests/ChemSculptor.Core.Tests/AgentServiceTests.cs
 tests/ChemSculptor.Core.Tests/SinglePointCalculationServiceTests.cs
 tests/ChemSculptor.Core.Tests/GaussianRouteKeywordBuilderTests.cs
 tests/ChemSculptor.Core.Tests/GaussianInputWriterTests.cs
+tests/ChemSculptor.Core.Tests/CalculationParameterModelsTests.cs
 ```
 
 ### 验证
 
 ```text
 Release 构建：0 警告，0 错误
-测试：117/117 通过
+测试：118/118 通过
 ```
 
 ---
