@@ -127,6 +127,7 @@ public static class CalculationParameterCatalog
             {
                 "默认对称性",
                 "程序默认对称性",
+                "对称性",
                 "symm",
                 "symmetry",
                 "使用对称性",
@@ -153,7 +154,8 @@ public static class CalculationParameterCatalog
                 "SCF 最大",
                 "SCF 迭代上限",
                 "最多迭代",
-                "SCF cycles"
+                "SCF cycles",
+                "SCF"
             }));
 
         definitions.Add(CreateDefinition(
@@ -168,6 +170,7 @@ public static class CalculationParameterCatalog
                 "气相",
                 "无溶剂",
                 "不加溶剂",
+                "溶剂",
                 "gas",
                 "no solvent",
                 "水",

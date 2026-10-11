@@ -56,19 +56,30 @@ ResolvedCalculationParameter
 src/ChemSculptor.Compute/CalculationParameterCatalog.cs
 ```
 
+新增对话参数提取：
+
+```text
+src/ChemSculptor.Compute/CalculationParameterExtractionModels.cs
+src/ChemSculptor.Compute/ICalculationParameterExtractor.cs
+src/ChemSculptor.Compute/RuleBasedCalculationParameterExtractor.cs
+```
+
+提取器现在可以识别首期冻结别名、数值参数和对称性、色散等文本状态。
+
 新增测试：
 
 ```text
 tests/ChemSculptor.Core.Tests/CalculationOptionKeysTests.cs
 tests/ChemSculptor.Core.Tests/CalculationParameterModelsTests.cs
 tests/ChemSculptor.Core.Tests/CalculationParameterCatalogTests.cs
+tests/ChemSculptor.Core.Tests/RuleBasedCalculationParameterExtractorTests.cs
 ```
 
 ### 验证
 
 ```text
 Release 构建：0 警告，0 错误
-测试：100/100 通过
+测试：103/103 通过
 ```
 
 ---

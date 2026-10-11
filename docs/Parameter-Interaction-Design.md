@@ -299,6 +299,8 @@ Gaussian 目录定义参数到 route keyword 的映射
 
 ## 8. 第四步：从对话文本提取参数
 
+实现状态：规则版提取器已完成；尚未接入 AgentService。
+
 新增接口：
 
 ```text
