@@ -5,12 +5,12 @@
 
 ---
 
-## v0.52.0（2026-10-11）：规范计算参数键
+## v0.52.0（2026-10-12）：规范计算参数键
 
 ### 版本
 
 - 当前版本：`0.52.0`
-- 日期：`2026-10-11`
+- 日期：`2026-10-12`
 - 版本类型：参数架构
 
 ### 改动目的
@@ -66,6 +66,16 @@ src/ChemSculptor.Compute/RuleBasedCalculationParameterExtractor.cs
 
 提取器现在可以识别首期冻结别名、数值参数和对称性、色散等文本状态。
 
+新增参数 Resolver：
+
+```text
+src/ChemSculptor.Compute/CalculationParameterResolutionModels.cs
+src/ChemSculptor.Compute/CalculationParameterResolver.cs
+```
+
+Resolver 现在负责默认值合并、KeyOnly 处理、范围校验、冲突问题和
+charge/multiplicity 奇偶校验。
+
 新增测试：
 
 ```text
@@ -73,13 +83,14 @@ tests/ChemSculptor.Core.Tests/CalculationOptionKeysTests.cs
 tests/ChemSculptor.Core.Tests/CalculationParameterModelsTests.cs
 tests/ChemSculptor.Core.Tests/CalculationParameterCatalogTests.cs
 tests/ChemSculptor.Core.Tests/RuleBasedCalculationParameterExtractorTests.cs
+tests/ChemSculptor.Core.Tests/CalculationParameterResolverTests.cs
 ```
 
 ### 验证
 
 ```text
 Release 构建：0 警告，0 错误
-测试：103/103 通过
+测试：108/108 通过
 ```
 
 ---

@@ -383,6 +383,8 @@ ParameterIntent:
 
 ## 9. 第五步：解析和合并参数
 
+实现状态：纯逻辑 Resolver 已完成；尚未接入 AgentService。
+
 新增：
 
 ```text
