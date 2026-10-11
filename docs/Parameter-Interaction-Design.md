@@ -708,6 +708,8 @@ result.json
 
 ## 15. 第十一步：客户端显示
 
+实现状态：API 响应和 WinForms 对话显示已完成。
+
 `AgentMessageResponse` 增加：
 
 ```text

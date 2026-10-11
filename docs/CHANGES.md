@@ -136,6 +136,18 @@ src/ChemSculptor.Skills.Common/CalculationWorkflow/CalculationInputPreparationSk
 每个作业现在写入 parameters.json，保存规范参数、来源、风险和程序
 关键词翻译结果；输入文件生成后会补充 SHA-256。
 
+新增参数问题客户端显示：
+
+```text
+src/ChemSculptor.Api/Contracts.cs
+src/ChemSculptor.Api/Endpoints/AgentEndpoints.cs
+src/ChemSculptor.WinForms/Models/Responses/ResponseModels.cs
+src/ChemSculptor.WinForms/MainForm.cs
+```
+
+Agent 响应现在返回 RequiresUserAction、Questions 和 AppliedParameters，
+WinForms 会显示已应用参数和需要补充或确认的问题。
+
 新增测试：
 
 ```text

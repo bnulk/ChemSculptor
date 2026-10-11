@@ -2,7 +2,7 @@
 
 ## 当前阶段
 
-对话式计算参数方案已落地前十步。
+对话式计算参数方案已落地前十一步。
 
 ```text
 calculation.single-point 保持现有分层
@@ -15,6 +15,7 @@ AgentService 已接入参数问询
 SinglePointCalculationService 已接入 ResolvedSpec
 Gaussian route 关键词翻译已实现
 参数审计已写入 parameters.json
+参数问题和已应用参数已显示到客户端对话区
 ```
 
 ## 当前边界

@@ -1,4 +1,6 @@
 using ChemSculptor.Agent;
+using ChemSculptor.Compute;
+using ChemSculptor.Conversation;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
@@ -41,6 +43,10 @@ public static class AgentEndpoints
             unsupported.Status = "Unsupported";
             unsupported.Message = result.Error;
             unsupported.Diagnostics = new List<string>(result.Diagnostics);
+            unsupported.RequiresUserAction = result.RequiresUserAction;
+            unsupported.Questions = ConvertQuestions(result.Questions);
+            unsupported.AppliedParameters =
+                ConvertParameters(result.AppliedParameters);
             return Results.BadRequest(unsupported);
         }
 
@@ -52,8 +58,64 @@ public static class AgentEndpoints
         response.OutputFilePath = result.OutputFilePath;
         response.Message = result.Message;
         response.Diagnostics = new List<string>(result.Diagnostics);
+        response.RequiresUserAction = result.RequiresUserAction;
+        response.Questions = ConvertQuestions(result.Questions);
+        response.AppliedParameters =
+            ConvertParameters(result.AppliedParameters);
 
         return Results.Ok(response);
+    }
+
+    private static List<AgentQuestionResponse> ConvertQuestions(
+        List<ConversationQuestion> questions)
+    {
+        List<AgentQuestionResponse> responses =
+            new List<AgentQuestionResponse>();
+
+        for (int index = 0; index < questions.Count; index++)
+        {
+            ConversationQuestion question = questions[index];
+            AgentQuestionResponse response =
+                new AgentQuestionResponse();
+            response.QuestionId = question.QuestionId;
+            response.QuestionType = question.QuestionType;
+            response.Text = question.Text;
+            response.Options = new List<string>(question.Options);
+            response.RiskLevel = question.RiskLevel.ToString();
+            responses.Add(response);
+        }
+
+        return responses;
+    }
+
+    private static List<AgentAppliedParameterResponse> ConvertParameters(
+        List<ResolvedCalculationParameter> parameters)
+    {
+        List<AgentAppliedParameterResponse> responses =
+            new List<AgentAppliedParameterResponse>();
+
+        for (int index = 0; index < parameters.Count; index++)
+        {
+            ResolvedCalculationParameter parameter = parameters[index];
+            CalculationParameterDefinition? definition =
+                CalculationParameterCatalog.Find(parameter.Key);
+            AgentAppliedParameterResponse response =
+                new AgentAppliedParameterResponse();
+            response.Key = parameter.Key;
+            response.DisplayName = definition == null
+                ? parameter.Key
+                : definition.DisplayName;
+            response.Value = parameter.Value;
+            response.RawText = parameter.RawText;
+            response.Source = parameter.Source.ToString();
+            response.Confidence = parameter.Confidence;
+            response.RiskLevel = parameter.RiskLevel.ToString();
+            response.RequiresApproval = parameter.RequiresApproval;
+            response.TranslatedKeyword = parameter.TranslatedKeyword;
+            responses.Add(response);
+        }
+
+        return responses;
     }
 
     private static string GetTaskTypeText(AgentResult result)

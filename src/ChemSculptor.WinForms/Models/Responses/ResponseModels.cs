@@ -23,6 +23,56 @@ public sealed class AgentMessageResultDto
 
     /// <summary>诊断信息。</summary>
     public List<string> Diagnostics { get; set; } = new List<string>();
+
+    /// <summary>当前是否需要用户继续操作。</summary>
+    public bool RequiresUserAction { get; set; }
+
+    /// <summary>需要用户回答的问题。</summary>
+    public List<AgentQuestionDto> Questions { get; set; } =
+        new List<AgentQuestionDto>();
+
+    /// <summary>本次解析应用的参数。</summary>
+    public List<AgentAppliedParameterDto> AppliedParameters
+    {
+        get;
+        set;
+    } = new List<AgentAppliedParameterDto>();
+}
+
+/// <summary>服务器返回的参数问题。</summary>
+public sealed class AgentQuestionDto
+{
+    public string QuestionId { get; set; } = string.Empty;
+
+    public string QuestionType { get; set; } = string.Empty;
+
+    public string Text { get; set; } = string.Empty;
+
+    public List<string> Options { get; set; } = new List<string>();
+
+    public string RiskLevel { get; set; } = string.Empty;
+}
+
+/// <summary>服务器返回的已应用参数。</summary>
+public sealed class AgentAppliedParameterDto
+{
+    public string Key { get; set; } = string.Empty;
+
+    public string DisplayName { get; set; } = string.Empty;
+
+    public string Value { get; set; } = string.Empty;
+
+    public string RawText { get; set; } = string.Empty;
+
+    public string Source { get; set; } = string.Empty;
+
+    public double Confidence { get; set; }
+
+    public string RiskLevel { get; set; } = string.Empty;
+
+    public bool RequiresApproval { get; set; }
+
+    public string TranslatedKeyword { get; set; } = string.Empty;
 }
 
 /// <summary>服务器生成的客户端科学摘要。</summary>

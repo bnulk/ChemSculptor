@@ -325,6 +325,78 @@ public sealed class MainForm : Form
         ScrollToBottom();
     }
 
+    /// <summary>显示参数问题和已经应用的参数。</summary>
+    private void AppendParameterFeedback(AgentMessageResultDto result)
+    {
+        if (result.AppliedParameters.Count > 0)
+        {
+            AppendMessage("system", "已应用参数：");
+
+            for (int index = 0;
+                index < result.AppliedParameters.Count;
+                index++)
+            {
+                AgentAppliedParameterDto parameter =
+                    result.AppliedParameters[index];
+                string line =
+                    parameter.DisplayName +
+                    "：" +
+                    parameter.Value;
+
+                if (!string.IsNullOrWhiteSpace(
+                    parameter.TranslatedKeyword))
+                {
+                    line =
+                        line +
+                        "（" +
+                        parameter.TranslatedKeyword +
+                        "）";
+                }
+
+                AppendMessage("hint", line);
+            }
+        }
+
+        if (result.RequiresUserAction
+            || result.Questions.Count > 0)
+        {
+            AppendMessage("system", "请补充或确认：");
+
+            for (int index = 0;
+                index < result.Questions.Count;
+                index++)
+            {
+                AgentQuestionDto question =
+                    result.Questions[index];
+                string line =
+                    (index + 1).ToString() +
+                    ". " +
+                    question.Text;
+
+                if (question.Options.Count > 0)
+                {
+                    line =
+                        line +
+                        " 可选：" +
+                        string.Join(
+                            " / ",
+                            question.Options);
+                }
+
+                AppendMessage("hint", line);
+            }
+        }
+
+        for (int index = 0;
+            index < result.Diagnostics.Count;
+            index++)
+        {
+            AppendMessage(
+                "hint",
+                "诊断：" + result.Diagnostics[index]);
+        }
+    }
+
     /// <summary>把一条消息渲染成对话卡片。</summary>
     private void AddBubble(ChatMessage message)
     {
@@ -497,6 +569,14 @@ public sealed class MainForm : Form
                 return;
             }
 
+            AppendParameterFeedback(result);
+
+            if (result.RequiresUserAction
+                && string.IsNullOrWhiteSpace(result.JobId))
+            {
+                return;
+            }
+
             if (string.IsNullOrWhiteSpace(result.JobId))
             {
                 AppendMessage("error", "服务器没有返回计算作业标识。");
@@ -511,11 +591,6 @@ public sealed class MainForm : Form
             AppendMessage("hint", "输入文件：" + result.InputFilePath);
             AppendMessage("hint", "输出文件：" + result.OutputFilePath);
             AppendMessage("hint", result.Message);
-
-            for (int index = 0; index < result.Diagnostics.Count; index++)
-            {
-                AppendMessage("hint", "诊断：" + result.Diagnostics[index]);
-            }
 
             CalculationJobItem calculation = new CalculationJobItem();
             calculation.JobId = result.JobId;

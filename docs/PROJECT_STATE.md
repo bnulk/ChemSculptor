@@ -105,6 +105,7 @@ Agent 参数问询接入
 ResolvedSpec 服务接入
 Gaussian route 关键词翻译
 计算参数审计
+参数问题客户端显示
 WinForms 客户端
 波函数稳定性检查
 自旋多重度矫正
