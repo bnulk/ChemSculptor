@@ -1,0 +1,44 @@
+using ChemSculptor.Compute;
+
+namespace ChemSculptor.Core.Tests;
+
+/// <summary>规范计算参数键测试。</summary>
+public class CalculationOptionKeysTests
+{
+    /// <summary>验证外部可见的规范参数键保持稳定且不重复。</summary>
+    [Fact]
+    public void DefinesStableCanonicalParameterKeys()
+    {
+        string[] keys =
+        {
+            CalculationOptionKeys.Engine,
+            CalculationOptionKeys.Method,
+            CalculationOptionKeys.Basis,
+            CalculationOptionKeys.DispersionCorrection,
+            CalculationOptionKeys.Symmetry,
+            CalculationOptionKeys.ScfIterationLimit,
+            CalculationOptionKeys.Solvent,
+            CalculationOptionKeys.Charge,
+            CalculationOptionKeys.Multiplicity
+        };
+
+        Assert.Equal("engine", CalculationOptionKeys.Engine);
+        Assert.Equal("method", CalculationOptionKeys.Method);
+        Assert.Equal("basis", CalculationOptionKeys.Basis);
+        Assert.Equal(
+            "dispersion-correction",
+            CalculationOptionKeys.DispersionCorrection);
+        Assert.Equal("symmetry", CalculationOptionKeys.Symmetry);
+        Assert.Equal(
+            "scf-iteration-limit",
+            CalculationOptionKeys.ScfIterationLimit);
+        Assert.Equal("solvent", CalculationOptionKeys.Solvent);
+        Assert.Equal("charge", CalculationOptionKeys.Charge);
+        Assert.Equal(
+            "multiplicity",
+            CalculationOptionKeys.Multiplicity);
+        Assert.Equal(
+            keys.Length,
+            keys.Distinct(StringComparer.OrdinalIgnoreCase).Count());
+    }
+}

@@ -1,0 +1,104 @@
+﻿{
+  "resultId": "scientific-result-job-3d63684323f2471d95f9fde56f9c8a5a",
+  "rootJobId": "job-3d63684323f2471d95f9fde56f9c8a5a",
+  "points": [
+    {
+      "pointId": "point-job-3d63684323f2471d95f9fde56f9c8a5a",
+      "sequence": 1,
+      "directoryName": "01-original-m1",
+      "status": "Superseded",
+      "multiplicity": 1,
+      "files": [
+        {
+          "artifactId": "artifact-job-3d63684323f2471d95f9fde56f9c8a5a-0",
+          "kind": "RestartState",
+          "downloadFileName": "O2-original-m1.chk",
+          "length": 692224,
+          "sha256": "319f02992bacb2071837a77c4ebcf81fbc2e3d2623c4caaf344a43d8cd7e533b",
+          "isAvailable": true,
+          "error": "",
+          "downloadPath": "/scientific-results/scientific-result-job-3d63684323f2471d95f9fde56f9c8a5a/artifacts/point-job-3d63684323f2471d95f9fde56f9c8a5a/artifact-job-3d63684323f2471d95f9fde56f9c8a5a-0"
+        },
+        {
+          "artifactId": "artifact-job-3d63684323f2471d95f9fde56f9c8a5a-1",
+          "kind": "RestartState",
+          "downloadFileName": "O2-original-m1.fchk",
+          "length": 118207,
+          "sha256": "9c55f6f01d5d3009d0b45a31af3e346195ade08ccdf18d59b8385b4f745ec953",
+          "isAvailable": true,
+          "error": "",
+          "downloadPath": "/scientific-results/scientific-result-job-3d63684323f2471d95f9fde56f9c8a5a/artifacts/point-job-3d63684323f2471d95f9fde56f9c8a5a/artifact-job-3d63684323f2471d95f9fde56f9c8a5a-1"
+        },
+        {
+          "artifactId": "artifact-job-3d63684323f2471d95f9fde56f9c8a5a-2",
+          "kind": "Input",
+          "downloadFileName": "O2-original-m1.gjf",
+          "length": 226,
+          "sha256": "087b5707d200f2a9c27b9e9e68891f835262ff4e6e4ebd5a205bc273353cb8ed",
+          "isAvailable": true,
+          "error": "",
+          "downloadPath": "/scientific-results/scientific-result-job-3d63684323f2471d95f9fde56f9c8a5a/artifacts/point-job-3d63684323f2471d95f9fde56f9c8a5a/artifact-job-3d63684323f2471d95f9fde56f9c8a5a-2"
+        },
+        {
+          "artifactId": "artifact-job-3d63684323f2471d95f9fde56f9c8a5a-3",
+          "kind": "PrimaryOutput",
+          "downloadFileName": "O2-original-m1.log",
+          "length": 22734,
+          "sha256": "1313cfb17bf3871c96dbce556aee724f61646d23ee7455a243f4bdc485067c39",
+          "isAvailable": true,
+          "error": "",
+          "downloadPath": "/scientific-results/scientific-result-job-3d63684323f2471d95f9fde56f9c8a5a/artifacts/point-job-3d63684323f2471d95f9fde56f9c8a5a/artifact-job-3d63684323f2471d95f9fde56f9c8a5a-3"
+        }
+      ]
+    },
+    {
+      "pointId": "point-job-51d2820753bf454192261c24e4abde71",
+      "sequence": 2,
+      "directoryName": "02-recovery-m3",
+      "status": "Accepted",
+      "multiplicity": 3,
+      "files": [
+        {
+          "artifactId": "artifact-job-51d2820753bf454192261c24e4abde71-0",
+          "kind": "RestartState",
+          "downloadFileName": "O2-recovery-m3.chk",
+          "length": 696320,
+          "sha256": "47dfc6efc785884c8b38acfe2e4c21bebbc84f1954a22f55fce608e133bfd797",
+          "isAvailable": true,
+          "error": "",
+          "downloadPath": "/scientific-results/scientific-result-job-3d63684323f2471d95f9fde56f9c8a5a/artifacts/point-job-51d2820753bf454192261c24e4abde71/artifact-job-51d2820753bf454192261c24e4abde71-0"
+        },
+        {
+          "artifactId": "artifact-job-51d2820753bf454192261c24e4abde71-1",
+          "kind": "RestartState",
+          "downloadFileName": "O2-recovery-m3.fchk",
+          "length": 141778,
+          "sha256": "47b2a166ab8e948926e102453c85fc9c8a67bf45b5690f46a5d8ed55be4fb471",
+          "isAvailable": true,
+          "error": "",
+          "downloadPath": "/scientific-results/scientific-result-job-3d63684323f2471d95f9fde56f9c8a5a/artifacts/point-job-51d2820753bf454192261c24e4abde71/artifact-job-51d2820753bf454192261c24e4abde71-1"
+        },
+        {
+          "artifactId": "artifact-job-51d2820753bf454192261c24e4abde71-2",
+          "kind": "Input",
+          "downloadFileName": "O2-recovery-m3.gjf",
+          "length": 228,
+          "sha256": "180a5367815de6dcef4e3517ba1f997ef8189c24d34dfbd1a5316597a3aaa8cf",
+          "isAvailable": true,
+          "error": "",
+          "downloadPath": "/scientific-results/scientific-result-job-3d63684323f2471d95f9fde56f9c8a5a/artifacts/point-job-51d2820753bf454192261c24e4abde71/artifact-job-51d2820753bf454192261c24e4abde71-2"
+        },
+        {
+          "artifactId": "artifact-job-51d2820753bf454192261c24e4abde71-3",
+          "kind": "PrimaryOutput",
+          "downloadFileName": "O2-recovery-m3.log",
+          "length": 27136,
+          "sha256": "25488d0384a1b0834fbd81824375a570201622ad1fb4af30f0a2fb2d12fff3bb",
+          "isAvailable": true,
+          "error": "",
+          "downloadPath": "/scientific-results/scientific-result-job-3d63684323f2471d95f9fde56f9c8a5a/artifacts/point-job-51d2820753bf454192261c24e4abde71/artifact-job-51d2820753bf454192261c24e4abde71-3"
+        }
+      ]
+    }
+  ]
+}

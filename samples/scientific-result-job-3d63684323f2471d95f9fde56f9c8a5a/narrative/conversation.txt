@@ -1,0 +1,81 @@
+﻿[2026-10-11 15:24:47] system：
+欢迎使用 ChemSculptor。请选择坐标 txt，并在下方描述你的科研目标。
+
+[2026-10-11 15:24:47] hint：
+提交后客户端会轮询计算状态，并显示结果和验证报告。
+
+[2026-10-11 15:25:01] user：
+单点计算
+
+[2026-10-11 15:25:01] system：
+任务类型：SinglePoint，作业：job-3d63684323f2471d95f9fde56f9c8a5a，状态：Running。
+
+[2026-10-11 15:25:01] hint：
+输入文件：C:\ProgramData\ChemSculptor\jobs\job-3d63684323f2471d95f9fde56f9c8a5a\input\job-3d63684323f2471d95f9fde56f9c8a5a.gjf
+
+[2026-10-11 15:25:01] hint：
+输出文件：C:\ProgramData\ChemSculptor\jobs\job-3d63684323f2471d95f9fde56f9c8a5a\run\output.log
+
+[2026-10-11 15:25:02] hint：
+已识别任务类型：单点计算。 Gaussian 16 单点计算已提交。
+
+[2026-10-11 15:25:07] system：
+job-3d63684323f2471d95f9fde56f9c8a5a 状态：Validated
+
+[2026-10-11 15:25:07] system：
+job-3d63684323f2471d95f9fde56f9c8a5a 计算结束：
+作业：job-3d63684323f2471d95f9fde56f9c8a5a
+状态：Validated
+
+--- 计算结果 ---
+能量：-150.20726174699999 Hartree
+程序：Gaussian 16
+方法：CAM-B3LYP
+基组：6-31G*
+正常终结：True
+失败类别：None
+输出文件：C:\ProgramData\ChemSculptor\jobs\job-3d63684323f2471d95f9fde56f9c8a5a\run\output.log
+诊断：gaussian.normal_termination - Gaussian 正常结束。
+诊断：gaussian.energy_found - 已提取最终 SCF 能量。
+
+--- 验证报告 ---
+验证：Passed
+全部必要验证通过。正常终结是必要条件，但不是充分条件。 必要检查 15/15 项通过。
+
+[2026-10-11 15:25:20] system：
+科学摘要：单点计算
+状态：Complete
+已记录 2 个计算点；矫正 1 次；稳定性检查 Finding -> Passed。
+
+计算点：
+共 2 个计算点。
+
+矫正统计：
+矫正次数：1。
+
+单点能量：
+-150.270886865 Hartree
+
+[2026-10-11 15:25:25] hint：
+已保存：points\01-original-m1\O2-original-m1.chk
+
+[2026-10-11 15:25:25] hint：
+已保存：points\01-original-m1\O2-original-m1.fchk
+
+[2026-10-11 15:25:25] hint：
+已保存：points\01-original-m1\O2-original-m1.gjf
+
+[2026-10-11 15:25:25] hint：
+已保存：points\01-original-m1\O2-original-m1.log
+
+[2026-10-11 15:25:25] hint：
+已保存：points\02-recovery-m3\O2-recovery-m3.chk
+
+[2026-10-11 15:25:25] hint：
+已保存：points\02-recovery-m3\O2-recovery-m3.fchk
+
+[2026-10-11 15:25:25] hint：
+已保存：points\02-recovery-m3\O2-recovery-m3.gjf
+
+[2026-10-11 15:25:25] hint：
+已保存：points\02-recovery-m3\O2-recovery-m3.log

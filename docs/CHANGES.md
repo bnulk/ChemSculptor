@@ -5,6 +5,56 @@
 
 ---
 
+## v0.52.0（2026-10-11）：规范计算参数键
+
+### 版本
+
+- 当前版本：`0.52.0`
+- 日期：`2026-10-11`
+- 版本类型：参数架构
+
+### 改动目的
+
+为对话式计算参数建立稳定的通用参数键，避免 Gaussian、ORCA 和客户端
+直接依赖彼此的关键词字符串。
+
+### 代码改动
+
+扩展：
+
+```text
+src/ChemSculptor.Compute/CalculationOptionKeys.cs
+```
+
+新增规范键：
+
+```text
+engine
+method
+basis
+dispersion-correction
+symmetry
+scf-iteration-limit
+solvent
+charge
+multiplicity
+```
+
+新增测试：
+
+```text
+tests/ChemSculptor.Core.Tests/CalculationOptionKeysTests.cs
+```
+
+### 验证
+
+```text
+Release 构建：0 警告，0 错误
+测试：97/97 通过
+```
+
+---
+
 ## v0.51.0（2026-10-11）：单点计算复合 Skill
 
 ### 版本

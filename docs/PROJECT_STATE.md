@@ -3,7 +3,7 @@
 ## 当前版本
 
 ```text
-0.51.0
+0.52.0
 ```
 
 ## 文档维护原则
@@ -35,7 +35,7 @@ HANDOFF.md
 
 ```text
 Release 构建：0 警告，0 错误
-测试：96/96 通过
+测试：97/97 通过
 ```
 
 ## 总体架构
@@ -95,6 +95,7 @@ Gaussian 输入生成
 Gaussian 输出解析
 单点计算 API
 单点计算复合 Skill
+规范计算参数键
 WinForms 客户端
 波函数稳定性检查
 自旋多重度矫正
@@ -264,6 +265,7 @@ docs/HANDOFF.md
 docs/Tutorials/ChemSculptor-Tutorial.md
 docs/Tutorials/Codex-Skill-Authoring-Tutorial.md
 docs/Tutorials/ChemSculptor-Skill-Collection-Tutorial.md
+docs/Parameter-Interaction-Design.md
 docs/Tutorials/Skill-Collections-and-Workflow-Tutorial.md
 docs/Tutorials/ScientificData-Tutorial.md
 docs/Tutorials/Scientific-Repository-Upgrade-Tutorial.md

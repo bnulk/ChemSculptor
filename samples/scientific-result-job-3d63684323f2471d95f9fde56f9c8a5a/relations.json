@@ -1,0 +1,11 @@
+﻿[
+  {
+    "id": "relation-job-3d63684323f2471d95f9fde56f9c8a5a-to-job-51d2820753bf454192261c24e4abde71",
+    "kind": "DerivedFrom",
+    "fromPointId": "point-job-3d63684323f2471d95f9fde56f9c8a5a",
+    "toPointId": "point-job-51d2820753bf454192261c24e4abde71",
+    "label": "\u4FEE\u6B63\u8BA1\u7B97\u7531\u539F\u59CB\u8BA1\u7B97\u6D3E\u751F",
+    "sequence": 1,
+    "description": "\u7A33\u5B9A\u6027\u77E9\u9635\u6700\u4F4E\u672C\u5F81\u503C\u5BF9\u5E94\u7684\u7535\u5B50\u6001\u4E0E\u5F53\u524D\u81EA\u65CB\u591A\u91CD\u5EA6\u4E0D\u540C\uFF0C\u5E94\u4FEE\u6539\u4F53\u7CFB\u81EA\u65CB\u591A\u91CD\u5EA6\u3002"
+  }
+]

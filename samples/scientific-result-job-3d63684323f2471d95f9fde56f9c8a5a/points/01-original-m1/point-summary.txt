@@ -1,0 +1,31 @@
+﻿PointId：point-job-3d63684323f2471d95f9fde56f9c8a5a
+Sequence：1
+名称：原始计算点
+状态：Superseded
+类型：Unknown
+分子式：O2
+原子数：2
+电荷：0
+多重度：1
+计算程序：Gaussian 16
+方法：CAM-B3LYP
+基组：6-31G*
+文件清单：4 个文件。
+性质：energy = -150.20726174699999 Hartree
+验证：calculation.normal-termination = Passed；计算程序正常结束。
+验证：calculation.job_id = Passed；通过。
+验证：calculation.program = Passed；通过。
+验证：calculation.method = Passed；通过。
+验证：calculation.basis = Passed；通过。
+验证：calculation.charge = Passed；通过。
+验证：calculation.multiplicity = Passed；通过。
+验证：calculation.normal_termination = Passed；通过。
+验证：calculation.scf_converged = Passed；通过。
+验证：calculation.output_normal_termination = Passed；通过。
+验证：calculation.failure_kind = Passed；通过。
+验证：calculation.energy_present = Passed；通过。
+验证：calculation.energy_finite = Passed；通过。
+验证：calculation.energy_unit = Passed；通过。
+验证：calculation.output_file = Passed；通过。
+验证：gaussian.output_last_line_normal_termination = Passed；通过。
+验证：wavefunction-stability = Finding；Gaussian 报告初始波函数不稳定；后续稳定性优化可能已找到稳定解。

@@ -1,0 +1,16 @@
+﻿[
+  {
+    "id": "observable-job-3d63684323f2471d95f9fde56f9c8a5a-energy",
+    "name": "\u5355\u70B9\u80FD\u91CF",
+    "kind": "SinglePointEnergy",
+    "numericValue": -150.270886865,
+    "textValue": "",
+    "unit": "Hartree",
+    "formula": "\u91C7\u7528\u5DF2\u63A5\u53D7\u8BA1\u7B97\u70B9\u7684\u80FD\u91CF\u3002",
+    "pointIds": [
+      "point-job-51d2820753bf454192261c24e4abde71"
+    ],
+    "relationIds": [],
+    "summary": "\u6700\u7EC8\u91C7\u7528\u4F5C\u4E1A job-51d2820753bf454192261c24e4abde71 \u7684\u80FD\u91CF\u3002"
+  }
+]

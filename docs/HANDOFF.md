@@ -2,36 +2,36 @@
 
 ## 当前阶段
 
-单点计算 Skill 与完整工作流已完成分层。
+对话式计算参数方案已开始落地，第一步已定义规范参数键。
 
 ```text
-calculation.single-point 负责正常单点计算路径
-原子 Skill 负责输入准备、提交、等待、提取和验证
-完整工作流负责稳定性检查、修正、恢复和科学数据记录
+calculation.single-point 保持现有分层
+规范参数键已经集中定义
+参数提取、解析和程序翻译尚未实现
 ```
 
 ## 当前边界
 
 ```text
-单点计算 Skill 不自行修复 SCF
-SCF 修复仍由完整工作流和异常处理 Skill 负责
-恢复分支没有派生作业时安全跳过复检
-SCF 收敛状态和迭代次数已经进入通用计算结果
+首期只支持 Gaussian 16
+首期只支持已冻结的规范参数键
+ORCA、原始关键词扩展和审批机制暂不实现
 ```
 
 ## 验证结果
 
 ```text
 Release 构建：0 警告，0 错误
-测试：96/96 通过
+测试：97/97 通过
 ```
 
 ## 尚未完成
 
 ```text
-尚未实现 SCF 不收敛修正 Skill
-尚未给 WorkflowNode 增加条件路由
-恢复分支仍采用执行后跳过的方式
+尚未定义参数值模型
+尚未实现参数提取器
+尚未实现参数 Resolver
+尚未实现程序翻译器
 ```
 
 ## 下一步精确任务
@@ -39,9 +39,10 @@ Release 构建：0 警告，0 错误
 下一阶段由用户指定。建议：
 
 ```text
-实现 SCF 不收敛诊断和修正方案
-给 WorkflowNode 增加条件路由
-增加单点计算 Skill 的端到端集成测试
+定义 CalculationParameterDefinition 和 ResolvedCalculationParameter
+实现参数提取器
+实现 CalculationParameterResolver
+实现 GaussianParameterTranslator
 ```
 
 ## 注意事项

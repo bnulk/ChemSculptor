@@ -1,0 +1,15 @@
+﻿ResultId：scientific-result-job-3d63684323f2471d95f9fde56f9c8a5a
+点集：单点计算 点集
+
+科学点：
+- PointId：point-job-3d63684323f2471d95f9fde56f9c8a5a
+- PointId：point-job-51d2820753bf454192261c24e4abde71
+
+关系：
+- RelationId：relation-job-3d63684323f2471d95f9fde56f9c8a5a-to-job-51d2820753bf454192261c24e4abde71
+  point-job-3d63684323f2471d95f9fde56f9c8a5a -> point-job-51d2820753bf454192261c24e4abde71；DerivedFrom；稳定性矩阵最低本征值对应的电子态与当前自旋多重度不同，应修改体系自旋多重度。
+
+物理量：
+- ObservableId：observable-job-3d63684323f2471d95f9fde56f9c8a5a-energy
+  PointIds：point-job-51d2820753bf454192261c24e4abde71
+  RelationIds：

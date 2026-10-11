@@ -1,435 +1,100 @@
-# Codex Skill 编写教程
+# Codex Skill 编写教程：以单点计算为例
 
 > 官方依据：[Codex skills](https://developers.openai.com/codex/skills/)
-> 结构校验依据：Codex 内置 `skill-creator` 的 `SKILL.md`、`init_skill.py`
-> 和 `quick_validate.py`
-> 本教程目的：为 ChemSculptor 后续代码和 Skill 组织定下强制规矩
+> 结构校验依据：Codex 内置 `skill-creator` 与 `quick_validate.py`
+> 实例：ChemSculptor 当前的单点计算
+> 目标：照着本教程一步一步做，就能写出一个合规的 Codex Skill
 
 ---
 
-## 0. 先记住一句话
+## 开始前：先分清三个东西
+
+当前单点计算里同时存在三个层次：
 
 ```text
-Codex Skill 是给智能体的可复用工作说明。
-运行时 ISkill 是系统执行能力。
-Workflow 是完成任务的过程编排。
+1. Codex Skill
+   .agents/skills/single-point-calculation/SKILL.md
+
+2. ChemSculptor 运行时 Skill
+   calculation.single-point
+   src/ChemSculptor.Skills.Common/SinglePointCalculation/SinglePointCalculationSkill.cs
+
+3. 完整单点计算工作流
+   src/ChemSculptor.Agent/SinglePointWorkflowDefinitionFactory.cs
 ```
 
-这三者不能混为一谈。
+它们的关系是：
+
+```text
+Codex Skill
+  告诉 Codex 怎样正确使用系统
+
+运行时报 Skill
+  真正执行一次正常单点计算
+
+Workflow
+  负责异常、修复、重算和结果归档
+```
+
+因此：
+
+```text
+Codex Skill 不复制 C# 实现
+运行时 Skill 不读取 SKILL.md
+Workflow 不依赖 SKILL.md 才能运行
+```
 
 ---
 
-## 1. 三种 Skill 必须分开
+## 第一步：决定这个 Codex Skill 负责什么
 
-### 1.1 Codex Skill
+先写清楚边界，再创建文件。
 
-官方结构：
-
-```text
-skill-name/
-|-- SKILL.md                 必需
-|-- agents/
-|   `-- openai.yaml          可选
-|-- scripts/                 可选
-|-- references/              可选
-`-- assets/                  可选
-```
-
-用途：
+单点计算的 Codex Skill 负责：
 
 ```text
-告诉 Codex 什么时候使用这个能力
-告诉 Codex 输入应该是什么
-告诉 Codex 应该调用哪些工具或脚本
-告诉 Codex 结果如何验证
-告诉 Codex 什么时候停止或转交其他工作流
-```
-
-它不是一个 C# 服务，也不是一个运行中的工作流。
-
-### 1.2 ChemSculptor 运行时 ISkill
-
-位置：
-
-```text
-src/ChemSculptor.Skills.Common
-src/ChemSculptor.Skills.Gaussian
-src/ChemSculptor.Skills.Orca
-```
-
-特征：
-
-```text
-实现 ISkill
-有 Name、Version、Capabilities
-由 WorkflowEngine 按节点调用
-输入和输出通过 TaskRequest、TaskResult 或 JsonSkill 传递
-```
-
-示例：
-
-```text
-calculation.prepare-input
-calculation.submit
-calculation.wait
-calculation.extract-result
-calculation.workflow-validation
-```
-
-### 1.3 完整工作流
-
-位置示例：
-
-```text
-src/ChemSculptor.Agent/SinglePointWorkflowDefinitionFactory.cs
-```
-
-它负责：
-
-```text
-节点顺序
-异常恢复
-重试策略
-人工审批
-科学数据记录
+识别一次稳定单点计算请求
+检查输入契约是否完整
+调用 ChemSculptor 已有的单点计算入口
+读取结果契约
+检查正常结束、能量存在、SCF 真正收敛
+把异常情况转交完整工作流
 ```
 
 它不负责：
 
 ```text
-解析 Gaussian 文本
-拼接程序关键词
-实现程序启动细节
+自己生成 Gaussian 输入
+自己调用 g16
+自己解析 Gaussian 文本
+自己修复 SCF 不收敛
+自己无限重试
+```
+
+结论：
+
+```text
+Codex Skill 名称：single-point-calculation
+运行时 Skill 标识：calculation.single-point
 ```
 
 ---
 
-## 2. 当前单点计算案例的正确分层
+## 第二步：创建目录
 
-### 2.1 Codex Skill
-
-建议名称：
-
-```text
-single-point-calculation
-```
-
-建议位置：
+项目级 Skill 统一放在：
 
 ```text
 .agents/skills/single-point-calculation/
 ```
 
-官方默认可发现的用户级位置是：
+用户级 Skill 默认放在：
 
 ```text
-$CODEX_HOME/skills/<skill-name>/
+$CODEX_HOME/skills/single-point-calculation/
 ```
 
-项目级 Skill 按本仓库约定放在：
-
-```text
-.agents/skills/<skill-name>/
-```
-
-它回答：
-
-```text
-如何完成一次稳定的单点计算
-需要哪些输入
-应该调用哪个运行能力
-如何检查 SCF 是否收敛
-什么时候转交完整工作流
-```
-
-### 2.2 运行时复合 Skill
-
-```text
-calculation.single-point
-```
-
-它回答：
-
-```text
-如何在系统内部完成一次正常单点计算
-```
-
-它内部调用：
-
-```text
-calculation.prepare-input
-  -> calculation.submit
-  -> calculation.wait
-  -> calculation.extract-result
-  -> calculation.workflow-validation
-```
-
-### 2.3 完整工作流
-
-```text
-single-point-complete
-  -> calculation.single-point
-  -> 稳定性检查
-  -> 修正规划
-  -> 派生恢复作业
-  -> 恢复复检
-  -> 处理方案
-  -> 科学数据记录
-```
-
-它回答：
-
-```text
-如何围绕用户目标完成单点计算、错误处理和结果归档
-```
-
----
-
-## 3. Skill 命名规则
-
-强制规则：
-
-```text
-使用小写字母、数字和连字符
-不能以连字符开头或结尾
-不能包含连续连字符
-长度不能超过 64 个字符
-目录名必须与 name 一致
-```
-
-正确：
-
-```text
-single-point-calculation
-scf-convergence-repair
-gaussian-result-extraction
-```
-
-错误：
-
-```text
-SinglePointCalculation
-single_point_calculation
-single--point
--single-point-
-```
-
-命名要表达能力，不要表达流程阶段：
-
-```text
-好：single-point-calculation
-差：step-one-run-gaussian
-```
-
----
-
-## 4. SKILL.md 规则
-
-### 4.1 Frontmatter
-
-必须包含：
-
-```yaml
----
-name: single-point-calculation
-description: "使用 ChemSculptor 完成一次稳定的单点计算；当任务需要 SCF 修复、重算或异常恢复时，转交完整单点工作流。"
----
-```
-
-允许的字段：
-
-```text
-name
-description
-license
-allowed-tools
-metadata
-```
-
-项目默认只使用：
-
-```text
-name
-description
-metadata
-```
-
-规则：
-
-```text
-description 必须说明“做什么”和“什么时候适用”
-description 不写长篇流程
-description 不超过 1024 个字符
-description 不能包含尖括号
-description 不能保留 TODO 占位
-```
-
-### 4.2 SKILL.md 正文
-
-正文只保留使用这个 Skill 时必须知道的规则：
-
-```text
-适用范围
-输入契约摘要
-执行步骤
-结果契约摘要
-基本验证
-停止条件和转交流程
-参考文件入口
-脚本入口
-```
-
-正文不放大段程序文档，不复制完整 API 手册，不写通用软件教程。
-
-推荐结构：
-
-````markdown
-# Single Point Calculation
-
-## 适用范围
-...
-
-## 输入契约
-...
-
-## 执行步骤
-...
-
-## 结果契约
-...
-
-## 基本验证
-...
-
-## 停止条件
-...
-
-## 参考资料
-- 输入契约：references/input-contract.md
-- 结果契约：references/result-contract.md
-- 错误码：references/error-codes.md
-````
-
----
-
-## 5. 渐进披露规则
-
-官方 Skill 分三层加载：
-
-```text
-第一层：name + description
-  用于发现 Skill
-
-第二层：SKILL.md 正文
-  决定使用 Skill 后加载
-
-第三层：references、scripts、assets
-  只在当前任务需要时加载
-```
-
-项目强制规则：
-
-```text
-SKILL.md 必须短小、明确、可路由
-详细输入输出模型放 references
-重复的确定性操作放 scripts
-模板、样例文件放 assets
-不要默认加载所有 reference
-不要复制 reference 内容和 SKILL.md
-```
-
----
-
-## 6. 资源目录规则
-
-### 6.1 scripts
-
-只在以下情况创建：
-
-```text
-同一个机械操作会被反复执行
-脚本能提高可靠性
-脚本能避免每次重写相同代码
-```
-
-单点计算 Skill 可放：
-
-```text
-scripts/validate_single_point_result.ps1
-```
-
-职责：
-
-```text
-读取结果 JSON
-检查 ScfConverged
-检查 Energy
-检查 NormalTermination
-检查输出文件存在
-失败时返回非零退出码
-```
-
-脚本必须实际运行验证，不能在未测试的情况下交付。
-
-### 6.2 references
-
-单点计算 Skill 建议：
-
-```text
-references/input-contract.md
-references/result-contract.md
-references/validation-rules.md
-references/error-codes.md
-references/gaussian.md
-```
-
-职责：
-
-```text
-input-contract.md：结构、电荷、多重度、方法、基组、溶剂、引擎
-result-contract.md：能量、SCF 收敛、迭代次数、输出文件、错误状态
-validation-rules.md：正常结束、能量存在、SCF 真正收敛
-error-codes.md：通用失败类别和错误码
-gaussian.md：仅在 Gaussian 任务中使用
-```
-
-程序专用知识不能写进通用输入契约。
-
-### 6.3 assets
-
-只放最终输出需要复制的文件：
-
-```text
-模板
-图片
-字体
-图标
-起步项目
-```
-
-不要把说明文档伪装成 asset。
-
-### 6.4 agents/openai.yaml
-
-可选，用于 UI 展示和调用策略。
-
-默认允许自动发现：
-
-```yaml
-policy:
-  allow_implicit_invocation: true
-```
-
-只有在用户明确要求时，才关闭自动调用：
-
-```yaml
-policy:
-  allow_implicit_invocation: false
-```
-
----
-
-## 7. 当前单点计算 Skill 的推荐文件树
+单点计算 Skill 使用下面的目录：
 
 ```text
 .agents/skills/single-point-calculation/
@@ -446,24 +111,67 @@ policy:
     `-- validate_single_point_result.ps1
 ```
 
-注意：
+规则：
 
 ```text
-这不是 C# 运行时 Skill 的目录
-它不替代 ChemSculptor.Skills.Common
-它只告诉 Codex 如何正确使用运行时能力
+只有一个必需文件：SKILL.md
+只有确实需要时才创建 scripts、references、assets
+不要创建 README.md、CHANGELOG.md、安装指南
 ```
 
 ---
 
-## 8. 单点计算 SKILL.md 示例
+## 第三步：写 SKILL.md 的 frontmatter
 
-````markdown
+文件：
+
+```text
+.agents/skills/single-point-calculation/SKILL.md
+```
+
+开头必须这样写：
+
+```yaml
 ---
 name: single-point-calculation
 description: "使用 ChemSculptor 完成一次稳定的单点计算；当任务需要 SCF 修复、重算或异常恢复时，转交完整单点工作流。"
 ---
+```
 
+逐条解释：
+
+```text
+name
+  必须等于目录名
+  只能用小写字母、数字、连字符
+  不能超过 64 个字符
+  不能以连字符开头或结尾
+  不能出现连续连字符
+
+description
+  说明“做什么”
+  说明“什么时候适用”
+  不超过 1024 个字符
+  不能包含尖括号
+  不能保留 TODO
+```
+
+当前单点计算实例中：
+
+```text
+name = single-point-calculation
+description 明确提到 SCF 修复、重算和异常恢复要转交完整工作流
+```
+
+这就避免 Codex 把 Codex Skill 误当成 SCF 修复流程。
+
+---
+
+## 第四步：写 SKILL.md 正文
+
+正文只保留必要规则。推荐内容如下：
+
+````markdown
 # Single Point Calculation
 
 ## 适用范围
@@ -488,8 +196,15 @@ description: "使用 ChemSculptor 完成一次稳定的单点计算；当任务�
 
 ## 执行
 
-优先调用 ChemSculptor 已有的单点计算入口，不重新实现输入生成、
-程序调用或输出解析。
+优先调用 ChemSculptor 已有的单点计算入口。
+
+运行时能力标识：
+
+```text
+calculation.single-point
+```
+
+不要重新实现输入生成、程序调用或输出解析。
 
 ## 结果契约
 
@@ -535,11 +250,447 @@ SCF 未收敛
 - Gaussian 细节：references/gaussian.md
 ````
 
+注意：
+
+```text
+正文不复制 C# 代码
+正文不复制完整 API 文档
+正文只做路由和必要约束
+```
+
 ---
 
-## 9. 必须执行的校验
+## 第五步：写输入契约 reference
 
-### 9.1 初始化
+问一个简单问题：
+
+```text
+调用 calculation.single-point 前，必需知道什么？
+```
+
+当前 C# 类型：
+
+```text
+CalculationInputGenerationRequest
+```
+
+文件：
+
+```text
+.agents/skills/single-point-calculation/references/input-contract.md
+```
+
+内容：
+
+````markdown
+# Single Point Input Contract
+
+调用 calculation.single-point 前必须提供：
+
+```text
+structure
+charge
+multiplicity
+method
+basis
+solvent
+engine
+```
+
+字段含义：
+
+```text
+structure
+  分子结构，使用 ChemSculptor 支持的坐标文本格式
+
+charge
+  总电荷，整数
+
+multiplicity
+  自旋多重度，正奇数或正偶数，必须与电子数一致
+
+method
+  方法或泛函，例如 CAM-B3LYP
+
+basis
+  基组，例如 6-31G*
+
+solvent
+  溶剂模型；气相时明确写 gas 或为空
+
+engine
+  计算引擎，例如 Gaussian 16
+```
+
+缺少必需字段时停止，不要猜测。
+
+程序专用参数不要写进本文件；Gaussian 细节见 gaussian.md。
+````
+
+规则：
+
+```text
+输入契约与程序无关
+不要出现 %chk、GAUSS_EXEDIR、SCF=QC 等 Gaussian 关键词
+```
+
+---
+
+## 第六步：写结果契约 reference
+
+问：
+
+```text
+一次稳定单点计算完成后，必须返回什么？
+```
+
+当前 C# 类型：
+
+```text
+SinglePointCalculationSkillResult
+CalculationResult
+```
+
+文件：
+
+```text
+.agents/skills/single-point-calculation/references/result-contract.md
+```
+
+内容：
+
+````markdown
+# Single Point Result Contract
+
+必需字段：
+
+```text
+Energy
+EnergyUnit
+ScfConverged
+ScfIterations
+NormalTermination
+FailureKind
+OutputFilePath
+Diagnostics
+```
+
+字段含义：
+
+```text
+Energy
+  最终单点能量
+
+EnergyUnit
+  能量单位，当前为 Hartree
+
+ScfConverged
+  SCF 是否真正收敛
+
+ScfIterations
+  最终 SCF 迭代次数
+
+NormalTermination
+  程序是否正常结束
+
+FailureKind
+  通用失败类别
+
+OutputFilePath
+  程序主要输出文件
+
+Diagnostics
+  解析和验证诊断
+```
+
+只满足 NormalTermination 不足以通过。
+ScfConverged 必须为 true，能量必须存在且有限。
+````
+
+这直接对应当前代码：
+
+```text
+CalculationResult.ScfConverged
+CalculationResult.ScfIterations
+CalculationResult.NormalTermination
+CalculationResult.Energy
+CalculationResult.FailureKind
+```
+
+---
+
+## 第七步：写校验规则 reference
+
+问：
+
+```text
+什么情况才算“稳定完成一次单点计算”？
+```
+
+文件：
+
+```text
+.agents/skills/single-point-calculation/references/validation-rules.md
+```
+
+内容：
+
+````markdown
+# Single Point Validation Rules
+
+必需检查：
+
+```text
+1. 作业标识一致
+2. 程序一致
+3. 方法一致
+4. 基组一致
+5. 电荷一致
+6. 多重度一致
+7. 程序正常结束
+8. SCF 已真正收敛
+9. 能量存在
+10. 能量有限
+11. 能量单位为 Hartree
+12. 输出文件存在
+```
+
+任一必需检查失败：
+
+```text
+不要报告为成功
+不要继续生成科学结论
+转交完整单点工作流
+```
+````
+
+这直接对应当前 C# 验证器：
+
+```text
+SinglePointCalculationResultValidator
+```
+
+特别强调：
+
+```text
+NormalTermination = true
+不等于
+SCF 收敛
+```
+
+---
+
+## 第八步：写错误码 reference
+
+问：
+
+```text
+失败时，Codex 应该看到哪些稳定错误码？
+```
+
+文件：
+
+```text
+.agents/skills/single-point-calculation/references/error-codes.md
+```
+
+内容：
+
+````markdown
+# Single Point Error Codes
+
+通用失败类别：
+
+```text
+ProcessFailed
+OutputMissing
+NormalTerminationMissing
+ProgramError
+EnergyMissing
+Canceled
+Unknown
+ScfNotConverged
+```
+
+Gaussian 解析器当前识别：
+
+```text
+SCF Done
+Convergence failure
+SCF has not converged
+No convergence in SCF
+Error termination
+Normal termination of Gaussian
+```
+
+遇到 ScfNotConverged：
+
+```text
+停止正常单点 Skill 路径
+转交完整单点工作流
+不要在本 Skill 内自动修改 Gaussian 关键词
+```
+````
+
+程序专用错误码不要写进通用错误码文件。
+如果错误码只适用于 Gaussian，放入 `gaussian.md`。
+
+---
+
+## 第九步：写 Gaussian 专用 reference
+
+文件：
+
+```text
+.agents/skills/single-point-calculation/references/gaussian.md
+```
+
+内容：
+
+````markdown
+# Gaussian Single Point Notes
+
+仅当 engine 为 Gaussian 16 时读取本文件。
+
+输入文件：
+
+```text
+.gjf
+```
+
+主要输出：
+
+```text
+output.log
+```
+
+检查点：
+
+```text
+.chk
+.fchk
+```
+
+关键输出标记：
+
+```text
+SCF Done
+Normal termination of Gaussian 16
+Error termination
+```
+
+SCF 收敛失败标记：
+
+```text
+Convergence failure
+SCF has not converged
+No convergence in SCF
+```
+
+不要在这里放自动修复策略。
+SCF 修复属于独立工作流或独立 SCF 修复 Skill。
+````
+
+规则：
+
+```text
+程序专用知识只放本文件
+通用 SKILL.md 不出现 Gaussian 关键词
+```
+
+---
+
+## 第十步：写可复用脚本
+
+只有当同一个操作会反复执行时，才创建脚本。
+
+当前单点计算适合创建：
+
+```text
+.agents/skills/single-point-calculation/scripts/validate_single_point_result.ps1
+```
+
+职责：
+
+```text
+读取 result.json
+检查 normalTermination
+检查 scfConverged
+检查 energy
+检查 outputFilePath 是否存在
+失败时返回非零退出码
+```
+
+脚本示意：
+
+```powershell
+param(
+    [Parameter(Mandatory = $true)]
+    [string]$ResultPath
+)
+
+$result = Get-Content -Raw $ResultPath | ConvertFrom-Json
+
+if (-not $result.normalTermination) {
+    Write-Error "计算没有正常结束。"
+    exit 1
+}
+
+if (-not $result.scfConverged) {
+    Write-Error "SCF 没有真正收敛。"
+    exit 1
+}
+
+if ($null -eq $result.energy) {
+    Write-Error "结果缺少能量。"
+    exit 1
+}
+
+if (-not (Test-Path $result.outputFilePath)) {
+    Write-Error "输出文件不存在。"
+    exit 1
+}
+
+Write-Output "单点计算结果验证通过。"
+exit 0
+```
+
+脚本必须实际运行验证，不能只写不测。
+
+---
+
+## 第十一步：写 agents/openai.yaml
+
+文件：
+
+```text
+.agents/skills/single-point-calculation/agents/openai.yaml
+```
+
+内容：
+
+```yaml
+interface:
+  display_name: "Single Point Calculation"
+  short_description: "Run stable single-point calculations"
+```
+
+规则：
+
+```text
+short_description 必须为 25 到 64 个字符
+options 只写官方允许的字段
+默认允许自动发现
+只有明确要求时才关闭自动调用
+```
+
+---
+
+## 第十二步：初始化、校验、测试
+
+### 12.1 初始化
+
+如果目录不存在，可以先用官方脚本：
 
 ```powershell
 python C:\Users\bnulk\.codex\skills\.system\skill-creator\scripts\init_skill.py `
@@ -548,7 +699,7 @@ python C:\Users\bnulk\.codex\skills\.system\skill-creator\scripts\init_skill.py 
   --resources references,scripts
 ```
 
-### 9.2 结构校验
+### 12.2 结构校验
 
 ```powershell
 python C:\Users\bnulk\.codex\skills\.system\skill-creator\scripts\quick_validate.py `
@@ -561,111 +712,95 @@ python C:\Users\bnulk\.codex\skills\.system\skill-creator\scripts\quick_validate
 Skill is valid!
 ```
 
-### 9.3 行为验证
+### 12.3 行为测试
 
-使用真实请求测试：
+用完整输入测试：
 
 ```text
-给一个完整单点输入
-验证 Skill 能识别输入契约
-验证 Skill 能调用正确运行入口
-验证 Skill 会检查 SCF 收敛
-验证 SCF 不收敛时转交工作流
-验证没有生成未经验证的科学结论
+结构完整
+电荷明确
+多重度明确
+方法明确
+基组明确
+溶剂明确
+引擎明确
+```
+
+期望行为：
+
+```text
+识别 single-point-calculation
+读取 input-contract.md
+调用 calculation.single-point
+读取 result-contract.md
+检查 ScfConverged
+检查 Energy
+检查 NormalTermination
+```
+
+异常测试：
+
+```text
+提供 SCF 不收敛结果
+期望 Skill 停止正常路径
+期望转交完整单点工作流
+不要自动修复 SCF
 ```
 
 ---
 
-## 10. ChemSculptor 强制规矩
+## 以后新增 Skill 的固定规矩
 
-以后新增 Codex Skill，必须满足：
+每条都是硬性要求：
 
 ```text
-1. 每个 Skill 一个目录。
+1. 每个 Skill 一个独立目录。
 2. 每个目录必须有 SKILL.md。
-3. name 必须是小写连字符格式，且少于 64 个字符。
-4. description 必须说明能力和适用条件。
-5. SKILL.md 只写必要规则。
-6. 细节进入 references。
-7. 重复确定性操作进入 scripts。
-8. 最终输出模板进入 assets。
-9. 不创建 README、安装指南、变更日志等附属文档。
-10. 不把完整工作流塞进一个 Skill。
-11. 不把程序专用细节放进通用 Skill。
-12. 不复制 ChemSculptor 运行时 ISkill 的实现。
-13. 新增或修改 Skill 后必须运行 quick_validate.py。
-14. 新增脚本必须实际运行验证。
-15. Skill 变化必须同步项目文档。
+3. 目录名必须等于 frontmatter 的 name。
+4. name 必须是小写连字符格式，长度小于 64。
+5. description 必须说明能力和适用条件。
+6. description 不得包含 TODO 或尖括号。
+7. SKILL.md 只写必要规则。
+8. 详细契约进入 references。
+9. 重复确定性操作进入 scripts。
+10. 输出模板放入 assets。
+11. 不创建 README、安装指南、变更日志。
+12. 不把完整 workflow 塞进一个 Skill。
+13. 不把程序专用规则写进通用 Skill。
+14. 不复制运行时 ISkill 的实现。
+15. 新增或修改后必须运行 quick_validate.py。
+16. 新增脚本必须实际运行验证。
+17. Skill 变化必须同步项目文档。
 ```
 
 ---
 
-## 11. 最常见的错误
+## 你现在应该做什么
 
-错误一：把 Codex Skill 当成运行时 Skill。
-
-```text
-错误思路：
-创建 SKILL.md 就等于系统有 calculation.single-point 能力
-
-正确思路：
-SKILL.md 负责指导调用
-C# ISkill 负责执行能力
-Workflow 负责组合过程
-```
-
-错误二：把完整工作流塞进一个 Skill。
+按照顺序做，不要跳步：
 
 ```text
-错误：
-single-point-calculation
-  包含诊断、修复、重算、归档
-
-正确：
-single-point-calculation 只做一次稳定单点计算
-完整工作流负责异常恢复和重算
-```
-
-错误三：所有细节都堆在 SKILL.md。
-
-```text
-错误：
-把全部 API 手册、错误码和 Gaussian 样例都写进正文
-
-正确：
-正文只保留路由和规则
-详细内容进入 references
-```
-
-错误四：程序专用规则污染通用 Skill。
-
-```text
-错误：
-通用输入契约写 %chk、GAUSS_EXEDIR、SCF=QC
-
-正确：
-通用契约保持程序无关
-Gaussian 细节进入 references/gaussian.md
-```
-
-错误五：没有校验就认为 Skill 完成。
-
-```text
-错误：
-文件创建完成就结束
-
-正确：
-quick_validate.py 通过
-脚本实际运行通过
-真实任务行为验证通过
+1. 建 single-point-calculation 目录
+2. 写 SKILL.md
+3. 写 input-contract.md
+4. 写 result-contract.md
+5. 写 validation-rules.md
+6. 写 error-codes.md
+7. 写 gaussian.md
+8. 写 validate_single_point_result.ps1
+9. 写 agents/openai.yaml
+10. 运行 quick_validate.py
+11. 用正常单点请求测试
+12. 用 SCF 不收敛请求测试
 ```
 
 ---
 
-## 12. 一句话规矩
+## 最终规矩
 
 ```text
-Codex Skill 负责告诉智能体怎么做，
-运行时 Skill 负责具体执行，
+Codex Skill 负责指导怎么做。
+运行时 Skill 负责真正执行。
 Workflow 负责完成整个任务。
+三者只要混在一起，架构就会失控。
 ```
