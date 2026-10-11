@@ -262,6 +262,7 @@ docs/CHANGES.md
 docs/HANDOFF.md
 
 docs/Tutorials/ChemSculptor-Tutorial.md
+docs/Tutorials/Codex-Skill-Authoring-Tutorial.md
 docs/Tutorials/ChemSculptor-Skill-Collection-Tutorial.md
 docs/Tutorials/Skill-Collections-and-Workflow-Tutorial.md
 docs/Tutorials/ScientificData-Tutorial.md
