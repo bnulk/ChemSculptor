@@ -76,6 +76,16 @@ src/ChemSculptor.Compute/CalculationParameterResolver.cs
 Resolver 现在负责默认值合并、KeyOnly 处理、范围校验、冲突问题和
 charge/multiplicity 奇偶校验。
 
+新增参数问询闭环：
+
+```text
+src/ChemSculptor.Conversation/ConversationModels.cs
+src/ChemSculptor.Conversation/CalculationParameterConversationService.cs
+```
+
+问询状态机现在支持保存待回答问题、合并用户回答、继续提问、取消和
+重新开始。同一参数的新回答会覆盖旧意图。
+
 新增测试：
 
 ```text
@@ -84,13 +94,14 @@ tests/ChemSculptor.Core.Tests/CalculationParameterModelsTests.cs
 tests/ChemSculptor.Core.Tests/CalculationParameterCatalogTests.cs
 tests/ChemSculptor.Core.Tests/RuleBasedCalculationParameterExtractorTests.cs
 tests/ChemSculptor.Core.Tests/CalculationParameterResolverTests.cs
+tests/ChemSculptor.Core.Tests/CalculationParameterConversationServiceTests.cs
 ```
 
 ### 验证
 
 ```text
 Release 构建：0 警告，0 错误
-测试：108/108 通过
+测试：111/111 通过
 ```
 
 ---

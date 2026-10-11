@@ -436,6 +436,8 @@ ParameterResolutionResult
 
 ## 10. 第六步：建立对话问询闭环
 
+实现状态：参数问询状态机已完成；尚未接入 AgentService。
+
 当前会话模型已经有：
 
 ```text

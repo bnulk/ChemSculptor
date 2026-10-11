@@ -76,6 +76,100 @@ public sealed class ConversationSession
 
     /// <summary>关联的工作流标识。</summary>
     public string WorkflowId { get; set; } = string.Empty;
+
+    /// <summary>尚未完成的参数收集请求。</summary>
+    public PendingCalculationParameterRequest? PendingParameterRequest
+    {
+        get;
+        set;
+    }
+}
+
+/// <summary>等待用户继续回答的参数请求。</summary>
+public sealed class PendingCalculationParameterRequest
+{
+    /// <summary>会话标识。</summary>
+    public string SessionId { get; set; } = string.Empty;
+
+    /// <summary>最初的任务文本。</summary>
+    public string OriginalText { get; set; } = string.Empty;
+
+    /// <summary>当前坐标文本。</summary>
+    public string CoordinateText { get; set; } = string.Empty;
+
+    /// <summary>当前已经合并的计算方案。</summary>
+    public CalculationSpec CurrentSpec { get; set; } =
+        new CalculationSpec();
+
+    /// <summary>已经提取的全部参数意图。</summary>
+    public List<CalculationParameterIntent> ParameterIntents
+    {
+        get;
+        set;
+    } = new List<CalculationParameterIntent>();
+
+    /// <summary>缺失值参数键。</summary>
+    public List<string> MissingParameters { get; set; } =
+        new List<string>();
+
+    /// <summary>冲突参数键。</summary>
+    public List<string> ConflictParameters { get; set; } =
+        new List<string>();
+
+    /// <summary>待回答问题。</summary>
+    public List<CalculationParameterQuestion> Questions { get; set; } =
+        new List<CalculationParameterQuestion>();
+
+    /// <summary>创建时间。</summary>
+    public DateTimeOffset CreatedAt { get; set; } =
+        DateTimeOffset.UtcNow;
+
+    /// <summary>最后更新时间。</summary>
+    public DateTimeOffset UpdatedAt { get; set; } =
+        DateTimeOffset.UtcNow;
+}
+
+/// <summary>参数问询闭环的处理状态。</summary>
+public enum ParameterConversationTurnStatus
+{
+    /// <summary>参数完成，可以提交计算。</summary>
+    ReadyToSubmit,
+
+    /// <summary>需要用户继续回答。</summary>
+    NeedsClarification,
+
+    /// <summary>参数被拒绝。</summary>
+    Rejected,
+
+    /// <summary>当前参数收集被取消。</summary>
+    Canceled,
+
+    /// <summary>当前参数收集重新开始。</summary>
+    Restarted
+}
+
+/// <summary>一次参数问询处理结果。</summary>
+public sealed class ParameterConversationTurn
+{
+    /// <summary>处理状态。</summary>
+    public ParameterConversationTurnStatus Status { get; set; }
+
+    /// <summary>面向用户的说明。</summary>
+    public string Message { get; set; } = string.Empty;
+
+    /// <summary>当前参数解析结果。</summary>
+    public CalculationParameterResolutionResult? Resolution
+    {
+        get;
+        set;
+    }
+
+    /// <summary>当前等待请求。</summary>
+    public PendingCalculationParameterRequest? PendingRequest
+    {
+        get;
+        set;
+    }
 }
 
 /// <summary>会话中的一条消息。</summary>
