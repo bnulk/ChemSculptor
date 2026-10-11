@@ -406,7 +406,21 @@ public sealed class CalculationParameterResolver
             return;
         }
 
-        int electronCount = context.ElectronCount.Value;
+        int electronCount =
+            context.ElectronCount.Value - result.Spec.Charge;
+
+        if (electronCount < 0)
+        {
+            AddDiagnostic(
+                result,
+                "parameter.invalid.value",
+                CalculationDiagnosticSeverity.Error,
+                CalculationOptionKeys.Charge,
+                "总电荷使体系电子数小于 0。",
+                result.Spec.Charge.ToString(
+                    CultureInfo.InvariantCulture));
+            return;
+        }
 
         if (!multiplicityExplicit)
         {

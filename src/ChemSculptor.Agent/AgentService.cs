@@ -1,24 +1,57 @@
 using ChemSculptor.Compute;
 using ChemSculptor.Conversation;
+using ChemSculptor.InputProcessor;
+using ChemSculptor.InputProcessor.Chemistry;
 
 namespace ChemSculptor.Agent;
 
 /// <summary>
 /// 智能体编排服务。
-/// 先调用会话层解释意图，再根据意图调用单点计算服务。
+/// 负责任务解释、参数问询、单点计算提交和结果组装。
 /// </summary>
 public sealed class AgentService : IAgentService
 {
     private readonly IConversationService _conversationService;
     private readonly ISinglePointCalculationService _singlePointService;
+    private readonly CalculationParameterConversationService
+        _parameterConversationService;
+    private readonly IGeometryTextParser _geometryParser;
 
     /// <summary>创建智能体服务。</summary>
     public AgentService(
         IConversationService conversationService,
-        ISinglePointCalculationService singlePointService)
+        ISinglePointCalculationService singlePointService,
+        CalculationParameterConversationService parameterConversationService,
+        IGeometryTextParser geometryParser)
     {
+        if (conversationService == null)
+        {
+            throw new ArgumentNullException(
+                nameof(conversationService));
+        }
+
+        if (singlePointService == null)
+        {
+            throw new ArgumentNullException(
+                nameof(singlePointService));
+        }
+
+        if (parameterConversationService == null)
+        {
+            throw new ArgumentNullException(
+                nameof(parameterConversationService));
+        }
+
+        if (geometryParser == null)
+        {
+            throw new ArgumentNullException(
+                nameof(geometryParser));
+        }
+
         _conversationService = conversationService;
         _singlePointService = singlePointService;
+        _parameterConversationService = parameterConversationService;
+        _geometryParser = geometryParser;
     }
 
     /// <summary>处理客户端原始消息。</summary>
@@ -26,23 +59,47 @@ public sealed class AgentService : IAgentService
         AgentRequest request,
         CancellationToken cancellationToken = default)
     {
-        ConversationRequest conversationRequest = new ConversationRequest();
+        if (request == null)
+        {
+            throw new ArgumentNullException(nameof(request));
+        }
+
+        PendingCalculationParameterRequest? pending =
+            await _parameterConversationService.GetPendingAsync(
+                request.SessionId,
+                cancellationToken);
+
+        if (pending != null)
+        {
+            return await HandleParameterConversationAsync(
+                request,
+                null,
+                pending,
+                cancellationToken);
+        }
+
+        ConversationRequest conversationRequest =
+            new ConversationRequest();
         conversationRequest.SessionId = request.SessionId;
         conversationRequest.Text = request.Text;
 
         ConversationReply conversationReply =
-            await _conversationService.HandleMessageAsync(conversationRequest, cancellationToken);
+            await _conversationService.HandleMessageAsync(
+                conversationRequest,
+                cancellationToken);
 
         if (!conversationReply.Intent.IsSupported)
         {
             AgentResult unsupported = new AgentResult();
             unsupported.IsSupported = false;
             unsupported.Error = conversationReply.ReplyMessage;
-            unsupported.Diagnostics = new List<string>(conversationReply.Diagnostics);
+            unsupported.Diagnostics =
+                new List<string>(conversationReply.Diagnostics);
             return unsupported;
         }
 
-        if (conversationReply.Intent.TaskType != CalculationTaskType.SinglePoint)
+        if (conversationReply.Intent.TaskType
+            != CalculationTaskType.SinglePoint)
         {
             AgentResult notImplemented = new AgentResult();
             notImplemented.IsSupported = false;
@@ -53,30 +110,19 @@ public sealed class AgentService : IAgentService
         if (conversationReply.Intent.ElectronicStateObjective
             == ElectronicStateObjective.TargetExcitedState)
         {
-            AgentResult excitedStateNotImplemented = new AgentResult();
+            AgentResult excitedStateNotImplemented =
+                new AgentResult();
             excitedStateNotImplemented.IsSupported = false;
             excitedStateNotImplemented.Error =
                 "已识别激发态目标，但当前阶段尚未实现激发态计算。";
             return excitedStateNotImplemented;
         }
 
-        CalculationRequest calculationRequest = new CalculationRequest();
-        calculationRequest.SessionId = request.SessionId;
-        calculationRequest.Goal = request.Text;
-        calculationRequest.CoordinateText = request.CoordinateText;
-        calculationRequest.ElectronicStateObjective =
-            conversationReply.Intent.ElectronicStateObjective;
-        calculationRequest.TargetMultiplicity =
-            conversationReply.Intent.TargetMultiplicity;
-        calculationRequest.TargetStateLabel =
-            conversationReply.Intent.TargetStateLabel;
-
-        SinglePointCalculationSubmissionResult submission =
-            await _singlePointService.SubmitAsync(
-                calculationRequest,
-                cancellationToken);
-
-        return BuildSinglePointResult(conversationReply, submission);
+        return await HandleParameterConversationAsync(
+            request,
+            conversationReply,
+            null,
+            cancellationToken);
     }
 
     /// <summary>直接执行单点计算。</summary>
@@ -84,7 +130,8 @@ public sealed class AgentService : IAgentService
         AgentSinglePointRequest request,
         CancellationToken cancellationToken = default)
     {
-        CalculationRequest calculationRequest = new CalculationRequest();
+        CalculationRequest calculationRequest =
+            new CalculationRequest();
         calculationRequest.Goal = "单点计算";
         calculationRequest.CoordinateText = request.CoordinateText;
 
@@ -93,28 +140,166 @@ public sealed class AgentService : IAgentService
                 calculationRequest,
                 cancellationToken);
 
-        AgentResult result = new AgentResult();
-        result.TaskType = CalculationTaskType.SinglePoint;
+        return BuildSubmissionResult(null, submission);
+    }
 
-        if (!submission.Succeeded || submission.Job == null)
+    private async Task<AgentResult> HandleParameterConversationAsync(
+        AgentRequest request,
+        ConversationReply? conversationReply,
+        PendingCalculationParameterRequest? pending,
+        CancellationToken cancellationToken)
+    {
+        string coordinateText = string.IsNullOrWhiteSpace(
+            request.CoordinateText)
+            ? pending == null
+                ? string.Empty
+                : pending.CoordinateText
+            : request.CoordinateText;
+
+        int? neutralElectronCount =
+            await TryGetNeutralElectronCountAsync(
+                coordinateText,
+                cancellationToken);
+
+        CalculationParameterResolutionContext resolutionContext =
+            new CalculationParameterResolutionContext();
+        resolutionContext.Engine =
+            CalculationDefaults.DefaultProgram;
+        resolutionContext.TaskType =
+            CalculationTaskType.SinglePoint;
+        resolutionContext.ElectronCount = neutralElectronCount;
+
+        ParameterConversationTurn turn =
+            await _parameterConversationService.HandleAsync(
+                request.SessionId,
+                request.Text,
+                coordinateText,
+                CalculationDefaults.CreateDefaultSinglePoint(),
+                resolutionContext,
+                cancellationToken);
+
+        if (turn.Status
+            == ParameterConversationTurnStatus.ReadyToSubmit)
         {
-            result.IsSupported = false;
-            result.Error = submission.Error;
-            result.Diagnostics = new List<string>(submission.Diagnostics);
-            return result;
+            CalculationRequest calculationRequest =
+                BuildCalculationRequest(
+                    request,
+                    conversationReply,
+                    turn);
+
+            SinglePointCalculationSubmissionResult submission =
+                await _singlePointService.SubmitAsync(
+                    calculationRequest,
+                    cancellationToken);
+
+            AgentResult submitted =
+                BuildSubmissionResult(
+                    conversationReply,
+                    submission);
+            submitted.RequiresUserAction = false;
+            submitted.AppliedParameters =
+                turn.Resolution == null
+                    ? new List<ResolvedCalculationParameter>()
+                    : new List<ResolvedCalculationParameter>(
+                        turn.Resolution.AppliedParameters);
+            return submitted;
         }
 
+        if (turn.Status
+            == ParameterConversationTurnStatus.NeedsClarification)
+        {
+            return BuildClarificationResult(turn);
+        }
+
+        if (turn.Status
+            == ParameterConversationTurnStatus.Rejected)
+        {
+            return BuildRejectedResult(turn);
+        }
+
+        AgentResult stateResult = new AgentResult();
+        stateResult.IsSupported = true;
+        stateResult.TaskType = CalculationTaskType.SinglePoint;
+        stateResult.Status = turn.Status.ToString();
+        stateResult.Message = turn.Message;
+        return stateResult;
+    }
+
+    private static CalculationRequest BuildCalculationRequest(
+        AgentRequest request,
+        ConversationReply? conversationReply,
+        ParameterConversationTurn turn)
+    {
+        CalculationRequest calculationRequest =
+            new CalculationRequest();
+        calculationRequest.SessionId = request.SessionId;
+        calculationRequest.Goal = string.IsNullOrWhiteSpace(
+            turn.OriginalText)
+            ? request.Text
+            : turn.OriginalText;
+        calculationRequest.CoordinateText =
+            turn.CoordinateText;
+        calculationRequest.ResolvedSpec = turn.Resolution == null
+            ? CalculationDefaults.CreateDefaultSinglePoint()
+            : turn.Resolution.Spec;
+
+        if (conversationReply != null)
+        {
+            calculationRequest.ElectronicStateObjective =
+                conversationReply.Intent.ElectronicStateObjective;
+            calculationRequest.TargetMultiplicity =
+                conversationReply.Intent.TargetMultiplicity;
+            calculationRequest.TargetStateLabel =
+                conversationReply.Intent.TargetStateLabel;
+        }
+
+        return calculationRequest;
+    }
+
+    private static AgentResult BuildClarificationResult(
+        ParameterConversationTurn turn)
+    {
+        AgentResult result = new AgentResult();
         result.IsSupported = true;
-        result.JobId = submission.Job.JobId;
-        result.Status = submission.Job.State.ToString();
-        result.InputFilePath = submission.Job.SourceInputFilePath;
-        result.OutputFilePath = submission.Job.OutputFilePath;
-        result.Message = submission.Message;
+        result.RequiresUserAction = true;
+        result.TaskType = CalculationTaskType.SinglePoint;
+        result.Status = "NeedsClarification";
+        result.Message = turn.Message;
+        result.Questions = MapQuestions(turn);
+        result.AppliedParameters =
+            turn.Resolution == null
+                ? new List<ResolvedCalculationParameter>()
+                : new List<ResolvedCalculationParameter>(
+                    turn.Resolution.AppliedParameters);
+        AddResolutionDiagnostics(result, turn.Resolution);
         return result;
     }
 
-    private static AgentResult BuildSinglePointResult(
-        ConversationReply conversationReply,
+    private static AgentResult BuildRejectedResult(
+        ParameterConversationTurn turn)
+    {
+        AgentResult result = new AgentResult();
+        result.IsSupported = false;
+        result.TaskType = CalculationTaskType.SinglePoint;
+        result.Status = "Rejected";
+        result.Error = turn.Message;
+        result.AppliedParameters =
+            turn.Resolution == null
+                ? new List<ResolvedCalculationParameter>()
+                : new List<ResolvedCalculationParameter>(
+                    turn.Resolution.AppliedParameters);
+        AddResolutionDiagnostics(result, turn.Resolution);
+
+        if (result.Diagnostics.Count > 0)
+        {
+            result.Error = result.Error + " " + result.Diagnostics[0];
+        }
+
+        return result;
+    }
+
+    private static AgentResult BuildSubmissionResult(
+        ConversationReply? conversationReply,
         SinglePointCalculationSubmissionResult submission)
     {
         AgentResult result = new AgentResult();
@@ -124,7 +309,8 @@ public sealed class AgentService : IAgentService
         {
             result.IsSupported = false;
             result.Error = submission.Error;
-            result.Diagnostics = new List<string>(submission.Diagnostics);
+            result.Diagnostics =
+                new List<string>(submission.Diagnostics);
             return result;
         }
 
@@ -134,9 +320,100 @@ public sealed class AgentService : IAgentService
         result.Status = job.State.ToString();
         result.InputFilePath = job.SourceInputFilePath;
         result.OutputFilePath = job.OutputFilePath;
-        result.Message = conversationReply.ReplyMessage + " " + submission.Message;
-        result.Diagnostics = new List<string>(conversationReply.Diagnostics);
-
+        result.Message = conversationReply == null
+            ? submission.Message
+            : conversationReply.ReplyMessage +
+                " " +
+                submission.Message;
+        result.Diagnostics = conversationReply == null
+            ? new List<string>()
+            : new List<string>(conversationReply.Diagnostics);
         return result;
+    }
+
+    private static List<ConversationQuestion> MapQuestions(
+        ParameterConversationTurn turn)
+    {
+        List<ConversationQuestion> questions =
+            new List<ConversationQuestion>();
+
+        if (turn.PendingRequest == null)
+        {
+            return questions;
+        }
+
+        for (int index = 0;
+            index < turn.PendingRequest.Questions.Count;
+            index++)
+        {
+            CalculationParameterQuestion source =
+                turn.PendingRequest.Questions[index];
+            ConversationQuestion question =
+                new ConversationQuestion();
+            question.QuestionId = source.QuestionId;
+            question.QuestionType =
+                source.QuestionType.ToString();
+            question.Text = source.Prompt;
+            question.Options =
+                new List<string>(source.Options);
+            question.RiskLevel = CalculationRiskLevel.Info;
+            questions.Add(question);
+        }
+
+        return questions;
+    }
+
+    private static void AddResolutionDiagnostics(
+        AgentResult result,
+        CalculationParameterResolutionResult? resolution)
+    {
+        if (resolution == null)
+        {
+            return;
+        }
+
+        for (int index = 0;
+            index < resolution.Diagnostics.Count;
+            index++)
+        {
+            CalculationParameterDiagnostic diagnostic =
+                resolution.Diagnostics[index];
+            result.Diagnostics.Add(
+                diagnostic.Code + ": " + diagnostic.Message);
+        }
+    }
+
+    private async Task<int?> TryGetNeutralElectronCountAsync(
+        string coordinateText,
+        CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(coordinateText))
+        {
+            return null;
+        }
+
+        MolecularGeometry geometry =
+            await _geometryParser.ParseAsync(
+                coordinateText,
+                cancellationToken);
+
+        if (geometry.Atoms.Count == 0)
+        {
+            return null;
+        }
+
+        int electronCount;
+        string error;
+
+        if (!ElectronCountCalculator.TryCalculate(
+            geometry.Atoms,
+            0,
+            out electronCount,
+            out error))
+        {
+            return null;
+        }
+
+        return electronCount;
     }
 }

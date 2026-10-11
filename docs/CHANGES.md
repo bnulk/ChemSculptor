@@ -86,6 +86,19 @@ src/ChemSculptor.Conversation/CalculationParameterConversationService.cs
 问询状态机现在支持保存待回答问题、合并用户回答、继续提问、取消和
 重新开始。同一参数的新回答会覆盖旧意图。
 
+接入 AgentService：
+
+```text
+src/ChemSculptor.Agent/AgentService.cs
+src/ChemSculptor.Agent/AgentModels.cs
+src/ChemSculptor.Agent/AgentServiceRegistration.cs
+src/ChemSculptor.Agent/SinglePointCalculationService.cs
+src/ChemSculptor.Compute/CalculationModels.cs
+```
+
+AgentService 现在会在需要时返回 Clarification 或 Rejected，不创建作业；
+参数完成后把 ResolvedSpec 写入 CalculationRequest 并提交单点计算。
+
 新增测试：
 
 ```text
@@ -95,13 +108,14 @@ tests/ChemSculptor.Core.Tests/CalculationParameterCatalogTests.cs
 tests/ChemSculptor.Core.Tests/RuleBasedCalculationParameterExtractorTests.cs
 tests/ChemSculptor.Core.Tests/CalculationParameterResolverTests.cs
 tests/ChemSculptor.Core.Tests/CalculationParameterConversationServiceTests.cs
+tests/ChemSculptor.Core.Tests/AgentServiceTests.cs
 ```
 
 ### 验证
 
 ```text
 Release 构建：0 警告，0 错误
-测试：111/111 通过
+测试：112/112 通过
 ```
 
 ---

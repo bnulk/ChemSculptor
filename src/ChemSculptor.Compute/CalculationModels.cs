@@ -285,6 +285,9 @@ public sealed class CalculationRequest
 
     /// <summary>用户覆盖的参数。</summary>
     public List<CalculationParameter> Overrides { get; set; } = new List<CalculationParameter>();
+
+    /// <summary>已经由参数 Resolver 解析完成的计算方案。</summary>
+    public CalculationSpec? ResolvedSpec { get; set; }
 }
 
 /// <summary>

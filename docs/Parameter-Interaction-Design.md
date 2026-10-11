@@ -505,6 +505,8 @@ CreatedAt
 
 ## 11. 第七步：接入 AgentService
 
+实现状态：AgentService 已接入参数提取、Resolver 和问询闭环；API 响应字段尚未扩展。
+
 在：
 
 ```text

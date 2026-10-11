@@ -26,6 +26,13 @@ public static class AgentServiceRegistration
             services);
         ServiceCollectionServiceExtensions.AddSingleton<IConversationService, ConversationService>(
             services);
+        ServiceCollectionServiceExtensions.AddSingleton<
+            CalculationParameterResolver>(services);
+        ServiceCollectionServiceExtensions.AddSingleton<
+            ICalculationParameterExtractor,
+            RuleBasedCalculationParameterExtractor>(services);
+        ServiceCollectionServiceExtensions.AddSingleton<
+            CalculationParameterConversationService>(services);
         ServiceCollectionServiceExtensions.AddSingleton<ICalculationRepository, FileCalculationRepository>(
             services);
         ServiceCollectionServiceExtensions.AddSingleton<ISkillInvoker, SkillJsonInvoker>(

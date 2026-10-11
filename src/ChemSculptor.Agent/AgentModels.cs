@@ -1,4 +1,5 @@
 using ChemSculptor.Compute;
+using ChemSculptor.Conversation;
 
 namespace ChemSculptor.Agent;
 
@@ -51,4 +52,18 @@ public sealed class AgentResult
 
     /// <summary>诊断信息。</summary>
     public List<string> Diagnostics { get; set; } = new List<string>();
+
+    /// <summary>当前是否需要用户继续操作。</summary>
+    public bool RequiresUserAction { get; set; }
+
+    /// <summary>需要用户回答的问题。</summary>
+    public List<ConversationQuestion> Questions { get; set; } =
+        new List<ConversationQuestion>();
+
+    /// <summary>本次解析应用的计算参数。</summary>
+    public List<ResolvedCalculationParameter> AppliedParameters
+    {
+        get;
+        set;
+    } = new List<ResolvedCalculationParameter>();
 }

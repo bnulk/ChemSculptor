@@ -170,6 +170,12 @@ public sealed class ParameterConversationTurn
         get;
         set;
     }
+
+    /// <summary>当前参数收集的原始任务文本。</summary>
+    public string OriginalText { get; set; } = string.Empty;
+
+    /// <summary>当前参数收集使用的坐标文本。</summary>
+    public string CoordinateText { get; set; } = string.Empty;
 }
 
 /// <summary>会话中的一条消息。</summary>

@@ -34,7 +34,7 @@ public sealed class CalculationParameterResolutionContext
     public CalculationTaskType TaskType { get; set; } =
         CalculationTaskType.SinglePoint;
 
-    /// <summary>已经应用电荷后的总电子数。</summary>
+    /// <summary>中性体系的总电子数，尚未扣除总电荷。</summary>
     public int? ElectronCount { get; set; }
 }
 

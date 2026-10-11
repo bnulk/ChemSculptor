@@ -69,6 +69,17 @@ public sealed class CalculationParameterConversationService
             await GetOrCreateSessionAsync(
                 sessionId,
                 cancellationToken);
+        PendingCalculationParameterRequest? pending =
+            session.PendingParameterRequest;
+        string originalText = pending == null
+            ? text
+            : pending.OriginalText;
+        string originalCoordinateText =
+            string.IsNullOrWhiteSpace(coordinateText)
+                ? pending == null
+                    ? string.Empty
+                    : pending.CoordinateText
+                : coordinateText;
 
         if (IsCancelText(text))
         {
@@ -76,9 +87,12 @@ public sealed class CalculationParameterConversationService
             await _repository.SaveSessionAsync(
                 session,
                 cancellationToken);
-            return CreateTurn(
+            ParameterConversationTurn canceled = CreateTurn(
                 ParameterConversationTurnStatus.Canceled,
                 "已取消当前参数收集。");
+            canceled.OriginalText = originalText;
+            canceled.CoordinateText = originalCoordinateText;
+            return canceled;
         }
 
         if (IsRestartText(text))
@@ -87,13 +101,14 @@ public sealed class CalculationParameterConversationService
             await _repository.SaveSessionAsync(
                 session,
                 cancellationToken);
-            return CreateTurn(
+            ParameterConversationTurn restarted = CreateTurn(
                 ParameterConversationTurnStatus.Restarted,
                 "已清除当前参数收集，请重新描述任务。");
+            restarted.OriginalText = originalText;
+            restarted.CoordinateText = originalCoordinateText;
+            return restarted;
         }
 
-        PendingCalculationParameterRequest? pending =
-            session.PendingParameterRequest;
         CalculationSpec workingSpec = pending == null
             ? baseSpec
             : pending.CurrentSpec;
@@ -133,6 +148,8 @@ public sealed class CalculationParameterConversationService
                     ParameterConversationTurnStatus.ReadyToSubmit,
                     "参数解析完成，可以提交计算。");
             resolvedTurn.Resolution = resolution;
+            resolvedTurn.OriginalText = originalText;
+            resolvedTurn.CoordinateText = originalCoordinateText;
             return resolvedTurn;
         }
 
@@ -149,6 +166,8 @@ public sealed class CalculationParameterConversationService
                     ParameterConversationTurnStatus.Rejected,
                     "参数解析失败，请修正后重新提交。");
             rejectedTurn.Resolution = resolution;
+            rejectedTurn.OriginalText = originalText;
+            rejectedTurn.CoordinateText = originalCoordinateText;
             return rejectedTurn;
         }
 
@@ -171,7 +190,32 @@ public sealed class CalculationParameterConversationService
                 "需要继续确认计算参数。");
         turn.Resolution = resolution;
         turn.PendingRequest = nextPending;
+        turn.OriginalText = nextPending.OriginalText;
+        turn.CoordinateText = nextPending.CoordinateText;
         return turn;
+    }
+
+    /// <summary>读取当前会话尚未完成的参数请求。</summary>
+    public async Task<PendingCalculationParameterRequest?> GetPendingAsync(
+        string sessionId,
+        CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(sessionId))
+        {
+            return null;
+        }
+
+        ConversationSession? session =
+            await _repository.GetSessionAsync(
+                sessionId,
+                cancellationToken);
+
+        if (session == null)
+        {
+            return null;
+        }
+
+        return session.PendingParameterRequest;
     }
 
     private static List<CalculationParameterIntent>

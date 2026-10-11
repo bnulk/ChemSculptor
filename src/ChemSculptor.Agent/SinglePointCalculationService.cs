@@ -80,7 +80,8 @@ public sealed class SinglePointCalculationService : ISinglePointCalculationServi
 
         try
         {
-            CalculationSpec spec = CalculationDefaults.CreateDefaultSinglePoint();
+            CalculationSpec spec = request.ResolvedSpec
+                ?? CalculationDefaults.CreateDefaultSinglePoint();
             string electronicStateError =
                 ApplyElectronicStateIntent(spec, request);
 

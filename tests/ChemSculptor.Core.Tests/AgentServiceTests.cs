@@ -136,6 +136,62 @@ public class AgentServiceTests
         }
     }
 
+    /// <summary>验证参数问询会阻断提交，并在回答后继续提交。</summary>
+    [Fact]
+    public async Task ParameterClarificationContinuesInNextMessage()
+    {
+        string root = CreateTemporaryRoot();
+
+        try
+        {
+            RecordingWorkflowEngine workflowEngine;
+            AgentService service =
+                CreateAgentService(root, out workflowEngine);
+            string coordinates =
+                "O 0.000000 0.000000 0.117300\n" +
+                "H 0.000000 0.757200 -0.469200\n" +
+                "H 0.000000 -0.757200 -0.469200";
+
+            AgentRequest firstRequest = new AgentRequest();
+            firstRequest.SessionId = "session-parameters";
+            firstRequest.Text = "单点计算，对称性";
+            firstRequest.CoordinateText = coordinates;
+
+            AgentResult first =
+                await service.HandleMessageAsync(firstRequest);
+
+            Assert.True(first.IsSupported);
+            Assert.True(first.RequiresUserAction);
+            Assert.Equal("NeedsClarification", first.Status);
+            Assert.Empty(first.JobId);
+            Assert.Single(first.Questions);
+            Assert.Contains(
+                CalculationOptionKeys.Symmetry,
+                first.Questions[0].QuestionId);
+
+            AgentRequest secondRequest = new AgentRequest();
+            secondRequest.SessionId = "session-parameters";
+            secondRequest.Text = "关闭对称性";
+            secondRequest.CoordinateText = coordinates;
+
+            AgentResult second =
+                await service.HandleMessageAsync(secondRequest);
+
+            Assert.True(second.IsSupported);
+            Assert.False(second.RequiresUserAction);
+            Assert.Equal("Running", second.Status);
+            Assert.NotEmpty(second.JobId);
+            Assert.Equal(
+                "Ignore",
+                workflowEngine.LastJob.Spec.ExtraOptions[
+                    CalculationOptionKeys.Symmetry]);
+        }
+        finally
+        {
+            DeleteTemporaryRoot(root);
+        }
+    }
+
     private static AgentService CreateAgentService(
         string root,
         out RecordingWorkflowEngine workflowEngine)
@@ -161,8 +217,17 @@ public class AgentServiceTests
         RuleBasedTaskInterpreter interpreter = new RuleBasedTaskInterpreter();
         InMemoryConversationRepository repository = new InMemoryConversationRepository();
         ConversationService conversationService = new ConversationService(interpreter, repository);
+        CalculationParameterConversationService parameterService =
+            new CalculationParameterConversationService(
+                repository,
+                new RuleBasedCalculationParameterExtractor(),
+                new CalculationParameterResolver());
 
-        return new AgentService(conversationService, singlePointService);
+        return new AgentService(
+            conversationService,
+            singlePointService,
+            parameterService,
+            new GeometryTextParser());
     }
 
     private static string CreateTemporaryRoot()
