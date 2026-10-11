@@ -40,17 +40,35 @@ charge
 multiplicity
 ```
 
+新增参数值模型：
+
+```text
+src/ChemSculptor.Compute/CalculationParameterModels.cs
+
+CalculationParameterValueKind
+CalculationParameterDefinition
+ResolvedCalculationParameter
+```
+
+新增规范参数目录：
+
+```text
+src/ChemSculptor.Compute/CalculationParameterCatalog.cs
+```
+
 新增测试：
 
 ```text
 tests/ChemSculptor.Core.Tests/CalculationOptionKeysTests.cs
+tests/ChemSculptor.Core.Tests/CalculationParameterModelsTests.cs
+tests/ChemSculptor.Core.Tests/CalculationParameterCatalogTests.cs
 ```
 
 ### 验证
 
 ```text
 Release 构建：0 警告，0 错误
-测试：97/97 通过
+测试：100/100 通过
 ```
 
 ---

@@ -2,11 +2,12 @@
 
 ## 当前阶段
 
-对话式计算参数方案已开始落地，第一步已定义规范参数键。
+对话式计算参数方案已落地前三步。
 
 ```text
 calculation.single-point 保持现有分层
 规范参数键已经集中定义
+参数值模型和规范参数目录已经建立
 参数提取、解析和程序翻译尚未实现
 ```
 
@@ -22,13 +23,12 @@ ORCA、原始关键词扩展和审批机制暂不实现
 
 ```text
 Release 构建：0 警告，0 错误
-测试：97/97 通过
+测试：100/100 通过
 ```
 
 ## 尚未完成
 
 ```text
-尚未定义参数值模型
 尚未实现参数提取器
 尚未实现参数 Resolver
 尚未实现程序翻译器
@@ -39,7 +39,6 @@ Release 构建：0 警告，0 错误
 下一阶段由用户指定。建议：
 
 ```text
-定义 CalculationParameterDefinition 和 ResolvedCalculationParameter
 实现参数提取器
 实现 CalculationParameterResolver
 实现 GaussianParameterTranslator
