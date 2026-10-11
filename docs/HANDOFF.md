@@ -2,7 +2,7 @@
 
 ## 当前阶段
 
-对话式计算参数方案已落地前八步。
+对话式计算参数方案已落地前九步。
 
 ```text
 calculation.single-point 保持现有分层
@@ -13,7 +13,7 @@ calculation.single-point 保持现有分层
 参数问询闭环已经实现
 AgentService 已接入参数问询
 SinglePointCalculationService 已接入 ResolvedSpec
-程序翻译尚未实现
+Gaussian route 关键词翻译已实现
 ```
 
 ## 当前边界
@@ -28,7 +28,7 @@ ORCA、原始关键词扩展和审批机制暂不实现
 
 ```text
 Release 构建：0 警告，0 错误
-测试：113/113 通过
+测试：117/117 通过
 ```
 
 ## 尚未完成

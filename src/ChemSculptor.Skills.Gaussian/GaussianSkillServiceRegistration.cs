@@ -28,6 +28,8 @@ public static class GaussianSkillServiceRegistration
         ServiceCollectionServiceExtensions.AddSingleton<GaussianProcessingPlanTranslator>(
             services);
         ServiceCollectionServiceExtensions.AddSingleton<
+            GaussianRouteKeywordBuilder>(services);
+        ServiceCollectionServiceExtensions.AddSingleton<
             GaussianWavefunctionStabilityParser>(services);
         ServiceCollectionServiceExtensions.AddSingleton<
             GaussianWavefunctionStabilityInputWriter>(services);

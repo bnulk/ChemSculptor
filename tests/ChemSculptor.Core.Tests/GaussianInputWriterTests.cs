@@ -113,6 +113,63 @@ public class GaussianInputWriterTests
         }
     }
 
+    /// <summary>验证解析后的参数会进入输入文件 route line。</summary>
+    [Fact]
+    public async Task WritesResolvedRouteKeywords()
+    {
+        string root = Path.Combine(
+            Path.GetTempPath(),
+            "ChemSculptorTests",
+            Guid.NewGuid().ToString("N"));
+
+        Directory.CreateDirectory(root);
+        string outputPath = Path.Combine(root, "job-resolved.gjf");
+
+        try
+        {
+            CalculationSpec spec =
+                CalculationDefaults.CreateDefaultSinglePoint();
+            CalculationDefaults.ApplyDefaultMultiplicityFromElectronCount(
+                spec,
+                10);
+            spec.ExtraOptions[
+                CalculationOptionKeys.DispersionCorrection] = "GD3BJ";
+            spec.ExtraOptions[
+                CalculationOptionKeys.Symmetry] = "Ignore";
+            spec.ExtraOptions[
+                CalculationOptionKeys.ScfIterationLimit] = "300";
+            spec.Solvent = "Water";
+
+            GaussianInputOptions options = new GaussianInputOptions();
+            options.Memory = "4GB";
+            options.ProcessorCount = 4;
+            options.Title = "resolved water";
+
+            GaussianInputWriter writer = new GaussianInputWriter();
+            await writer.WriteAsync(
+                spec,
+                CreateWaterGeometry(),
+                options,
+                outputPath);
+
+            string text = await File.ReadAllTextAsync(outputPath);
+
+            Assert.Contains("CAM-B3LYP/6-31G*", text);
+            Assert.Contains("SP", text);
+            Assert.Contains("em=GD3BJ", text);
+            Assert.Contains("nosymm", text);
+            Assert.Contains("scfcyc=300", text);
+            Assert.Contains("SCRF=(Solvent=Water)", text);
+        }
+        finally
+        {
+            if (Directory.Exists(root))
+            {
+                Directory.Delete(root, true);
+            }
+        }
+    }
+
     private static CanonicalGeometry CreateWaterGeometry()
     {
         CanonicalGeometry geometry = new CanonicalGeometry();

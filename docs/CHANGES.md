@@ -110,6 +110,17 @@ CalculationRequest 现在保存 ResolvedSpec 和 ResolvedParameters。
 SinglePointCalculationService 优先使用 ResolvedSpec 创建作业，保证参数
 问询结果进入实际计算链路。
 
+新增 Gaussian route 关键词翻译：
+
+```text
+src/ChemSculptor.Compute.Gaussian/GaussianRouteKeywordBuilder.cs
+src/ChemSculptor.Compute.Gaussian/GaussianInputWriter.cs
+src/ChemSculptor.Skills.Gaussian/GaussianSkillServiceRegistration.cs
+```
+
+Gaussian 输入写入器现在把色散校正、对称性、SCF 迭代和溶剂翻译为
+em=...、nosymm、scfcyc=...、SCRF=...。
+
 新增测试：
 
 ```text
@@ -121,13 +132,15 @@ tests/ChemSculptor.Core.Tests/CalculationParameterResolverTests.cs
 tests/ChemSculptor.Core.Tests/CalculationParameterConversationServiceTests.cs
 tests/ChemSculptor.Core.Tests/AgentServiceTests.cs
 tests/ChemSculptor.Core.Tests/SinglePointCalculationServiceTests.cs
+tests/ChemSculptor.Core.Tests/GaussianRouteKeywordBuilderTests.cs
+tests/ChemSculptor.Core.Tests/GaussianInputWriterTests.cs
 ```
 
 ### 验证
 
 ```text
 Release 构建：0 警告，0 错误
-测试：113/113 通过
+测试：117/117 通过
 ```
 
 ---

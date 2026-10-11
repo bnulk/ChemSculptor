@@ -599,6 +599,8 @@ ResolvedParameters
 
 ## 13. 第九步：Gaussian 路有关键词翻译
 
+实现状态：Gaussian route 关键词翻译已完成；API 与客户端尚未接入结构化参数摘要。
+
 新增：
 
 ```text

@@ -10,6 +10,27 @@ namespace ChemSculptor.Compute.Gaussian;
 /// </summary>
 public sealed class GaussianInputWriter
 {
+    private readonly GaussianRouteKeywordBuilder _routeKeywordBuilder;
+
+    /// <summary>创建 Gaussian 输入写入器。</summary>
+    public GaussianInputWriter()
+        : this(new GaussianRouteKeywordBuilder())
+    {
+    }
+
+    /// <summary>创建 Gaussian 输入写入器。</summary>
+    public GaussianInputWriter(
+        GaussianRouteKeywordBuilder routeKeywordBuilder)
+    {
+        if (routeKeywordBuilder == null)
+        {
+            throw new ArgumentNullException(
+                nameof(routeKeywordBuilder));
+        }
+
+        _routeKeywordBuilder = routeKeywordBuilder;
+    }
+
     /// <summary>
     /// 生成 Gaussian 输入文件。
     /// 输入内容由计算方案、规范几何和运行选项共同决定。
@@ -29,8 +50,9 @@ public sealed class GaussianInputWriter
             checkpointPath = Path.ChangeExtension(outputPath, ".chk");
         }
 
-        string routeKeyword = GetRouteKeyword(spec.TaskType);
-        string routeLine = BuildRouteLine(spec, routeKeyword);
+        GaussianRouteKeywordBuildResult route =
+            _routeKeywordBuilder.Build(spec);
+        string routeLine = route.RouteLine;
         string title = options.Title;
 
         if (string.IsNullOrWhiteSpace(title))
@@ -119,47 +141,6 @@ public sealed class GaussianInputWriter
         {
             throw new ArgumentException("自旋多重度必须大于零。", nameof(spec));
         }
-    }
-
-    private static string GetRouteKeyword(CalculationTaskType taskType)
-    {
-        if (taskType == CalculationTaskType.SinglePoint)
-        {
-            return "SP";
-        }
-
-        throw new NotSupportedException("当前阶段只支持单点计算输入生成。");
-    }
-
-    private static string BuildRouteLine(
-        CalculationSpec spec,
-        string routeKeyword)
-    {
-        string routeLine =
-            "#p " + spec.Method + "/" + spec.Basis + " " + routeKeyword;
-        string? iterationLimitText;
-
-        if (spec.ExtraOptions.TryGetValue(
-            CalculationOptionKeys.ScfIterationLimit,
-            out iterationLimitText))
-        {
-            int iterationLimit;
-
-            if (int.TryParse(
-                iterationLimitText,
-                NumberStyles.Integer,
-                CultureInfo.InvariantCulture,
-                out iterationLimit)
-                && iterationLimit > 0)
-            {
-                routeLine =
-                    routeLine +
-                    " scfcyc=" +
-                    iterationLimit.ToString(CultureInfo.InvariantCulture);
-            }
-        }
-
-        return routeLine;
     }
 
     private static string FormatAtomLine(CanonicalAtom atom)
