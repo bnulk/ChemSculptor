@@ -174,9 +174,9 @@ public class SinglePointCalculationServiceTests
         }
     }
 
-    /// <summary>验证服务优先使用请求中的已解析计算方案。</summary>
+    /// <summary>验证作业保存已解析参数和 ResolvedSpec。</summary>
     [Fact]
-    public async Task UsesResolvedSpecFromRequest()
+    public async Task JobStoresResolvedParameters()
     {
         string root = CreateTemporaryRoot();
 

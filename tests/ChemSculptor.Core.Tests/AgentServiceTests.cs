@@ -192,6 +192,59 @@ public class AgentServiceTests
         }
     }
 
+    /// <summary>验证一条带参数的消息会生成已解析计算方案。</summary>
+    [Fact]
+    public async Task ChatMessageWithParametersProducesResolvedSpec()
+    {
+        string root = CreateTemporaryRoot();
+
+        try
+        {
+            RecordingWorkflowEngine workflowEngine;
+            AgentService service =
+                CreateAgentService(root, out workflowEngine);
+
+            AgentRequest request = new AgentRequest();
+            request.SessionId = "session-parameter-message";
+            request.Text =
+                "单点计算，CAM-B3LYP/6-31G*，加 GD3BJ 色散校正，" +
+                "nosymm，SCF 最多 300 次";
+            request.CoordinateText =
+                "O 0.000000 0.000000 0.117300\n" +
+                "H 0.000000 0.757200 -0.469200\n" +
+                "H 0.000000 -0.757200 -0.469200";
+
+            AgentResult result =
+                await service.HandleMessageAsync(request);
+
+            Assert.True(result.IsSupported);
+            Assert.False(result.RequiresUserAction);
+            Assert.Equal("Running", result.Status);
+            Assert.Equal(
+                "GD3BJ",
+                workflowEngine.LastJob.Spec.ExtraOptions[
+                    CalculationOptionKeys.DispersionCorrection]);
+            Assert.Equal(
+                "Ignore",
+                workflowEngine.LastJob.Spec.ExtraOptions[
+                    CalculationOptionKeys.Symmetry]);
+            Assert.Equal(
+                "300",
+                workflowEngine.LastJob.Spec.ExtraOptions[
+                    CalculationOptionKeys.ScfIterationLimit]);
+            Assert.Contains(
+                result.AppliedParameters,
+                parameter =>
+                    parameter.Key
+                        == CalculationOptionKeys.DispersionCorrection
+                    && parameter.Value == "GD3BJ");
+        }
+        finally
+        {
+            DeleteTemporaryRoot(root);
+        }
+    }
+
     private static AgentService CreateAgentService(
         string root,
         out RecordingWorkflowEngine workflowEngine)

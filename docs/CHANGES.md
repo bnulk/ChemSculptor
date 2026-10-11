@@ -148,6 +148,20 @@ src/ChemSculptor.WinForms/MainForm.cs
 Agent 响应现在返回 RequiresUserAction、Questions 和 AppliedParameters，
 WinForms 会显示已应用参数和需要补充或确认的问题。
 
+第十二步测试矩阵：
+
+```text
+tests/ChemSculptor.Core.Tests/ParameterExtractorTests.cs
+tests/ChemSculptor.Core.Tests/ParameterResolverTests.cs
+tests/ChemSculptor.Core.Tests/GaussianRouteKeywordBuilderTests.cs
+tests/ChemSculptor.Core.Tests/AgentServiceTests.cs
+tests/ChemSculptor.Core.Tests/SinglePointCalculationServiceTests.cs
+tests/ChemSculptor.Core.Tests/ParameterPipelineEndToEndTests.cs
+```
+
+覆盖未知 raw keyword 拒绝、参数来源保留、Gaussian route 关键词和
+端到端“对话参数 -> 规范参数 -> Gaussian route”链路。
+
 新增测试：
 
 ```text
@@ -168,7 +182,7 @@ tests/ChemSculptor.Core.Tests/CalculationParameterModelsTests.cs
 
 ```text
 Release 构建：0 警告，0 错误
-测试：118/118 通过
+测试：133/133 通过
 ```
 
 ---

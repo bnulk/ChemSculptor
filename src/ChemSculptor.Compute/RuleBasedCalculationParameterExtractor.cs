@@ -12,6 +12,11 @@ public sealed class RuleBasedCalculationParameterExtractor
         | RegexOptions.IgnoreCase
         | RegexOptions.CultureInvariant;
 
+    private static readonly Regex UnknownRawKeywordPattern =
+        new Regex(
+            @"(?<![A-Za-z0-9])[A-Za-z][A-Za-z0-9_-]*\s*=\s*[^\s,，;；]+",
+            PatternOptions);
+
     private readonly List<ExtractionRule> _rules;
 
     /// <summary>创建规则版参数提取器。</summary>
@@ -98,8 +103,49 @@ public sealed class RuleBasedCalculationParameterExtractor
             result.Intents.Add(intent);
         }
 
+        AddUnsupportedRawKeywords(
+            text,
+            accepted,
+            result);
         result.Intents.Sort(CompareIntents);
         return Task.FromResult(result);
+    }
+
+    private static void AddUnsupportedRawKeywords(
+        string text,
+        List<PendingMatch> accepted,
+        CalculationParameterExtractionResult result)
+    {
+        MatchCollection matches =
+            UnknownRawKeywordPattern.Matches(text);
+
+        for (int index = 0; index < matches.Count; index++)
+        {
+            Match match = matches[index];
+
+            if (!match.Success
+                || match.Length == 0
+                || OverlapsAccepted(
+                    accepted,
+                    match.Index,
+                    match.Length))
+            {
+                continue;
+            }
+
+            CalculationParameterIntent intent =
+                new CalculationParameterIntent();
+            intent.Key = string.Empty;
+            intent.Value = match.Value;
+            intent.RawText = match.Value;
+            intent.State =
+                CalculationParameterIntentState.Unsupported;
+            intent.Source = ParameterSource.User;
+            intent.Confidence = 0.5;
+            intent.StartIndex = match.Index;
+            intent.EndIndex = match.Index + match.Length;
+            result.Intents.Add(intent);
+        }
     }
 
     private static int CompareMatches(
@@ -148,6 +194,29 @@ public sealed class RuleBasedCalculationParameterExtractor
 
             if (candidateStart < acceptedEnd
                 && acceptedStart < candidateEnd)
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private static bool OverlapsAccepted(
+        List<PendingMatch> accepted,
+        int start,
+        int length)
+    {
+        int end = start + length;
+
+        for (int index = 0; index < accepted.Count; index++)
+        {
+            int acceptedStart = accepted[index].Match.Index;
+            int acceptedEnd =
+                acceptedStart + accepted[index].Match.Length;
+
+            if (start < acceptedEnd
+                && acceptedStart < end)
             {
                 return true;
             }
@@ -327,6 +396,10 @@ public sealed class RuleBasedCalculationParameterExtractor
             "no solvent", "None", 1.0, 3);
         AddAliasRule(rules, CalculationOptionKeys.Solvent,
             "水溶剂", "Water", 1.0, 3);
+        AddAliasRule(rules, CalculationOptionKeys.Solvent,
+            "SCRF=(Solvent=Water)", "Water", 1.0, 3);
+        AddAliasRule(rules, CalculationOptionKeys.Solvent,
+            "SCRF=(Solvent=None)", "None", 1.0, 3);
         AddAliasRule(rules, CalculationOptionKeys.Solvent,
             "水中", "Water", 1.0, 3);
         AddAliasRule(rules, CalculationOptionKeys.Solvent,

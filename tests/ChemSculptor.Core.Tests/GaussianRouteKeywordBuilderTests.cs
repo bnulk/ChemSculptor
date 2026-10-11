@@ -92,4 +92,72 @@ public class GaussianRouteKeywordBuilderTests
         Assert.Throws<NotSupportedException>(
             () => new GaussianRouteKeywordBuilder().Build(spec));
     }
+
+    /// <summary>验证 GD3BJ 输出 em=GD3BJ。</summary>
+    [Fact]
+    public void EmitsEmGd3bj()
+    {
+        CalculationSpec spec =
+            CalculationDefaults.CreateDefaultSinglePoint();
+        spec.ExtraOptions[
+            CalculationOptionKeys.DispersionCorrection] = "GD3BJ";
+
+        GaussianRouteKeywordBuildResult result =
+            new GaussianRouteKeywordBuilder().Build(spec);
+
+        Assert.Contains("em=GD3BJ", result.Keywords);
+    }
+
+    /// <summary>验证关闭对称性输出 nosymm。</summary>
+    [Fact]
+    public void EmitsNosymm()
+    {
+        CalculationSpec spec =
+            CalculationDefaults.CreateDefaultSinglePoint();
+        spec.ExtraOptions[
+            CalculationOptionKeys.Symmetry] = "Ignore";
+
+        GaussianRouteKeywordBuildResult result =
+            new GaussianRouteKeywordBuilder().Build(spec);
+
+        Assert.Contains("nosymm", result.Keywords);
+    }
+
+    /// <summary>验证 SCF 迭代上限输出 scfcyc。</summary>
+    [Fact]
+    public void EmitsScfcyc()
+    {
+        CalculationSpec spec =
+            CalculationDefaults.CreateDefaultSinglePoint();
+        spec.ExtraOptions[
+            CalculationOptionKeys.ScfIterationLimit] = "300";
+
+        GaussianRouteKeywordBuildResult result =
+            new GaussianRouteKeywordBuilder().Build(spec);
+
+        Assert.Contains("scfcyc=300", result.Keywords);
+    }
+
+    /// <summary>验证输出序列稳定，但不将顺序作为参数语义契约。</summary>
+    [Fact]
+    public void ProducesStableKeywordSequence()
+    {
+        CalculationSpec spec =
+            CalculationDefaults.CreateDefaultSinglePoint();
+        spec.ExtraOptions[
+            CalculationOptionKeys.DispersionCorrection] = "GD3BJ";
+        spec.ExtraOptions[
+            CalculationOptionKeys.Symmetry] = "Ignore";
+        spec.ExtraOptions[
+            CalculationOptionKeys.ScfIterationLimit] = "300";
+
+        GaussianRouteKeywordBuilder builder =
+            new GaussianRouteKeywordBuilder();
+        GaussianRouteKeywordBuildResult first =
+            builder.Build(spec);
+        GaussianRouteKeywordBuildResult second =
+            builder.Build(spec);
+
+        Assert.Equal(first.RouteLine, second.RouteLine);
+    }
 }
