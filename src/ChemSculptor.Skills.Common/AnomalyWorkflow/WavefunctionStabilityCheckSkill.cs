@@ -67,20 +67,32 @@ public sealed class WavefunctionStabilityCheckSkill
         TaskRequest request,
         CancellationToken cancellationToken = default)
     {
-        AnomalyCheckRequest checkRequest =
-            DeserializeCheckRequest(request);
-        AnomalyCheckResult checkResult =
-            await ExecuteCheckAsync(
+        AnomalyCheckRequest? checkRequest = null;
+        AnomalyCheckResult checkResult;
+
+        if (TryCreateSkippedRecoveryResult(
+            request,
+            out AnomalyCheckResult? skippedResult))
+        {
+            checkResult = skippedResult!;
+        }
+        else
+        {
+            checkRequest = DeserializeCheckRequest(request);
+            checkResult = await ExecuteCheckAsync(
                 checkRequest,
                 cancellationToken);
+        }
 
         if (string.IsNullOrWhiteSpace(checkResult.JobId)
+            && checkRequest != null
             && checkRequest.Context.Job != null)
         {
             checkResult.JobId = checkRequest.Context.Job.JobId;
         }
 
-        if (checkRequest.Context.Job != null)
+        if (checkRequest != null
+            && checkRequest.Context.Job != null)
         {
             AnomalyRecord record =
                 CreateAnomalyRecord(
@@ -198,12 +210,6 @@ public sealed class WavefunctionStabilityCheckSkill
                 SkillJson.Deserialize<RecoveryJobExecutionResult>(
                     recoveryExecutionJson);
 
-            if (recoveryExecution.RecoveryJob == null)
-            {
-                throw new InvalidOperationException(
-                    "派生作业复检缺少可用的恢复作业。");
-            }
-
             AnomalyCheckRequest request =
                 new AnomalyCheckRequest();
             request.CheckCode =
@@ -218,6 +224,37 @@ public sealed class WavefunctionStabilityCheckSkill
 
         throw new InvalidOperationException(
             "稳定性检查 Skill 缺少 request、validation 或 recoveryExecution 输入。");
+    }
+
+    /// <summary>没有派生恢复作业时直接返回跳过结果。</summary>
+    private static bool TryCreateSkippedRecoveryResult(
+        TaskRequest taskRequest,
+        out AnomalyCheckResult? result)
+    {
+        string? recoveryExecutionJson;
+
+        if (!taskRequest.Inputs.TryGetValue(
+            RecoveryExecutionKey,
+            out recoveryExecutionJson)
+            || string.IsNullOrWhiteSpace(recoveryExecutionJson))
+        {
+            result = null;
+            return false;
+        }
+
+        RecoveryJobExecutionResult recoveryExecution =
+            SkillJson.Deserialize<RecoveryJobExecutionResult>(
+                recoveryExecutionJson);
+
+        if (recoveryExecution.RecoveryJob != null)
+        {
+            result = null;
+            return false;
+        }
+
+        result = CreateSkippedResult(
+            "没有派生恢复作业，跳过波函数稳定性复检。");
+        return true;
     }
 
     private static AnomalyRecord CreateAnomalyRecord(
@@ -284,6 +321,13 @@ public sealed class WavefunctionStabilityCheckSkill
 
     private static AnomalyCheckResult CreateUnavailableResult()
     {
+        return CreateSkippedResult(
+            "没有适用于当前任务和计算程序的波函数稳定性检查实现。");
+    }
+
+    private static AnomalyCheckResult CreateSkippedResult(
+        string reason)
+    {
         AnomalyCheckResult result = new AnomalyCheckResult();
         result.Code = CommonAnomalyCheckCodes.WavefunctionStability;
         result.DisplayName = "波函数稳定性检查";
@@ -291,8 +335,7 @@ public sealed class WavefunctionStabilityCheckSkill
         result.Mechanism = AnomalyCheckMechanism.AuxiliaryCalculation;
         result.IsRequired = true;
         result.Status = AnomalyCheckStatus.Skipped;
-        result.SkippedReason =
-            "没有适用于当前任务和计算程序的波函数稳定性检查实现。";
+        result.SkippedReason = reason;
         result.Summary = result.SkippedReason;
         result.StartedAt = DateTimeOffset.UtcNow;
         result.CompletedAt = DateTimeOffset.UtcNow;

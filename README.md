@@ -10,6 +10,7 @@
 > 单点计算 API 参考见 [docs/Calculation-Api-Reference.md](docs/Calculation-Api-Reference.md)。
 > WinForms 交互说明见 [docs/WinForms-Interaction-Guide.md](docs/WinForms-Interaction-Guide.md)。
 > 声明式单点计算工作流见 [docs/Declarative-SinglePoint-Workflow.md](docs/Declarative-SinglePoint-Workflow.md)。
+> 单点计算 Skill 分层见 [docs/SinglePoint-Skill-Architecture.md](docs/SinglePoint-Skill-Architecture.md)。
 > 单点计算完整调用链说明见 [docs/SinglePoint-Calculation-Walkthrough.md](docs/SinglePoint-Calculation-Walkthrough.md)。
 > 版本与改动记录见 [docs/CHANGES.md](docs/CHANGES.md)。
 
@@ -24,7 +25,7 @@ src/
   ChemSculptor.Compute/         计算模型、默认方案与计算扩展接口
   ChemSculptor.Compute.Gaussian/ Gaussian 输入生成、命令与运行上下文
   ChemSculptor.Compute.Local/    本机进程执行后端
-  ChemSculptor.Skills.Common/   通用技能：结果验证等
+  ChemSculptor.Skills.Common/   通用技能：单点计算、输入准备、结果验证等
   ChemSculptor.Skills.Gaussian/ Gaussian 技能：输入、结果、异常框架
   ChemSculptor.Skills.Orca/     ORCA 技能目录框架
   ChemSculptor.Conversation/    会话、消息、意图与回复

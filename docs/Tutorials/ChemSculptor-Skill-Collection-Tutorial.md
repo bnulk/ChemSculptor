@@ -1,5 +1,8 @@
 # ChemSculptor Skill 集合教程
 
+> 架构提示：本教程描述原子能力 Skill。最新的单点计算复合 Skill 分层见
+> [SinglePoint-Skill-Architecture.md](../SinglePoint-Skill-Architecture.md)。
+
 > 适用版本：`v0.21.0` 之后
 > 面向对象：刚接触该架构、希望边阅读代码边理解设计思想的开发者
 > 当前重点：正常单点计算已经按 Skill 集合组织；异常处理只保留框架

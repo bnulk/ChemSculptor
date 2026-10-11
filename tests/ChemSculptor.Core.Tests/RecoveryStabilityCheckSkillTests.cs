@@ -12,6 +12,57 @@ namespace ChemSculptor.Core.Tests;
 /// <summary>派生作业稳定性复检测试。</summary>
 public class RecoveryStabilityCheckSkillTests
 {
+    /// <summary>验证没有派生作业时复检会安全跳过。</summary>
+    [Fact]
+    public async Task SkipsWhenNoRecoveryJobWasExecuted()
+    {
+        string root = CreateTemporaryRoot();
+
+        try
+        {
+            CalculationWorkspaceOptions options =
+                new CalculationWorkspaceOptions();
+            options.RootDirectory = root;
+            WorkspaceManager workspace =
+                new WorkspaceManager(options);
+            FileAnomalyRepository repository =
+                new FileAnomalyRepository(workspace);
+            AnomalyProviderRegistry registry =
+                new AnomalyProviderRegistry();
+            RecoveryJobExecutionResult execution =
+                new RecoveryJobExecutionResult();
+
+            TaskRequest taskRequest = new TaskRequest();
+            taskRequest.WorkflowId = "workflow-no-recovery";
+            taskRequest.NodeId = "recovery-stability-check";
+            taskRequest.Inputs["recoveryExecution"] =
+                SkillJson.Serialize(execution);
+
+            WavefunctionStabilityCheckSkill skill =
+                new WavefunctionStabilityCheckSkill(
+                    registry,
+                    repository);
+
+            TaskResult taskResult =
+                await skill.ExecuteAsync(taskRequest);
+            AnomalyCheckResult checkResult =
+                SkillJson.Deserialize<AnomalyCheckResult>(
+                    taskResult.Output!);
+
+            Assert.True(taskResult.Succeeded);
+            Assert.Equal(
+                AnomalyCheckStatus.Skipped,
+                checkResult.Status);
+            Assert.Contains(
+                "没有派生恢复作业",
+                checkResult.SkippedReason);
+        }
+        finally
+        {
+            DeleteTemporaryRoot(root);
+        }
+    }
+
     /// <summary>验证通用稳定性 Skill 可以检查派生作业。</summary>
     [Fact]
     public async Task ChecksRecoveryJobFromExecutionResult()

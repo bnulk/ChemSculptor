@@ -19,46 +19,17 @@ public static class SinglePointWorkflowDefinitionFactory
         definition.Goal = goal;
         definition.Nodes = new List<WorkflowNode>();
 
-        WorkflowNode inputGeneration = new WorkflowNode();
-        inputGeneration.Id = "input-generation";
-        inputGeneration.Skill = CalculationSkillIds.CalculationInputPreparation;
-        inputGeneration.Inputs["request"] = "$input.request";
-        definition.Nodes.Add(inputGeneration);
-
-        WorkflowNode submit = new WorkflowNode();
-        submit.Id = "submit";
-        submit.Skill = CalculationSkillIds.CalculationSubmission;
-        submit.DependsOn.Add(inputGeneration.Id);
-        submit.Inputs["inputResult"] = inputGeneration.Id;
-        definition.Nodes.Add(submit);
-
-        WorkflowNode wait = new WorkflowNode();
-        wait.Id = "wait";
-        wait.Skill = CalculationSkillIds.CalculationWait;
-        wait.DependsOn.Add(submit.Id);
-        wait.Inputs["submission"] = submit.Id;
-        definition.Nodes.Add(wait);
-
-        WorkflowNode extract = new WorkflowNode();
-        extract.Id = "extract";
-        extract.Skill = CalculationSkillIds.CalculationResultExtraction;
-        extract.DependsOn.Add(wait.Id);
-        extract.Inputs["submission"] = submit.Id;
-        definition.Nodes.Add(extract);
-
-        WorkflowNode validate = new WorkflowNode();
-        validate.Id = "validate";
-        validate.Skill = CalculationSkillIds.CalculationWorkflowValidation;
-        validate.DependsOn.Add(extract.Id);
-        validate.Inputs["wait"] = wait.Id;
-        validate.Inputs["extraction"] = extract.Id;
-        definition.Nodes.Add(validate);
+        WorkflowNode singlePoint = new WorkflowNode();
+        singlePoint.Id = "single-point";
+        singlePoint.Skill = CalculationSkillIds.CalculationSinglePoint;
+        singlePoint.Inputs["request"] = "$input.request";
+        definition.Nodes.Add(singlePoint);
 
         WorkflowNode stabilityCheck = new WorkflowNode();
         stabilityCheck.Id = "stability-check";
         stabilityCheck.Skill = AnomalySkillIds.CheckWavefunctionStability;
-        stabilityCheck.DependsOn.Add(validate.Id);
-        stabilityCheck.Inputs["validation"] = validate.Id;
+        stabilityCheck.DependsOn.Add(singlePoint.Id);
+        stabilityCheck.Inputs["validation"] = singlePoint.Id;
         definition.Nodes.Add(stabilityCheck);
 
         WorkflowNode stabilityCorrectionPlan = new WorkflowNode();
@@ -101,8 +72,8 @@ public static class SinglePointWorkflowDefinitionFactory
         plan.Id = "plan";
         plan.Skill = CalculationSkillIds.CalculationWorkflowProcessingPlan;
         plan.DependsOn.Add(recoveryStabilityCheck.Id);
-        plan.Inputs["validation"] = validate.Id;
-        plan.Inputs["extraction"] = extract.Id;
+        plan.Inputs["validation"] = singlePoint.Id;
+        plan.Inputs["extraction"] = singlePoint.Id;
         definition.Nodes.Add(plan);
 
         WorkflowNode scientificData = new WorkflowNode();
@@ -111,8 +82,8 @@ public static class SinglePointWorkflowDefinitionFactory
             ScientificDataSkillIds.RecordCalculationResult;
         scientificData.DependsOn.Add(plan.Id);
         scientificData.Inputs["request"] = "$input.request";
-        scientificData.Inputs["validation"] = validate.Id;
-        scientificData.Inputs["extraction"] = extract.Id;
+        scientificData.Inputs["validation"] = singlePoint.Id;
+        scientificData.Inputs["extraction"] = singlePoint.Id;
         scientificData.Inputs["stability"] = stabilityCheck.Id;
         scientificData.Inputs["correctionPlan"] =
             stabilityCorrectionPlan.Id;

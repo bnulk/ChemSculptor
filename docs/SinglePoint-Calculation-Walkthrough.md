@@ -1,5 +1,8 @@
 # ChemSculptor“单点计算”代码全流程说明
 
+> 架构提示：本文件保留早期详细讲解。最新的 Skill 分层见
+> [SinglePoint-Skill-Architecture.md](SinglePoint-Skill-Architecture.md)。
+
 > 适用版本：v0.26.0 之后
 > 当前阶段目标：客户端发送原始文本，服务器通过显式 Skill 集合完成单点计算、结果提取和结果验证
 > 当前未实现：科学合理性判断、自动查错纠错、远程执行

@@ -112,6 +112,16 @@ public sealed class SinglePointCalculationResultValidator : ICalculationResultVa
 
         AddRequiredCheck(
             report,
+            "calculation.scf_converged",
+            "SCF 已收敛",
+            CalculationValidationScope.Numerical,
+            "true",
+            GetScfConvergenceText(request.Result),
+            request.Result.ScfConverged == true,
+            "SCF 没有收敛，或输出中没有可确认的收敛信息。");
+
+        AddRequiredCheck(
+            report,
             "calculation.output_normal_termination",
             "输出文件中包含正常终结",
             CalculationValidationScope.ProgramOutput,
@@ -262,5 +272,18 @@ public sealed class SinglePointCalculationResultValidator : ICalculationResultVa
         return result.Energy.Value.ToString(
             "G17",
             System.Globalization.CultureInfo.InvariantCulture);
+    }
+
+    private static string GetScfConvergenceText(
+        CalculationResult result)
+    {
+        if (!result.ScfConverged.HasValue)
+        {
+            return "未知";
+        }
+
+        return result.ScfConverged.Value
+            ? "已收敛"
+            : "未收敛";
     }
 }

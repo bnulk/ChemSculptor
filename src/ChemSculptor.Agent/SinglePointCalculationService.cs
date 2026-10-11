@@ -131,6 +131,8 @@ public sealed class SinglePointCalculationService : ISinglePointCalculationServi
 
             CalculationJob job = new CalculationJob();
             job.JobId = jobId;
+            job.WorkflowId = jobId;
+            job.RootWorkflowId = jobId;
             job.SessionId = request.SessionId;
             job.GeometryId = request.GeometryId;
             job.Goal = request.Goal;

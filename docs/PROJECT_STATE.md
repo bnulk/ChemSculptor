@@ -3,7 +3,7 @@
 ## 当前版本
 
 ```text
-0.50.2
+0.51.0
 ```
 
 ## 文档维护原则
@@ -35,7 +35,7 @@ HANDOFF.md
 
 ```text
 Release 构建：0 警告，0 错误
-测试：91/91 通过
+测试：96/96 通过
 ```
 
 ## 总体架构
@@ -94,6 +94,7 @@ Api 引用 ScientificSummary
 Gaussian 输入生成
 Gaussian 输出解析
 单点计算 API
+单点计算复合 Skill
 WinForms 客户端
 波函数稳定性检查
 自旋多重度矫正
@@ -134,6 +135,8 @@ WinForms 领取和显示摘要
 ```text
 当前只实现单点计算
 当前只实现 Gaussian 16 本机执行主链
+单点计算正常路径由计算复合 Skill 封装
+顶层工作流负责异常恢复、SCF 处理和质量记录
 远程 HPC 队列和调度尚未实现
 几何优化、频率、TD-DFT 等任务尚未实现
 科学点文件清单已进入 CalculationPoint

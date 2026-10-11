@@ -11,6 +11,7 @@ public static class CommonSkillCatalog
         List<string> ids = new List<string>();
         ids.Add(
             CalculationResultValidation.CalculationResultValidationSkillDescriptor.Id);
+        ids.Add(CalculationSkillIds.CalculationSinglePoint);
         ids.Add(CalculationSkillIds.CalculationSubmission);
         ids.Add(CalculationSkillIds.CalculationWait);
         ids.Add(CalculationSkillIds.CalculationWorkflowValidation);

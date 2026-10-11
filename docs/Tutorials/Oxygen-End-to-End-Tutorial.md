@@ -1,5 +1,8 @@
 # 氧气示例：从客户端提交到最终科学摘要
 
+> 架构提示：本文涉及早期工作流节点名称。最新的单点计算 Skill 分层见
+> [SinglePoint-Skill-Architecture.md](../SinglePoint-Skill-Architecture.md)。
+
 本文面向第一次接触 ChemSculptor 的读者。目标是用一个真实的氧气例子，说明
 下面这条完整链路：
 

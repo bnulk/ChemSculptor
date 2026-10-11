@@ -505,6 +505,20 @@ public sealed class ScientificResultExtractor
             data.Values["resultProgram"] = result.Program;
         }
 
+        if (result.ScfConverged.HasValue)
+        {
+            data.Values["scfConverged"] =
+                result.ScfConverged.Value.ToString(
+                    CultureInfo.InvariantCulture);
+        }
+
+        if (result.ScfIterations.HasValue)
+        {
+            data.Values["scfIterations"] =
+                result.ScfIterations.Value.ToString(
+                    CultureInfo.InvariantCulture);
+        }
+
         return data;
     }
 

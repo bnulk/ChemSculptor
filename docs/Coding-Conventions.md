@@ -200,6 +200,7 @@ IQuantumProgramAdapterRegistry
 通用 Skill ID 必须使用能力语义，例如：
 
 ```text
+calculation.single-point
 calculation.prepare-input
 calculation.submit
 calculation.wait

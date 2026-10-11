@@ -5,6 +5,84 @@
 
 ---
 
+## v0.51.0（2026-10-11）：单点计算复合 Skill
+
+### 版本
+
+- 当前版本：`0.51.0`
+- 日期：`2026-10-11`
+- 版本类型：架构重组
+
+### 改动目的
+
+把“一次稳定的单点计算”和“完成单点计算的完整工作流”分开。
+
+```text
+calculation.single-point
+  负责一次稳定单点计算
+
+calculation.prepare-input / submit / wait / extract-result
+  继续作为原子能力 Skill
+
+单点计算完整工作流
+  负责稳定性检查、修正、重算、处理方案和科学数据记录
+```
+
+### 代码改动
+
+新增：
+
+```text
+src/ChemSculptor.Skills.Common/SinglePointCalculation/
+  SinglePointCalculationSkill.cs
+```
+
+新增结果契约：
+
+```text
+SinglePointCalculationSkillResult
+SinglePointCalculationStepResult
+```
+
+新增计算字段：
+
+```text
+CalculationResult.ScfConverged
+CalculationResult.ScfIterations
+CalculationFailureKind.ScfNotConverged
+```
+
+顶层工作流节点由：
+
+```text
+input-generation
+  → submit
+  → wait
+  → extract
+  → validate
+```
+
+改为：
+
+```text
+single-point
+  → stability-check
+  → correction-plan
+  → recovery
+  → recheck
+  → plan
+  → science-data-record
+```
+
+### 验证
+
+```text
+Release 构建：0 警告，0 错误
+测试：96/96 通过
+```
+
+---
+
 ## v0.50.2（2026-10-07）：可变产物清单
 
 ### 版本

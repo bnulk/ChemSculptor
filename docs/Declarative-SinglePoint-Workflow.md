@@ -1,6 +1,6 @@
 # 声明式单点计算工作流
 
-> 适用版本：`v0.27.0` 之后
+> 适用版本：`v0.51.0` 之后
 > 目标：理解单点计算如何从代码编排升级为声明式 DAG
 
 ---
@@ -32,29 +32,47 @@
 ## 2. 当前 DAG
 
 ```text
-input-generation
+single-point
   ↓
-submit
+stability-check
   ↓
-wait
+stability-correction-plan
   ↓
-extract
+recovery-job
   ↓
-validate
+recovery-execution
+  ↓
+recovery-stability-check
   ↓
 plan
+  ↓
+science-data-record
 ```
 
 对应技能：
 
 ```text
-calculation.prepare-input
-calculation.submit
-calculation.wait
-calculation.extract-result
+calculation.single-point
+anomaly.check-wavefunction-stability
+anomaly.plan-wavefunction-stability-correction
+anomaly.create-recovery-job
+anomaly.execute-recovery-job
 calculation.workflow-validation
 calculation.workflow-processing-plan
+science.record-calculation-result
 ```
+
+`calculation.single-point` 是复合 Skill，内部继续调用：
+
+```text
+calculation.prepare-input
+  → calculation.submit
+  → calculation.wait
+  → calculation.extract-result
+  → calculation.workflow-validation
+```
+
+原子 Skill 仍然保留并独立注册。
 
 ---
 
@@ -84,88 +102,48 @@ $input.request
 示例：
 
 ```text
-submit.Inputs["inputResult"] = "input-generation"
+stability-check.Inputs["validation"] = "single-point"
 ```
 
 含义：
 
 ```text
-把 input-generation 节点的输出
-作为 submit 技能的 inputResult 输入
+把 single-point 节点的输出
+作为稳定性检查技能的 validation 输入
 ```
 
 另一个示例：
 
 ```text
-input-generation.Inputs["request"] = "$input.request"
+single-point.Inputs["request"] = "$input.request"
 ```
 
 含义：
 
 ```text
 把工作流初始输入 request
-作为技能输入 request
+作为单点计算 Skill 的输入 request
 ```
 
 ---
 
 ## 5. 每个节点做什么
 
-### input-generation
+### single-point
 
-解析坐标、生成输入文件、复制到 run、构建执行上下文。
-
-输出：
-
-```text
-CalculationInputGenerationResult
-```
-
-### submit
-
-把输入提交到 `IComputeBackend`。
+调用输入准备、提交、等待、提取和验证原子 Skill，返回统一的
+`SinglePointCalculationSkillResult`。
 
 输出：
 
 ```text
-CalculationSubmissionSkillResult
-```
-
-### wait
-
-轮询后端状态直到：
-
-```text
-Completed
-Failed
-Canceled
-```
-
-输出：
-
-```text
-CalculationWaitSkillResult
-```
-
-### extract
-
-调用程序 Adapter 解析输出并翻译为通用结果，同时根据适配器声明的文件规则
-收集产物清单，并写入 `result.json`。
-
-输出：
-
-```text
-CalculationResultExtractionResult
-```
-
-### validate
-
-调用通用验证服务，合并全部适用验证器。
-
-输出：
-
-```text
-CalculationWorkflowValidationSkillResult
+SinglePointCalculationSkillResult
+  Succeeded
+  Passed
+  Job
+  Result
+  Report
+  Steps
 ```
 
 ### plan
@@ -222,22 +200,24 @@ GET /workflows/{jobId}
 ```text
 工作流状态：Passed
 
-input-generation = Passed
-submit = Passed
-wait = Passed
-extract = Passed
-validate = Passed
+single-point = Passed
+stability-check = Passed
+stability-correction-plan = Passed
+recovery-job = Passed
+recovery-execution = Passed
+recovery-stability-check = Passed
 plan = Passed
+science-data-record = Passed
 ```
 
 ---
 
 ## 8. 为什么这比直接代码编排更适合以后
 
-以后增加异常诊断时，可以在 `validate` 后面加入条件分支：
+以后增加真正的条件分支时，可以在 `single-point` 后面按验证结果分流：
 
 ```text
-validate
+single-point
   ├── Passed → plan
   └── Failed → diagnose
                  → propose-correction

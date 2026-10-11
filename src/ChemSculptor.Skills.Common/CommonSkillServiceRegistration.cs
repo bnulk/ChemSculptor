@@ -5,6 +5,7 @@ using ChemSculptor.Anomaly.Planning;
 using ChemSculptor.Skills.Common.AnomalyWorkflow;
 using ChemSculptor.Skills.Common.CalculationWorkflow;
 using ChemSculptor.Skills.Common.CalculationResultValidation;
+using ChemSculptor.Skills.Common.SinglePointCalculation;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace ChemSculptor.Skills.Common;
@@ -31,6 +32,9 @@ public static class CommonSkillServiceRegistration
         ServiceCollectionServiceExtensions.AddSingleton<
             ISkill,
             CalculationResultValidationSkill>(services);
+        ServiceCollectionServiceExtensions.AddSingleton<
+            ISkill,
+            SinglePointCalculationSkill>(services);
         ServiceCollectionServiceExtensions.AddSingleton<
             ISkill,
             CalculationSubmissionSkill>(services);

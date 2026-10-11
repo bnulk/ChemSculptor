@@ -211,6 +211,18 @@ MecpSearchWorkflow
 把工作流状态塞进实现细节
 ```
 
+例外是明确命名的复合 Skill。复合 Skill 只组合已经注册的原子能力，
+不直接实现程序输入、进程调用或文本解析，例如：
+
+```text
+calculation.single-point
+  → calculation.prepare-input
+  → calculation.submit
+  → calculation.wait
+  → calculation.extract-result
+  → calculation.workflow-validation
+```
+
 ### Workflow 应该负责
 
 ```text

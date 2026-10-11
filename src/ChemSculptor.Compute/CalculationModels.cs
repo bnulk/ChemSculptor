@@ -174,7 +174,10 @@ public enum CalculationFailureKind
     Canceled,
 
     /// <summary>无法分类的失败。</summary>
-    Unknown
+    Unknown,
+
+    /// <summary>SCF 没有收敛。</summary>
+    ScfNotConverged
 }
 
 /// <summary>
@@ -400,6 +403,12 @@ public sealed class CalculationResult
 
     /// <summary>程序是否正常结束。</summary>
     public bool NormalTermination { get; set; }
+
+    /// <summary>SCF 是否收敛；程序没有报告时为空。</summary>
+    public bool? ScfConverged { get; set; }
+
+    /// <summary>最终 SCF 迭代次数；程序没有报告时为空。</summary>
+    public int? ScfIterations { get; set; }
 
     /// <summary>通用失败类别。</summary>
     public CalculationFailureKind FailureKind { get; set; } =

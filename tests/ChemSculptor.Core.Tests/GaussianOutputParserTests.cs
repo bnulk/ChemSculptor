@@ -33,6 +33,8 @@ public class GaussianOutputParserTests
             Assert.Equal("RCAM-B3LYP", result.Method);
             Assert.Equal("Hartree", result.EnergyUnit);
             Assert.Equal(outputPath, result.OutputFilePath);
+            Assert.True(result.ScfConverged);
+            Assert.Equal(8, result.ScfIterations);
             Assert.Equal(CalculationFailureKind.None, result.FailureKind);
         }
         finally
@@ -85,6 +87,59 @@ public class GaussianOutputParserTests
 
             Assert.True(errorTerminationDiagnosticFound);
             Assert.True(energyNotFoundDiagnosticFound);
+        }
+        finally
+        {
+            DeleteTemporaryRoot(root);
+        }
+    }
+
+    /// <summary>验证 SCF 收敛失败会被识别为通用失败。</summary>
+    [Fact]
+    public async Task ReportsScfConvergenceFailure()
+    {
+        string root = CreateTemporaryRoot();
+        string outputPath = Path.Combine(root, "output.log");
+
+        try
+        {
+            string outputText =
+                " Convergence failure -- run terminated.\n" +
+                " Error termination via Lnk1e in g16.exe\n";
+
+            await File.WriteAllTextAsync(outputPath, outputText);
+
+            GaussianOutputParser parser =
+                new GaussianOutputParser();
+            GaussianOutput gaussianOutput =
+                await parser.ParseAsync(outputPath);
+            GaussianResultTranslator translator =
+                new GaussianResultTranslator();
+            CalculationResult result =
+                translator.Translate(gaussianOutput);
+
+            Assert.False(result.ScfConverged);
+            Assert.Equal(
+                CalculationFailureKind.ScfNotConverged,
+                result.FailureKind);
+
+            bool diagnosticFound = false;
+
+            for (int index = 0;
+                index < result.Diagnostics.Count;
+                index++)
+            {
+                CalculationDiagnostic diagnostic =
+                    result.Diagnostics[index];
+
+                if (diagnostic.Code
+                    == "gaussian.scf_not_converged")
+                {
+                    diagnosticFound = true;
+                }
+            }
+
+            Assert.True(diagnosticFound);
         }
         finally
         {

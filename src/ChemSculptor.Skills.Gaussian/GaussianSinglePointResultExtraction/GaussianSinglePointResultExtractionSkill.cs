@@ -27,7 +27,7 @@ public sealed class GaussianSinglePointResultExtractionSkill
         _programAdapter = programAdapter;
         _capabilities = new List<string>();
         _capabilities.Add("calculation.result-extraction");
-        _capabilities.Add("calculation.single-point");
+        _capabilities.Add("gaussian.single-point-result-extraction");
         _capabilities.Add("gaussian.result");
     }
 

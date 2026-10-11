@@ -21,11 +21,23 @@ public sealed class GaussianResultTranslator
         result.OutputFilePath = gaussianOutput.OutputFilePath;
         result.NormalTermination = gaussianOutput.NormalTermination;
         result.Energy = gaussianOutput.Energy;
+        result.ScfConverged = gaussianOutput.ScfConverged;
+        result.ScfIterations = gaussianOutput.ScfIterations;
         result.EnergyUnit = "Hartree";
         result.Method = gaussianOutput.EnergyMethod;
         result.FailureKind = CalculationFailureKind.None;
 
-        if (gaussianOutput.NormalTermination)
+        if (gaussianOutput.ScfConverged == false)
+        {
+            result.FailureKind =
+                CalculationFailureKind.ScfNotConverged;
+            AddDiagnostic(
+                result,
+                CalculationDiagnosticSeverity.Error,
+                "gaussian.scf_not_converged",
+                "Gaussian 输出显示 SCF 没有收敛。");
+        }
+        else if (gaussianOutput.NormalTermination)
         {
             if (!gaussianOutput.Energy.HasValue)
             {

@@ -1,5 +1,6 @@
 using ChemSculptor.Agent;
 using ChemSculptor.Anomaly.Models;
+using ChemSculptor.Compute;
 using ChemSculptor.Domain;
 using ChemSculptor.ScientificData.Models;
 
@@ -17,6 +18,8 @@ public class SinglePointWorkflowDefinitionFactoryTests
                 "workflow-single-point",
                 "单点计算");
 
+        WorkflowNode? singlePoint =
+            FindNode(definition, "single-point");
         WorkflowNode? stabilityCheck =
             FindNode(definition, "stability-check");
         WorkflowNode? correctionPlan =
@@ -31,6 +34,7 @@ public class SinglePointWorkflowDefinitionFactoryTests
         WorkflowNode? scientificData =
             FindNode(definition, "science-data-record");
 
+        Assert.NotNull(singlePoint);
         Assert.NotNull(stabilityCheck);
         Assert.NotNull(correctionPlan);
         Assert.NotNull(recoveryJob);
@@ -39,9 +43,13 @@ public class SinglePointWorkflowDefinitionFactoryTests
         Assert.NotNull(plan);
         Assert.NotNull(scientificData);
         Assert.Equal(
+            CalculationSkillIds.CalculationSinglePoint,
+            singlePoint.Skill);
+        Assert.Contains("$input.request", singlePoint.Inputs.Values);
+        Assert.Equal(
             AnomalySkillIds.CheckWavefunctionStability,
             stabilityCheck.Skill);
-        Assert.Contains("validate", stabilityCheck.DependsOn);
+        Assert.Contains("single-point", stabilityCheck.DependsOn);
         Assert.Equal(
             AnomalySkillIds.PlanWavefunctionStabilityCorrection,
             correctionPlan.Skill);
@@ -67,6 +75,7 @@ public class SinglePointWorkflowDefinitionFactoryTests
         Assert.Contains(
             "recovery-stability-check",
             plan.DependsOn);
+        Assert.Contains("single-point", plan.Inputs.Values);
         Assert.Equal(
             ScientificDataSkillIds.RecordCalculationResult,
             scientificData.Skill);

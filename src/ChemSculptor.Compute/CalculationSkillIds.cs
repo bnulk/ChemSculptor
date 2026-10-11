@@ -3,6 +3,10 @@ namespace ChemSculptor.Compute;
 /// <summary>计算工作流使用的技能标识。</summary>
 public static class CalculationSkillIds
 {
+    /// <summary>完成一次稳定的单点计算。</summary>
+    public const string CalculationSinglePoint =
+        "calculation.single-point";
+
     /// <summary>通用计算结果验证。</summary>
     public const string CalculationResultValidation =
         "calculation.result-validation";

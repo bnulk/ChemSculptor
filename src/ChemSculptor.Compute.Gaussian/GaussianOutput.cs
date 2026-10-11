@@ -21,6 +21,12 @@ public sealed class GaussianOutput
     /// <summary>能量所属的方法名称，例如 RCAM-B3LYP。</summary>
     public string EnergyMethod { get; set; } = string.Empty;
 
+    /// <summary>SCF 是否收敛。</summary>
+    public bool? ScfConverged { get; set; }
+
+    /// <summary>最终 SCF 迭代次数。</summary>
+    public int? ScfIterations { get; set; }
+
     /// <summary>错误结束行。</summary>
     public List<string> ErrorMessages { get; set; } = new List<string>();
 }

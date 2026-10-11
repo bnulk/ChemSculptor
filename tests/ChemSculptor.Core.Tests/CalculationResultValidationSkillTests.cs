@@ -92,6 +92,50 @@ public class CalculationResultValidationSkillTests
         }
     }
 
+    /// <summary>验证 SCF 未收敛时单点结果不能通过。</summary>
+    [Fact]
+    public async Task ScfNotConvergedFailsValidation()
+    {
+        string root = CreateTemporaryRoot();
+        string outputPath = Path.Combine(root, "output.log");
+
+        try
+        {
+            await File.WriteAllTextAsync(
+                outputPath,
+                "Normal termination");
+            CalculationResultValidationRequest request =
+                CreateValidRequest(outputPath);
+            request.Result.ScfConverged = false;
+
+            CalculationResultValidationSkillResult result =
+                await ExecuteValidationAsync(
+                    CreateSkill(),
+                    request);
+
+            Assert.False(result.Passed);
+
+            bool issueFound = false;
+
+            for (int index = 0;
+                index < result.Report.Issues.Count;
+                index++)
+            {
+                if (result.Report.Issues[index].Code
+                    == "calculation.scf_converged")
+                {
+                    issueFound = true;
+                }
+            }
+
+            Assert.True(issueFound);
+        }
+        finally
+        {
+            DeleteTemporaryRoot(root);
+        }
+    }
+
     /// <summary>验证建议级科学检查失败时只产生警告。</summary>
     [Fact]
     public async Task RecommendedScientificFailureProducesWarning()
@@ -196,6 +240,8 @@ public class CalculationResultValidationSkillTests
         result.Multiplicity = spec.Multiplicity;
         result.NormalTermination = true;
         result.FailureKind = CalculationFailureKind.None;
+        result.ScfConverged = true;
+        result.ScfIterations = 8;
         result.Energy = -76.3801014;
         result.EnergyUnit = "Hartree";
         result.OutputFilePath = outputPath;
