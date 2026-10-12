@@ -37,6 +37,16 @@ SCF 迭代上限
 
 缺少必需值时先提问，不要猜测。
 
+客户端也可以直接输入受支持的 Gaussian route 行，例如：
+
+```text
+#p cam-b3lyp/6-31G* em=GD3BJ scfcyc=200 nosymm
+```
+
+其中 `#p/#n/#t/#` 只控制输出信息量，不代表任务类型。
+
+Route 行中的关键词仍必须先转换为规范参数。
+
 详细参数和别名见：
 
 - 参数目录：references/parameters.md

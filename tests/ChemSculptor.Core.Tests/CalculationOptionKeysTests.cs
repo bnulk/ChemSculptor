@@ -16,6 +16,7 @@ public class CalculationOptionKeysTests
             CalculationOptionKeys.Basis,
             CalculationOptionKeys.DispersionCorrection,
             CalculationOptionKeys.Symmetry,
+            CalculationOptionKeys.RoutePrintLevel,
             CalculationOptionKeys.ScfIterationLimit,
             CalculationOptionKeys.Solvent,
             CalculationOptionKeys.Charge,
@@ -29,6 +30,9 @@ public class CalculationOptionKeysTests
             "dispersion-correction",
             CalculationOptionKeys.DispersionCorrection);
         Assert.Equal("symmetry", CalculationOptionKeys.Symmetry);
+        Assert.Equal(
+            "route-print-level",
+            CalculationOptionKeys.RoutePrintLevel);
         Assert.Equal(
             "scf-iteration-limit",
             CalculationOptionKeys.ScfIterationLimit);

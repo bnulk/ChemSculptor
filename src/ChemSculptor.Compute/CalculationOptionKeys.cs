@@ -18,6 +18,9 @@ public static class CalculationOptionKeys
     /// <summary>对称性模式。</summary>
     public const string Symmetry = "symmetry";
 
+    /// <summary>Gaussian route 输出信息量。</summary>
+    public const string RoutePrintLevel = "route-print-level";
+
     /// <summary>自洽场迭代上限。</summary>
     public const string ScfIterationLimit = "scf-iteration-limit";
 

@@ -174,6 +174,27 @@ tests/ChemSculptor.Core.Tests/ParameterPipelineEndToEndTests.cs
 
 Skill 现在说明单点计算边界、输入契约、执行链路、停止条件和参考文件。
 
+支持客户端直接输入 Gaussian route 行：
+
+```text
+#p cam-b3lyp/6-31G* em=GD3BJ scfcyc=200 nosymm
+```
+
+`RuleBasedTaskInterpreter` 现在把 `#p` 开头的 route 行默认识别为单点任务，
+参数提取器继续把安全别名转换为规范参数。
+
+新增 route 输出信息量参数：
+
+```text
+route-print-level
+  Verbose -> #p
+  Normal  -> #n
+  Terse   -> #t
+  Default -> #
+```
+
+`#p`、`#n`、`#t`、`#` 现在只控制输出信息量，不再承担任务类型语义。
+
 新增测试：
 
 ```text
@@ -194,7 +215,7 @@ tests/ChemSculptor.Core.Tests/CalculationParameterModelsTests.cs
 
 ```text
 Release 构建：0 警告，0 错误
-测试：133/133 通过
+测试：138/138 通过
 ```
 
 ---

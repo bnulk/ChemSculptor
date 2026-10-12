@@ -61,6 +61,9 @@ public sealed class RuleBasedTaskInterpreter : ITaskInterpreter
     /// <summary>单点计算的缩写关键词。</summary>
     private const string SinglePointAbbreviation = "sp";
 
+    /// <summary>Gaussian route 前缀。</summary>
+    private const string GaussianRoutePrefix = "#p";
+
     /// <summary>解释输入文本。</summary>
     public Task<InterpretedTask> InterpretAsync(
         string text,
@@ -78,6 +81,30 @@ public sealed class RuleBasedTaskInterpreter : ITaskInterpreter
         }
 
         string normalizedText = text.Trim();
+
+        if (IsGaussianRouteLine(normalizedText))
+        {
+            // #、#p、#n、#t 只控制输出信息量。
+            // 当前阶段尚无其它任务关键词时，按默认单点任务处理。
+            if (ContainsUnsupportedRouteTask(normalizedText))
+            {
+                interpretedTask.IsSupported = false;
+                interpretedTask.Confidence = 0.0;
+                interpretedTask.Diagnostics.Add(
+                    "当前阶段只支持单点计算 route。");
+                return Task.FromResult(interpretedTask);
+            }
+
+            interpretedTask.TaskType =
+                CalculationTaskType.SinglePoint;
+            interpretedTask.WorkflowId = "single_point";
+            interpretedTask.IsSupported = true;
+            interpretedTask.Confidence = 0.9;
+            InterpretElectronicState(
+                normalizedText,
+                interpretedTask);
+            return Task.FromResult(interpretedTask);
+        }
 
         if (ContainsKeyword(normalizedText, SinglePointKeyword)
             || ContainsKeyword(normalizedText, SinglePointEnglishKeyword)
@@ -98,6 +125,29 @@ public sealed class RuleBasedTaskInterpreter : ITaskInterpreter
         interpretedTask.Diagnostics.Add("当前阶段只支持单点计算。");
 
         return Task.FromResult(interpretedTask);
+    }
+
+    private static bool IsGaussianRouteLine(string text)
+    {
+        string trimmed = text.TrimStart();
+
+        return trimmed.StartsWith(
+            GaussianRoutePrefix,
+            StringComparison.OrdinalIgnoreCase)
+            || trimmed.StartsWith(
+                "#",
+                StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static bool ContainsUnsupportedRouteTask(string text)
+    {
+        return ContainsKeyword(text, "opt")
+            || ContainsKeyword(text, "freq")
+            || ContainsKeyword(text, "frequency")
+            || ContainsKeyword(text, "td")
+            || ContainsKeyword(text, "cis")
+            || ContainsKeyword(text, "soc")
+            || ContainsKeyword(text, "mecp");
     }
 
     private static bool ContainsKeyword(string text, string keyword)

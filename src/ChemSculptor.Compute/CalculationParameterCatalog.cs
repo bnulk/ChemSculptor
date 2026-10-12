@@ -141,6 +141,30 @@ public static class CalculationParameterCatalog
             }));
 
         definitions.Add(CreateDefinition(
+            CalculationOptionKeys.RoutePrintLevel,
+            "Route 输出信息量",
+            CalculationParameterValueKind.Enum,
+            new string[] { "Default", "Terse", "Normal", "Verbose" },
+            "Verbose",
+            CalculationRiskLevel.Info,
+            new string[]
+            {
+                "#",
+                "#t",
+                "#n",
+                "#p",
+                "terse",
+                "normal",
+                "verbose",
+                "信息量少",
+                "信息量中等",
+                "信息量多",
+                "简短输出",
+                "普通输出",
+                "详细输出"
+            }));
+
+        definitions.Add(CreateDefinition(
             CalculationOptionKeys.ScfIterationLimit,
             "SCF 迭代上限",
             CalculationParameterValueKind.Integer,

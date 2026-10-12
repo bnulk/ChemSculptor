@@ -11,6 +11,18 @@ method + basis
 task-type = SinglePoint
   -> SP
 
+route-print-level = Verbose
+  -> #p
+
+route-print-level = Normal
+  -> #n
+
+route-print-level = Terse
+  -> #t
+
+route-print-level = Default
+  -> #
+
 dispersion-correction = None
   -> 不输出
 
@@ -43,6 +55,12 @@ solvent = Water
 
 ```text
 #p CAM-B3LYP/6-31G* SP em=GD3BJ nosymm scfcyc=300 SCRF=(Solvent=Water)
+```
+
+允许客户端输入 route 行：
+
+```text
+#p cam-b3lyp/6-31G* em=GD3BJ scfcyc=200 nosymm
 ```
 
 ## 约束

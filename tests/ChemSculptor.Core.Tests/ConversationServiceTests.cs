@@ -30,6 +30,31 @@ public class ConversationServiceTests
         Assert.Contains("单点计算", reply.ReplyMessage);
     }
 
+    /// <summary>验证 Gaussian route 行默认识别为单点计算。</summary>
+    [Fact]
+    public async Task GaussianRouteLineIsRecognizedAsSinglePoint()
+    {
+        RuleBasedTaskInterpreter interpreter =
+            new RuleBasedTaskInterpreter();
+        InMemoryConversationRepository repository =
+            new InMemoryConversationRepository();
+        ConversationService service =
+            new ConversationService(interpreter, repository);
+
+        ConversationRequest request = new ConversationRequest();
+        request.SessionId = "session-route";
+        request.Text =
+            "#p cam-b3lyp/6-31G* em=GD3BJ scfcyc=200 nosymm";
+
+        ConversationReply reply =
+            await service.HandleMessageAsync(request);
+
+        Assert.True(reply.Intent.IsSupported);
+        Assert.Equal(
+            CalculationTaskType.SinglePoint,
+            reply.Intent.TaskType);
+    }
+
     /// <summary>验证明确指定三重态时记录目标自旋多重度。</summary>
     [Fact]
     public async Task TripletSinglePointMessageIsRecognized()

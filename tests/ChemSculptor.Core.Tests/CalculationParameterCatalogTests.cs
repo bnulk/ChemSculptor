@@ -18,6 +18,7 @@ public class CalculationParameterCatalogTests
             CalculationOptionKeys.Basis,
             CalculationOptionKeys.DispersionCorrection,
             CalculationOptionKeys.Symmetry,
+            CalculationOptionKeys.RoutePrintLevel,
             CalculationOptionKeys.ScfIterationLimit,
             CalculationOptionKeys.Solvent,
             CalculationOptionKeys.Charge,

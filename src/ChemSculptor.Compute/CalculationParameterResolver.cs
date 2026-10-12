@@ -320,6 +320,10 @@ public sealed class CalculationParameterResolver
             "Default");
         SetDefaultExtraOption(
             spec,
+            CalculationOptionKeys.RoutePrintLevel,
+            "Verbose");
+        SetDefaultExtraOption(
+            spec,
             CalculationOptionKeys.ScfIterationLimit,
             CalculationDefaults
                 .DefaultScfIterationLimit

@@ -242,6 +242,7 @@ public sealed class RuleBasedCalculationParameterExtractor
             CalculationOptionKeys.Basis,
             "6-31G*");
 
+        AddRoutePrintLevelRules(rules);
         AddDispersionRules(rules);
         AddSymmetryRules(rules);
         AddScfIterationRules(rules);
@@ -250,6 +251,25 @@ public sealed class RuleBasedCalculationParameterExtractor
         AddMultiplicityRules(rules);
 
         return rules;
+    }
+
+    private static void AddRoutePrintLevelRules(
+        List<ExtractionRule> rules)
+    {
+        AddAliasRule(rules, CalculationOptionKeys.RoutePrintLevel,
+            "#p", "Verbose", 1.0, 3);
+        AddAliasRule(rules, CalculationOptionKeys.RoutePrintLevel,
+            "#n", "Normal", 1.0, 3);
+        AddAliasRule(rules, CalculationOptionKeys.RoutePrintLevel,
+            "#t", "Terse", 1.0, 3);
+        AddAliasRule(rules, CalculationOptionKeys.RoutePrintLevel,
+            "#", "Default", 1.0, 3);
+        AddAliasRule(rules, CalculationOptionKeys.RoutePrintLevel,
+            "详细输出", "Verbose", 1.0, 3);
+        AddAliasRule(rules, CalculationOptionKeys.RoutePrintLevel,
+            "普通输出", "Normal", 1.0, 3);
+        AddAliasRule(rules, CalculationOptionKeys.RoutePrintLevel,
+            "简短输出", "Terse", 1.0, 3);
     }
 
     private static void AddSingleValueAliasRules(

@@ -115,6 +115,7 @@ WinForms
 |---|---|---|---|
 | 科学意图 | 方法、基组、色散、溶剂 | `method`、`basis`、`dispersion-correction`、`solvent` | 通用 + 程序 |
 | 算法控制 | SCF 迭代、收敛算法、初始猜测 | `scf-iteration-limit`、`scf-convergence` | 通用 + 程序 |
+| 输出控制 | Gaussian route 输出信息量 | `route-print-level` | 通用 + 程序 |
 | 体系控制 | 对称性、电荷、多重度 | `symmetry`、`charge`、`multiplicity` | 通用 + 程序 |
 | 资源控制 | 内存、核数、队列 | `memory`、`processor-count` | 执行后端 |
 | 原始关键字 | 暂未建模的 route keyword | `program-extra-keywords` | 高风险允许列表 |
@@ -126,6 +127,7 @@ method
 basis
 dispersion-correction
 symmetry
+route-print-level
 scf-iteration-limit
 charge
 multiplicity
@@ -300,6 +302,9 @@ Gaussian 目录定义参数到 route keyword 的映射
 ## 8. 第四步：从对话文本提取参数
 
 实现状态：规则版提取器已完成；尚未接入 AgentService。
+
+补充：`#p` 开头的 Gaussian route 行会先由任务解释器识别为单点任务，
+再由参数提取器解析已登记关键词。
 
 新增接口：
 

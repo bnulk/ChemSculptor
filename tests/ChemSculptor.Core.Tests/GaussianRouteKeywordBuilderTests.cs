@@ -160,4 +160,43 @@ public class GaussianRouteKeywordBuilderTests
 
         Assert.Equal(first.RouteLine, second.RouteLine);
     }
+
+    /// <summary>验证输出信息量会控制 route 前缀。</summary>
+    [Fact]
+    public void EmitsRoutePrintLevelPrefix()
+    {
+        AssertStartsWith(
+            "Verbose",
+            "#p");
+        AssertStartsWith(
+            "Normal",
+            "#n");
+        AssertStartsWith(
+            "Terse",
+            "#t");
+        AssertStartsWith(
+            "Default",
+            "#");
+    }
+
+    private static void AssertStartsWith(
+        string routePrintLevel,
+        string prefix)
+    {
+        CalculationSpec spec =
+            CalculationDefaults.CreateDefaultSinglePoint();
+        spec.ExtraOptions[
+            CalculationOptionKeys.RoutePrintLevel] = routePrintLevel;
+
+        GaussianRouteKeywordBuildResult result =
+            new GaussianRouteKeywordBuilder().Build(spec);
+
+        Assert.StartsWith(prefix, result.RouteLine);
+        Assert.Contains(
+            result.Translations,
+            translation =>
+                translation.Key
+                    == CalculationOptionKeys.RoutePrintLevel
+                && translation.RawKeyword == prefix);
+    }
 }

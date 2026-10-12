@@ -12,6 +12,9 @@ public sealed class GaussianRouteKeywordBuildResult
     /// <summary>任务关键词。</summary>
     public string TaskKeyword { get; set; } = string.Empty;
 
+    /// <summary>Route 前缀，控制输出信息量。</summary>
+    public string RoutePrefix { get; set; } = string.Empty;
+
     /// <summary>参数翻译出的 route 关键词。</summary>
     public List<string> Keywords { get; set; } =
         new List<string>();
@@ -47,6 +50,7 @@ public sealed class GaussianRouteKeywordBuilder
         result.MethodAndBasis =
             spec.Method + "/" + spec.Basis;
         result.TaskKeyword = "SP";
+        AddRoutePrintLevel(spec, result);
 
         AddTranslation(
             result,
@@ -143,6 +147,60 @@ public sealed class GaussianRouteKeywordBuilder
 
         throw new NotSupportedException(
             "不支持的色散校正：" + value);
+    }
+
+    private static void AddRoutePrintLevel(
+        CalculationSpec spec,
+        GaussianRouteKeywordBuildResult result)
+    {
+        string value = ReadExtraOption(
+            spec,
+            CalculationOptionKeys.RoutePrintLevel);
+
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            value = "Verbose";
+        }
+
+        if (string.Equals(
+            value,
+            "Default",
+            StringComparison.OrdinalIgnoreCase))
+        {
+            result.RoutePrefix = "#";
+        }
+        else if (string.Equals(
+            value,
+            "Terse",
+            StringComparison.OrdinalIgnoreCase))
+        {
+            result.RoutePrefix = "#t";
+        }
+        else if (string.Equals(
+            value,
+            "Normal",
+            StringComparison.OrdinalIgnoreCase))
+        {
+            result.RoutePrefix = "#n";
+        }
+        else if (string.Equals(
+            value,
+            "Verbose",
+            StringComparison.OrdinalIgnoreCase))
+        {
+            result.RoutePrefix = "#p";
+        }
+        else
+        {
+            throw new NotSupportedException(
+                "不支持的 route 输出信息量：" + value);
+        }
+
+        AddTranslation(
+            result,
+            CalculationOptionKeys.RoutePrintLevel,
+            value,
+            result.RoutePrefix);
     }
 
     private static void AddSymmetryKeyword(
@@ -295,7 +353,8 @@ public sealed class GaussianRouteKeywordBuilder
         GaussianRouteKeywordBuildResult result)
     {
         string routeLine =
-            "#p " +
+            result.RoutePrefix +
+            " " +
             result.MethodAndBasis +
             " " +
             result.TaskKeyword;

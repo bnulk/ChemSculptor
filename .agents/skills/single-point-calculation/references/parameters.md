@@ -8,6 +8,7 @@ method
 basis
 dispersion-correction
 symmetry
+route-print-level
 scf-iteration-limit
 solvent
 charge
@@ -22,6 +23,7 @@ method = CAM-B3LYP
 basis = 6-31G*
 dispersion-correction = None
 symmetry = Default
+route-print-level = Verbose
 scf-iteration-limit = 200
 solvent = None
 charge = 0
@@ -88,6 +90,36 @@ Ignore
 ```
 
 单独的“对称性”视为 KeyOnly，需要继续提问。
+
+## Route 输出信息量
+
+```text
+Verbose
+  #p
+  信息量多
+  详细输出
+
+Normal
+  #n
+  信息量中等
+  普通输出
+
+Terse
+  #t
+  信息量少
+  简短输出
+
+Default
+  #
+```
+
+规则：
+
+```text
+#、#p、#n、#t 只控制输出信息量
+不用于判断任务类型
+默认 Verbose，对应 #p
+```
 
 ## SCF 迭代上限
 

@@ -35,7 +35,7 @@ HANDOFF.md
 
 ```text
 Release 构建：0 警告，0 错误
-测试：133/133 通过
+测试：138/138 通过
 ```
 
 ## 总体架构
@@ -107,6 +107,8 @@ Gaussian route 关键词翻译
 计算参数审计
 参数问题客户端显示
 项目级 Codex Skill
+Gaussian route 行输入
+Route 输出信息量
 WinForms 客户端
 波函数稳定性检查
 自旋多重度矫正

@@ -245,6 +245,52 @@ public class AgentServiceTests
         }
     }
 
+    /// <summary>验证客户端直接输入 Gaussian route 行会被接受。</summary>
+    [Fact]
+    public async Task GaussianRouteLineMessageIsAccepted()
+    {
+        string root = CreateTemporaryRoot();
+
+        try
+        {
+            RecordingWorkflowEngine workflowEngine;
+            AgentService service =
+                CreateAgentService(root, out workflowEngine);
+
+            AgentRequest request = new AgentRequest();
+            request.SessionId = "session-route-line";
+            request.Text =
+                "#p cam-b3lyp/6-31G* em=GD3BJ scfcyc=200 nosymm";
+            request.CoordinateText =
+                "O 0.000000 0.000000 0.117300\n" +
+                "H 0.000000 0.757200 -0.469200\n" +
+                "H 0.000000 -0.757200 -0.469200";
+
+            AgentResult result =
+                await service.HandleMessageAsync(request);
+
+            Assert.True(result.IsSupported);
+            Assert.False(result.RequiresUserAction);
+            Assert.Equal("Running", result.Status);
+            Assert.Equal(
+                "GD3BJ",
+                workflowEngine.LastJob.Spec.ExtraOptions[
+                    CalculationOptionKeys.DispersionCorrection]);
+            Assert.Equal(
+                "Ignore",
+                workflowEngine.LastJob.Spec.ExtraOptions[
+                    CalculationOptionKeys.Symmetry]);
+            Assert.Equal(
+                "200",
+                workflowEngine.LastJob.Spec.ExtraOptions[
+                    CalculationOptionKeys.ScfIterationLimit]);
+        }
+        finally
+        {
+            DeleteTemporaryRoot(root);
+        }
+    }
+
     private static AgentService CreateAgentService(
         string root,
         out RecordingWorkflowEngine workflowEngine)

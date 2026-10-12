@@ -84,6 +84,41 @@ public class ParameterExtractorTests
                 && intent.RawText == "unknown-keyword=value");
     }
 
+    /// <summary>验证 #p / #n / #t / # 会映射为输出信息量。</summary>
+    [Fact]
+    public async Task ExtractsRoutePrintLevelAliases()
+    {
+        CalculationParameterExtractionResult verbose =
+            await ExtractAsync("#p");
+        CalculationParameterExtractionResult normal =
+            await ExtractAsync("#n");
+        CalculationParameterExtractionResult terse =
+            await ExtractAsync("#t");
+        CalculationParameterExtractionResult defaultLevel =
+            await ExtractAsync("#");
+
+        Assert.Equal(
+            "Verbose",
+            FindSingle(
+                verbose,
+                CalculationOptionKeys.RoutePrintLevel).Value);
+        Assert.Equal(
+            "Normal",
+            FindSingle(
+                normal,
+                CalculationOptionKeys.RoutePrintLevel).Value);
+        Assert.Equal(
+            "Terse",
+            FindSingle(
+                terse,
+                CalculationOptionKeys.RoutePrintLevel).Value);
+        Assert.Equal(
+            "Default",
+            FindSingle(
+                defaultLevel,
+                CalculationOptionKeys.RoutePrintLevel).Value);
+    }
+
     private static async Task<CalculationParameterExtractionResult>
         ExtractAsync(string text)
     {

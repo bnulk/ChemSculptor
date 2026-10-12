@@ -47,10 +47,64 @@ public class ParameterPipelineEndToEndTests
         GaussianRouteKeywordBuildResult route =
             new GaussianRouteKeywordBuilder().Build(resolution.Spec);
 
+        Assert.StartsWith("#p", route.RouteLine);
         Assert.Contains("CAM-B3LYP/6-31G*", route.RouteLine);
         Assert.Contains("SP", route.RouteLine);
         Assert.Contains("em=GD3BJ", route.RouteLine);
         Assert.Contains("nosymm", route.RouteLine);
         Assert.Contains("scfcyc=300", route.RouteLine);
+    }
+
+    /// <summary>验证客户端直接输入 Gaussian route 行可以解析。</summary>
+    [Fact]
+    public async Task GaussianRouteLineProducesResolvedGaussianRoute()
+    {
+        const string text =
+            "#p cam-b3lyp/6-31G* em=GD3BJ scfcyc=200 nosymm";
+
+        CalculationParameterExtractionContext extractionContext =
+            new CalculationParameterExtractionContext();
+        extractionContext.Engine = CalculationDefaults.DefaultProgram;
+        extractionContext.TaskType = CalculationTaskType.SinglePoint;
+
+        RuleBasedCalculationParameterExtractor extractor =
+            new RuleBasedCalculationParameterExtractor();
+        CalculationParameterExtractionResult extraction =
+            await extractor.ExtractAsync(text, extractionContext);
+
+        CalculationSpec spec =
+            CalculationDefaults.CreateDefaultSinglePoint();
+        CalculationParameterResolutionContext resolutionContext =
+            new CalculationParameterResolutionContext();
+        resolutionContext.Engine =
+            CalculationDefaults.DefaultProgram;
+        resolutionContext.TaskType =
+            CalculationTaskType.SinglePoint;
+        resolutionContext.ElectronCount = 10;
+
+        CalculationParameterResolutionResult resolution =
+            new CalculationParameterResolver().Resolve(
+                spec,
+                extraction.Intents,
+                resolutionContext);
+
+        Assert.Equal(
+            CalculationParameterResolutionStatus.Resolved,
+            resolution.Status);
+
+        GaussianRouteKeywordBuildResult route =
+            new GaussianRouteKeywordBuilder().Build(resolution.Spec);
+
+        Assert.Contains("CAM-B3LYP/6-31G*", route.RouteLine);
+        Assert.Contains("SP", route.RouteLine);
+        Assert.Contains("em=GD3BJ", route.RouteLine);
+        Assert.Contains("nosymm", route.RouteLine);
+        Assert.Contains("scfcyc=200", route.RouteLine);
+        Assert.Contains(
+            resolution.AppliedParameters,
+            parameter =>
+                parameter.Key
+                    == CalculationOptionKeys.RoutePrintLevel
+                && parameter.Value == "Verbose");
     }
 }
