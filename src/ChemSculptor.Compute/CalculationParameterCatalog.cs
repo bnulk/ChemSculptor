@@ -91,7 +91,7 @@ public static class CalculationParameterCatalog
             "色散校正",
             CalculationParameterValueKind.Enum,
             new string[] { "None", "GD3", "GD3BJ" },
-            "None",
+            "GD3BJ",
             CalculationRiskLevel.Info,
             new string[]
             {

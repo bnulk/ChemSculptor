@@ -313,7 +313,7 @@ public sealed class CalculationParameterResolver
         SetDefaultExtraOption(
             spec,
             CalculationOptionKeys.DispersionCorrection,
-            "None");
+            "GD3BJ");
         SetDefaultExtraOption(
             spec,
             CalculationOptionKeys.Symmetry,

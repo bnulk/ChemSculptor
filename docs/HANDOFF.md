@@ -20,6 +20,7 @@ Gaussian route 关键词翻译已实现
 项目级 Codex Skill 已同步
 Gaussian route 行输入已支持
 Route 输出信息量已建模
+默认 GD3BJ 色散已启用
 ```
 
 ## 当前边界

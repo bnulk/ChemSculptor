@@ -61,7 +61,7 @@ public class CalculationParameterCatalogTests
         CalculationParameterDefinition solvent =
             GetRequired(CalculationOptionKeys.Solvent);
 
-        Assert.Equal("None", dispersion.DefaultValue);
+        Assert.Equal("GD3BJ", dispersion.DefaultValue);
         Assert.Equal(
             new string[] { "None", "GD3", "GD3BJ" },
             dispersion.AllowedValues);

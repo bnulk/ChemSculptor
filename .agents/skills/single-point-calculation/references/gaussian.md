@@ -24,7 +24,7 @@ route-print-level = Default
   -> #
 
 dispersion-correction = None
-  -> 不输出
+  -> 不输出（显式关闭）
 
 dispersion-correction = GD3
   -> em=GD3

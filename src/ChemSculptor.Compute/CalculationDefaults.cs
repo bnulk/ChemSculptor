@@ -51,6 +51,8 @@ public static class CalculationDefaults
         spec.TargetStateLabel = string.Empty;
         spec.Solvent = string.Empty;
         spec.ExtraOptions = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        spec.ExtraOptions[CalculationOptionKeys.DispersionCorrection] =
+            "GD3BJ";
         spec.ExtraOptions[CalculationOptionKeys.ScfIterationLimit] =
             DefaultScfIterationLimit.ToString(CultureInfo.InvariantCulture);
         spec.Parameters = new List<CalculationParameter>();

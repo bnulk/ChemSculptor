@@ -109,6 +109,7 @@ Gaussian route 关键词翻译
 项目级 Codex Skill
 Gaussian route 行输入
 Route 输出信息量
+默认 GD3BJ 色散
 WinForms 客户端
 波函数稳定性检查
 自旋多重度矫正

@@ -110,8 +110,12 @@ public sealed class GaussianRouteKeywordBuilder
             spec,
             CalculationOptionKeys.DispersionCorrection);
 
-        if (string.IsNullOrWhiteSpace(value)
-            || string.Equals(
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            value = "GD3BJ";
+        }
+
+        if (string.Equals(
                 value,
                 "None",
                 StringComparison.OrdinalIgnoreCase))

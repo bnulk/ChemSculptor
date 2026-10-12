@@ -21,7 +21,7 @@ multiplicity
 engine = Gaussian 16
 method = CAM-B3LYP
 basis = 6-31G*
-dispersion-correction = None
+dispersion-correction = GD3BJ
 symmetry = Default
 route-print-level = Verbose
 scf-iteration-limit = 200
@@ -61,10 +61,11 @@ GD3
 规则：
 
 ```text
-没有提到色散 -> None
-提到色散但未指定类型 -> RequestDefault = GD3BJ
+没有提到色散 -> GD3BJ
+提到色散但未指定类型 -> GD3BJ
 明确输入 GD3 -> GD3
 明确输入 GD3BJ -> GD3BJ
+明确输入关闭色散 / 不加色散 / None -> None
 ```
 
 ## 对称性

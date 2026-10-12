@@ -47,7 +47,7 @@ public class GaussianInputWriterTests
             Assert.Contains("%nprocshared=4", text);
             Assert.Contains("%mem=4GB", text);
             Assert.Contains(
-                "#p CAM-B3LYP/6-31G* SP scfcyc=200",
+                "#p CAM-B3LYP/6-31G* SP em=GD3BJ scfcyc=200",
                 text);
             Assert.Contains("water single point", text);
             Assert.Contains("0 1", text);
