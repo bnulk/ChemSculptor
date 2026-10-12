@@ -1,9 +1,0 @@
-﻿PointId：point-job-3d63684323f2471d95f9fde56f9c8a5a
-Sequence：1
-InitialJobId：job-3d63684323f2471d95f9fde56f9c8a5a
-AcceptedJobId：job-51d2820753bf454192261c24e4abde71
-RootWorkflowId：job-3d63684323f2471d95f9fde56f9c8a5a
-ParentPointId：
-CorrectionCount：1
-AcceptedBy：ScientificResultExtractor
-AcceptanceSummary：原始点被修正结果取代。

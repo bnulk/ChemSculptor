@@ -284,6 +284,7 @@ docs/Tutorials/Skill-Collections-and-Workflow-Tutorial.md
 docs/Tutorials/ScientificData-Tutorial.md
 docs/Tutorials/Scientific-Repository-Upgrade-Tutorial.md
 docs/Tutorials/Oxygen-End-to-End-Tutorial.md
+docs/Coding-Conventions.md
 ```
 
 ## 最近一次验证
