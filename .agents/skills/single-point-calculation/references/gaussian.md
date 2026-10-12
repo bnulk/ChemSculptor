@@ -66,6 +66,8 @@ solvent = Water
 ## 约束
 
 ```text
+允许客户端使用已登记的 Gaussian 关键词交流
+必须先把 Gaussian 关键词转换为规范参数
 关键词顺序不作为语义契约
 用户原始文本不直接进入输入文件
 未登记的 raw keyword 必须拒绝
