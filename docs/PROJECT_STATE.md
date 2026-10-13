@@ -35,7 +35,7 @@ HANDOFF.md
 
 ```text
 Release 构建：0 警告，0 错误
-测试：138/138 通过
+测试：140/140 通过
 ```
 
 ## 总体架构
@@ -110,6 +110,7 @@ Gaussian route 关键词翻译
 Gaussian route 行输入
 Route 输出信息量
 默认 GD3BJ 色散
+优化任务契约
 WinForms 客户端
 波函数稳定性检查
 自旋多重度矫正

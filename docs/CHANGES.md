@@ -202,6 +202,32 @@ route-print-level
 显式输入关闭色散 / 不加色散 / None -> 关闭
 ```
 
+新增优化任务契约：
+
+```text
+src/ChemSculptor.Compute/OptimizationModels.cs
+src/ChemSculptor.Compute/CalculationInterfaces.cs
+tests/ChemSculptor.Core.Tests/OptimizationModelsTests.cs
+```
+
+新增模型：
+
+```text
+OptimizationResult
+OptimizationStep
+OptimizationConvergence
+OptimizationGradientComponent
+OptimizationFailureKind
+OptimizationSubmissionResult
+OptimizationRequest
+```
+
+新增接口：
+
+```text
+IOptimizationCalculationService
+```
+
 新增测试：
 
 ```text
@@ -216,13 +242,14 @@ tests/ChemSculptor.Core.Tests/SinglePointCalculationServiceTests.cs
 tests/ChemSculptor.Core.Tests/GaussianRouteKeywordBuilderTests.cs
 tests/ChemSculptor.Core.Tests/GaussianInputWriterTests.cs
 tests/ChemSculptor.Core.Tests/CalculationParameterModelsTests.cs
+tests/ChemSculptor.Core.Tests/OptimizationModelsTests.cs
 ```
 
 ### 验证
 
 ```text
 Release 构建：0 警告，0 错误
-测试：138/138 通过
+测试：140/140 通过
 ```
 
 ---

@@ -326,3 +326,35 @@ public interface ISinglePointCalculationService
         CancellationToken cancellationToken = default);
 
 }
+
+/// <summary>
+/// 几何优化计算服务。
+/// 负责串联优化作业的创建、执行、解析和结果查询。
+/// </summary>
+public interface IOptimizationCalculationService
+{
+    /// <summary>提交几何优化。</summary>
+    Task<OptimizationSubmissionResult> SubmitAsync(
+        OptimizationRequest request,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>查询计算作业。</summary>
+    Task<CalculationJob?> GetJobAsync(
+        string jobId,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>查询几何优化结果。</summary>
+    Task<OptimizationResult?> GetResultAsync(
+        string jobId,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>查询结果验证报告。</summary>
+    Task<CalculationValidationReport?> GetValidationAsync(
+        string jobId,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>取消计算作业。</summary>
+    Task<bool> CancelAsync(
+        string jobId,
+        CancellationToken cancellationToken = default);
+}
