@@ -5,6 +5,79 @@
 
 ---
 
+## v0.54.0（2026-10-13）：优化 Gaussian route 翻译
+
+### 版本
+
+- 当前版本：`0.54.0`
+- 日期：`2026-10-13`
+- 版本类型：新增功能
+
+### 改动目的
+
+把优化规范参数翻译为 Gaussian 的 `opt` 任务关键词，并保证
+一个 route line 中不会出现多个互相冲突的 `opt=...`。
+
+### 代码改动
+
+扩展：
+
+```text
+src/ChemSculptor.Compute.Gaussian/GaussianRouteKeywordBuilder.cs
+```
+
+新增映射：
+
+```text
+TaskType.Optimization          -> opt
+optimization-max-cycles = 100  -> MaxCycles=100
+optimization-convergence       -> Tight / VeryTight
+optimization-restart = true    -> Restart + geom=check guess=read
+optimization-initial-hessian   -> CalcFC / ReadFC
+```
+
+多个优化选项合并为一个任务关键词：
+
+```text
+opt=(CalcFC, Tight, Restart, MaxCycles=100)
+```
+
+单点任务继续保持：
+
+```text
+SP
+```
+
+翻译器版本更新为 `1.1.0`。输入写入器同步允许单点计算和几何优化。
+
+### 教程式说明
+
+route 翻译的职责是：
+
+```text
+规范参数
+  -> Gaussian 关键词片段
+  -> 单个 opt 任务关键词
+  -> 完整 route line
+```
+
+关键词顺序固定用于测试和审计，但不作为参数语义契约。
+重启优化会额外生成独立的：
+
+```text
+geom=check
+guess=read
+```
+
+### 验证
+
+```text
+Release 构建：0 警告，0 错误
+测试：151/151 通过
+```
+
+---
+
 ## v0.53.0（2026-10-13）：优化参数目录与默认值
 
 ### 版本

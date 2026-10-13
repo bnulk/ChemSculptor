@@ -161,6 +161,86 @@ public class GaussianRouteKeywordBuilderTests
         Assert.Equal(first.RouteLine, second.RouteLine);
     }
 
+    /// <summary>验证优化任务不会输出 SP，并合并 opt 参数。</summary>
+    [Fact]
+    public void BuildsMergedOptimizationRoute()
+    {
+        CalculationSpec spec =
+            CalculationDefaults.CreateDefaultOptimization();
+        spec.ExtraOptions[
+            CalculationOptionKeys.OptimizationMaxCycles] = "300";
+        spec.ExtraOptions[
+            CalculationOptionKeys.OptimizationConvergence] = "Tight";
+        spec.ExtraOptions[
+            CalculationOptionKeys.OptimizationRestart] = "true";
+        spec.ExtraOptions[
+            CalculationOptionKeys.OptimizationInitialHessian] = "CalcFC";
+
+        GaussianRouteKeywordBuildResult result =
+            new GaussianRouteKeywordBuilder().Build(spec);
+
+        Assert.Equal(
+            "opt=(CalcFC, Tight, Restart, MaxCycles=300)",
+            result.TaskKeyword);
+        Assert.DoesNotContain("SP", result.RouteLine);
+        Assert.Contains("opt=(", result.RouteLine);
+        Assert.Contains("geom=check", result.Keywords);
+        Assert.Contains("guess=read", result.Keywords);
+        Assert.Equal(
+            1,
+            CountOccurrences(result.RouteLine, "opt="));
+        Assert.Contains(
+            result.Translations,
+            translation =>
+                translation.Key
+                    == CalculationOptionKeys.OptimizationMaxCycles
+                && translation.RawKeyword == "MaxCycles=300");
+        Assert.Contains(
+            result.Translations,
+            translation =>
+                translation.Key
+                    == CalculationOptionKeys.OptimizationRestart
+                && translation.RawKeyword == "geom=check");
+    }
+
+    /// <summary>验证只有任务类型时会输出裸 opt。</summary>
+    [Fact]
+    public void BuildsBareOptimizationKeyword()
+    {
+        CalculationSpec spec =
+            CalculationDefaults.CreateDefaultOptimization();
+        spec.ExtraOptions.Clear();
+
+        GaussianRouteKeywordBuildResult result =
+            new GaussianRouteKeywordBuilder().Build(spec);
+
+        Assert.Equal("opt", result.TaskKeyword);
+        Assert.DoesNotContain("SP", result.RouteLine);
+    }
+
+    /// <summary>验证优化关键词输出顺序稳定。</summary>
+    [Fact]
+    public void ProducesStableOptimizationKeywordSequence()
+    {
+        CalculationSpec spec =
+            CalculationDefaults.CreateDefaultOptimization();
+        spec.ExtraOptions[
+            CalculationOptionKeys.OptimizationMaxCycles] = "300";
+        spec.ExtraOptions[
+            CalculationOptionKeys.OptimizationConvergence] = "VeryTight";
+        spec.ExtraOptions[
+            CalculationOptionKeys.OptimizationInitialHessian] = "ReadFC";
+
+        GaussianRouteKeywordBuilder builder =
+            new GaussianRouteKeywordBuilder();
+        GaussianRouteKeywordBuildResult first =
+            builder.Build(spec);
+        GaussianRouteKeywordBuildResult second =
+            builder.Build(spec);
+
+        Assert.Equal(first.RouteLine, second.RouteLine);
+    }
+
     /// <summary>验证输出信息量会控制 route 前缀。</summary>
     [Fact]
     public void EmitsRoutePrintLevelPrefix()
@@ -198,5 +278,31 @@ public class GaussianRouteKeywordBuilderTests
                 translation.Key
                     == CalculationOptionKeys.RoutePrintLevel
                 && translation.RawKeyword == prefix);
+    }
+
+    private static int CountOccurrences(
+        string text,
+        string value)
+    {
+        int count = 0;
+        int startIndex = 0;
+
+        while (startIndex < text.Length)
+        {
+            int index = text.IndexOf(
+                value,
+                startIndex,
+                StringComparison.OrdinalIgnoreCase);
+
+            if (index < 0)
+            {
+                break;
+            }
+
+            count++;
+            startIndex = index + value.Length;
+        }
+
+        return count;
     }
 }

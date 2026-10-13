@@ -6,7 +6,7 @@ namespace ChemSculptor.Compute.Gaussian;
 
 /// <summary>
 /// Gaussian 输入文件生成器。
-/// 当前阶段只支持单点计算输入，不负责启动程序或解析输出。
+/// 当前阶段支持单点计算和几何优化输入，不负责启动程序或解析输出。
 /// </summary>
 public sealed class GaussianInputWriter
 {

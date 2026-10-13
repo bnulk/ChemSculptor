@@ -26,6 +26,8 @@ Route 输出信息量已建模
 优化参数键、目录和默认值已建立
 优化参数提取与解析已实现
 优化参数已按任务类型隔离
+优化参数已翻译为单个 Gaussian opt 关键词
+优化重启已映射为 geom=check 和 guess=read
 ```
 
 ## 当前边界
@@ -34,37 +36,37 @@ Route 输出信息量已建模
 首期只支持 Gaussian 16
 首期只支持已冻结的规范参数键
 ORCA、原始关键词扩展和审批机制暂不实现
-优化任务尚未实现程序翻译、Skill 和执行服务
+优化任务尚未实现结果解析、Skill 和执行服务
 ```
 
 ## 验证结果
 
 ```text
 Release 构建：0 警告，0 错误
-测试：147/147 通过
+测试：151/151 通过
 ```
 
 ## 尚未完成
 
 ```text
-尚未实现优化参数到 Gaussian 关键词的翻译
+尚未实现优化输出到 OptimizationResult 的解析
 尚未实现优化 Skill
 尚未实现优化工作流和优化计算服务
 ```
 
 ## 下一步精确任务
 
-下一步严格执行优化第 3 步：
+下一步严格执行优化第 4 步：
 
 ```text
-TaskType.Optimization          -> opt
-optimization-max-cycles = 100  -> opt=maxcycles=100
-optimization-convergence       -> opt=Tight / opt=VeryTight
-optimization-restart = true    -> opt=restart + geom=check guess=read
-optimization-initial-hessian   -> opt=CalcFC / opt=ReadFC
+定义并实现 Gaussian 优化输出到 OptimizationResult 的解析
+提取正常结束、优化收敛、循环次数、最终能量和最终几何
+提取梯度、位移收敛和失败原因
+确保失败结果也保留诊断和可用产物
 ```
 
-翻译后必须增加确定性顺序测试，并保持通用层不拼接程序输入。
+解析结果必须填充第 1 步冻结的 OptimizationResult 契约，
+并增加正常收敛、未收敛和输出缺失测试。
 
 ## 注意事项
 

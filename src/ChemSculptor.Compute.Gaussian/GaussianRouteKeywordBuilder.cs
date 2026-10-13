@@ -49,7 +49,6 @@ public sealed class GaussianRouteKeywordBuilder
             new GaussianRouteKeywordBuildResult();
         result.MethodAndBasis =
             spec.Method + "/" + spec.Basis;
-        result.TaskKeyword = "SP";
         AddRoutePrintLevel(spec, result);
 
         AddTranslation(
@@ -62,11 +61,7 @@ public sealed class GaussianRouteKeywordBuilder
             CalculationOptionKeys.Basis,
             spec.Basis,
             spec.Basis);
-        AddTranslation(
-            result,
-            "task-type",
-            spec.TaskType.ToString(),
-            result.TaskKeyword);
+        AddTaskKeyword(spec, result);
 
         AddDispersionKeyword(spec, result);
         AddSymmetryKeyword(spec, result);
@@ -95,11 +90,292 @@ public sealed class GaussianRouteKeywordBuilder
     private static void ValidateTaskType(
         CalculationTaskType taskType)
     {
-        if (taskType != CalculationTaskType.SinglePoint)
+        if (taskType != CalculationTaskType.SinglePoint
+            && taskType != CalculationTaskType.Optimization)
         {
             throw new NotSupportedException(
-                "当前阶段只支持单点计算输入生成。");
+                "当前阶段只支持单点计算和几何优化输入生成。");
         }
+    }
+
+    private static void AddTaskKeyword(
+        CalculationSpec spec,
+        GaussianRouteKeywordBuildResult result)
+    {
+        if (spec.TaskType == CalculationTaskType.SinglePoint)
+        {
+            result.TaskKeyword = "SP";
+            AddTranslation(
+                result,
+                "task-type",
+                spec.TaskType.ToString(),
+                result.TaskKeyword);
+            return;
+        }
+
+        List<string> optimizationOptions =
+            new List<string>();
+        AddOptimizationInitialHessian(
+            spec,
+            optimizationOptions,
+            result);
+        AddOptimizationConvergence(
+            spec,
+            optimizationOptions,
+            result);
+        AddOptimizationRestart(
+            spec,
+            optimizationOptions,
+            result);
+        AddOptimizationMaxCycles(
+            spec,
+            optimizationOptions,
+            result);
+        result.TaskKeyword =
+            BuildOptimizationTaskKeyword(optimizationOptions);
+        AddTranslation(
+            result,
+            "task-type",
+            spec.TaskType.ToString(),
+            result.TaskKeyword);
+    }
+
+    private static void AddOptimizationInitialHessian(
+        CalculationSpec spec,
+        List<string> optimizationOptions,
+        GaussianRouteKeywordBuildResult result)
+    {
+        string value = ReadExtraOption(
+            spec,
+            CalculationOptionKeys.OptimizationInitialHessian);
+
+        if (string.IsNullOrWhiteSpace(value)
+            || string.Equals(
+                value,
+                "None",
+                StringComparison.OrdinalIgnoreCase))
+        {
+            return;
+        }
+
+        string option;
+
+        if (string.Equals(
+            value,
+            "CalcFC",
+            StringComparison.OrdinalIgnoreCase))
+        {
+            option = "CalcFC";
+        }
+        else if (string.Equals(
+            value,
+            "ReadFC",
+            StringComparison.OrdinalIgnoreCase))
+        {
+            option = "ReadFC";
+        }
+        else
+        {
+            throw new NotSupportedException(
+                "不支持的优化初始 Hessian：" + value);
+        }
+
+        AddOptimizationOption(
+            optimizationOptions,
+            option);
+        AddTranslation(
+            result,
+            CalculationOptionKeys.OptimizationInitialHessian,
+            value,
+            option);
+    }
+
+    private static void AddOptimizationConvergence(
+        CalculationSpec spec,
+        List<string> optimizationOptions,
+        GaussianRouteKeywordBuildResult result)
+    {
+        string value = ReadExtraOption(
+            spec,
+            CalculationOptionKeys.OptimizationConvergence);
+
+        if (string.IsNullOrWhiteSpace(value)
+            || string.Equals(
+                value,
+                "Default",
+                StringComparison.OrdinalIgnoreCase))
+        {
+            return;
+        }
+
+        string option;
+
+        if (string.Equals(
+            value,
+            "Tight",
+            StringComparison.OrdinalIgnoreCase))
+        {
+            option = "Tight";
+        }
+        else if (string.Equals(
+            value,
+            "VeryTight",
+            StringComparison.OrdinalIgnoreCase))
+        {
+            option = "VeryTight";
+        }
+        else
+        {
+            throw new NotSupportedException(
+                "不支持的优化收敛标准：" + value);
+        }
+
+        AddOptimizationOption(
+            optimizationOptions,
+            option);
+        AddTranslation(
+            result,
+            CalculationOptionKeys.OptimizationConvergence,
+            value,
+            option);
+    }
+
+    private static void AddOptimizationRestart(
+        CalculationSpec spec,
+        List<string> optimizationOptions,
+        GaussianRouteKeywordBuildResult result)
+    {
+        string value = ReadExtraOption(
+            spec,
+            CalculationOptionKeys.OptimizationRestart);
+
+        if (string.IsNullOrWhiteSpace(value)
+            || string.Equals(
+                value,
+                "false",
+                StringComparison.OrdinalIgnoreCase))
+        {
+            return;
+        }
+
+        if (!string.Equals(
+            value,
+            "true",
+            StringComparison.OrdinalIgnoreCase))
+        {
+            throw new NotSupportedException(
+                "优化重启值必须是 true 或 false。");
+        }
+
+        AddOptimizationOption(
+            optimizationOptions,
+            "Restart");
+        AddTranslation(
+            result,
+            CalculationOptionKeys.OptimizationRestart,
+            value,
+            "Restart");
+        AddKeyword(
+            result,
+            CalculationOptionKeys.OptimizationRestart,
+            value,
+            "geom=check");
+        AddKeyword(
+            result,
+            CalculationOptionKeys.OptimizationRestart,
+            value,
+            "guess=read");
+    }
+
+    private static void AddOptimizationMaxCycles(
+        CalculationSpec spec,
+        List<string> optimizationOptions,
+        GaussianRouteKeywordBuildResult result)
+    {
+        string value = ReadExtraOption(
+            spec,
+            CalculationOptionKeys.OptimizationMaxCycles);
+
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return;
+        }
+
+        int maxCycles;
+
+        if (!int.TryParse(
+            value,
+            NumberStyles.Integer,
+            CultureInfo.InvariantCulture,
+            out maxCycles)
+            || maxCycles <= 0)
+        {
+            throw new NotSupportedException(
+                "优化最大循环次数必须是正整数。");
+        }
+
+        string option =
+            "MaxCycles=" +
+            maxCycles.ToString(CultureInfo.InvariantCulture);
+        AddOptimizationOption(
+            optimizationOptions,
+            option);
+        AddTranslation(
+            result,
+            CalculationOptionKeys.OptimizationMaxCycles,
+            value,
+            option);
+    }
+
+    private static void AddOptimizationOption(
+        List<string> optimizationOptions,
+        string option)
+    {
+        for (int index = 0;
+            index < optimizationOptions.Count;
+            index++)
+        {
+            if (string.Equals(
+                optimizationOptions[index],
+                option,
+                StringComparison.OrdinalIgnoreCase))
+            {
+                return;
+            }
+        }
+
+        optimizationOptions.Add(option);
+    }
+
+    private static string BuildOptimizationTaskKeyword(
+        List<string> optimizationOptions)
+    {
+        if (optimizationOptions.Count == 0)
+        {
+            return "opt";
+        }
+
+        if (optimizationOptions.Count == 1)
+        {
+            return "opt=" + optimizationOptions[0];
+        }
+
+        string taskKeyword = "opt=(";
+
+        for (int index = 0;
+            index < optimizationOptions.Count;
+            index++)
+        {
+            if (index > 0)
+            {
+                taskKeyword = taskKeyword + ", ";
+            }
+
+            taskKeyword =
+                taskKeyword + optimizationOptions[index];
+        }
+
+        return taskKeyword + ")";
     }
 
     private static void AddDispersionKeyword(
@@ -349,7 +625,7 @@ public sealed class GaussianRouteKeywordBuilder
         translation.RawKeyword = keyword;
         translation.TranslatorName =
             "GaussianRouteKeywordBuilder";
-        translation.TranslatorVersion = "1.0.0";
+        translation.TranslatorVersion = "1.1.0";
         result.Translations.Add(translation);
     }
 

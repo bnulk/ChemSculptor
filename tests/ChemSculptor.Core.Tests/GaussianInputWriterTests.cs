@@ -64,9 +64,9 @@ public class GaussianInputWriterTests
         }
     }
 
-    /// <summary>验证当前阶段拒绝非单点任务。</summary>
+    /// <summary>验证几何优化会生成 opt route，而不是 SP。</summary>
     [Fact]
-    public async Task RejectsNonSinglePointTask()
+    public async Task WritesOptimizationInput()
     {
         string root = Path.Combine(
             Path.GetTempPath(),
@@ -78,13 +78,60 @@ public class GaussianInputWriterTests
 
         try
         {
-            CalculationSpec spec = CalculationDefaults.CreateDefaultSinglePoint();
+            CalculationSpec spec =
+                CalculationDefaults.CreateDefaultOptimization();
             CalculationDefaults.ApplyDefaultMultiplicityFromElectronCount(
                 spec,
                 10);
-            spec.TaskType = CalculationTaskType.Optimization;
+            spec.ExtraOptions[
+                CalculationOptionKeys.OptimizationMaxCycles] = "300";
+            spec.ExtraOptions[
+                CalculationOptionKeys.OptimizationInitialHessian] = "CalcFC";
 
             CanonicalGeometry geometry = CreateWaterGeometry();
+
+            GaussianInputOptions options = new GaussianInputOptions();
+            options.Memory = "4GB";
+            options.ProcessorCount = 4;
+
+            GaussianInputWriter writer = new GaussianInputWriter();
+            await writer.WriteAsync(spec, geometry, options, outputPath);
+            string text = await File.ReadAllTextAsync(outputPath);
+
+            Assert.Contains(
+                "opt=(CalcFC, MaxCycles=300)",
+                text);
+            Assert.DoesNotContain(" SP", text);
+        }
+        finally
+        {
+            if (Directory.Exists(root))
+            {
+                Directory.Delete(root, true);
+            }
+        }
+    }
+
+    /// <summary>验证当前阶段拒绝频率计算等未实现任务。</summary>
+    [Fact]
+    public async Task RejectsUnsupportedTaskType()
+    {
+        string root = Path.Combine(
+            Path.GetTempPath(),
+            "ChemSculptorTests",
+            Guid.NewGuid().ToString("N"));
+
+        Directory.CreateDirectory(root);
+        string outputPath = Path.Combine(root, "job-frequency.gjf");
+
+        try
+        {
+            CalculationSpec spec =
+                CalculationDefaults.CreateDefaultSinglePoint();
+            CalculationDefaults.ApplyDefaultMultiplicityFromElectronCount(
+                spec,
+                10);
+            spec.TaskType = CalculationTaskType.Frequency;
 
             GaussianInputOptions options = new GaussianInputOptions();
             options.Memory = "4GB";
@@ -95,7 +142,11 @@ public class GaussianInputWriterTests
 
             try
             {
-                await writer.WriteAsync(spec, geometry, options, outputPath);
+                await writer.WriteAsync(
+                    spec,
+                    CreateWaterGeometry(),
+                    options,
+                    outputPath);
             }
             catch (NotSupportedException)
             {
