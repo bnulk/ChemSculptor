@@ -146,6 +146,99 @@ public static class OptimizationWorkflowDefinitionFactory
             branchSelection.Id);
         definition.Nodes.Add(recoveryValidation);
 
+        WorkflowNode stabilityCheck = new WorkflowNode();
+        stabilityCheck.Id = "optimization-stability-check";
+        stabilityCheck.Skill =
+            AnomalySkillIds.CheckOptimizationStability;
+        stabilityCheck.DependsOn.Add(recoveryValidation.Id);
+        stabilityCheck.Inputs["optimization"] = optimization.Id;
+        stabilityCheck.Inputs["recoveryExecution"] =
+            recoveryExecution.Id;
+        definition.Nodes.Add(stabilityCheck);
+
+        WorkflowNode stabilityCorrectionPlan =
+            new WorkflowNode();
+        stabilityCorrectionPlan.Id =
+            "optimization-stability-correction-plan";
+        stabilityCorrectionPlan.Skill =
+            AnomalySkillIds.PlanWavefunctionStabilityCorrection;
+        stabilityCorrectionPlan.DependsOn.Add(
+            stabilityCheck.Id);
+        stabilityCorrectionPlan.Inputs["stability"] =
+            stabilityCheck.Id;
+        stabilityCorrectionPlan.ConditionInput =
+            stabilityCheck.Id;
+        AddConditions(
+            stabilityCorrectionPlan,
+            "wavefunction-instability");
+        definition.Nodes.Add(stabilityCorrectionPlan);
+
+        WorkflowNode stabilityRecoveryJob =
+            new WorkflowNode();
+        stabilityRecoveryJob.Id =
+            "optimization-stability-recovery-job";
+        stabilityRecoveryJob.Skill =
+            AnomalySkillIds.CreateRecoveryJob;
+        stabilityRecoveryJob.DependsOn.Add(
+            stabilityCorrectionPlan.Id);
+        stabilityRecoveryJob.Inputs["correctionPlan"] =
+            stabilityCorrectionPlan.Id;
+        AddPlanCreatedCondition(
+            stabilityRecoveryJob,
+            stabilityCorrectionPlan.Id);
+        definition.Nodes.Add(stabilityRecoveryJob);
+
+        WorkflowNode stabilityRecoveryExecution =
+            new WorkflowNode();
+        stabilityRecoveryExecution.Id =
+            "optimization-stability-recovery-execution";
+        stabilityRecoveryExecution.Skill =
+            AnomalySkillIds.ExecuteRecoveryJob;
+        stabilityRecoveryExecution.DependsOn.Add(
+            stabilityRecoveryJob.Id);
+        stabilityRecoveryExecution.Inputs["correctionPlan"] =
+            stabilityCorrectionPlan.Id;
+        stabilityRecoveryExecution.Inputs["recoveryJob"] =
+            stabilityRecoveryJob.Id;
+        AddPlanCreatedCondition(
+            stabilityRecoveryExecution,
+            stabilityCorrectionPlan.Id);
+        definition.Nodes.Add(stabilityRecoveryExecution);
+
+        WorkflowNode stabilityRecheck =
+            new WorkflowNode();
+        stabilityRecheck.Id =
+            "optimization-stability-recheck";
+        stabilityRecheck.Skill =
+            AnomalySkillIds.CheckOptimizationStability;
+        stabilityRecheck.DependsOn.Add(
+            stabilityRecoveryExecution.Id);
+        stabilityRecheck.Inputs["optimization"] =
+            optimization.Id;
+        stabilityRecheck.Inputs["recoveryExecution"] =
+            stabilityRecoveryExecution.Id;
+        AddPlanCreatedCondition(
+            stabilityRecheck,
+            stabilityCorrectionPlan.Id);
+        definition.Nodes.Add(stabilityRecheck);
+
+        WorkflowNode stabilityHardFailure =
+            new WorkflowNode();
+        stabilityHardFailure.Id =
+            "optimization-stability-hard-failure";
+        stabilityHardFailure.Skill =
+            AnomalySkillIds.ReportOptimizationHardFailure;
+        stabilityHardFailure.DependsOn.Add(
+            stabilityRecheck.Id);
+        stabilityHardFailure.Inputs["anomaly"] =
+            stabilityRecheck.Id;
+        stabilityHardFailure.ConditionInput =
+            stabilityRecheck.Id;
+        AddConditions(
+            stabilityHardFailure,
+            "wavefunction-instability");
+        definition.Nodes.Add(stabilityHardFailure);
+
         WorkflowNode hardFailure = new WorkflowNode();
         hardFailure.Id = "optimization-hard-failure";
         hardFailure.Skill =
@@ -165,11 +258,15 @@ public static class OptimizationWorkflowDefinitionFactory
             CalculationSkillIds.CalculationOptimizationProcessingPlan;
         processingPlan.DependsOn.Add(recoveryValidation.Id);
         processingPlan.DependsOn.Add(hardFailure.Id);
+        processingPlan.DependsOn.Add(
+            stabilityHardFailure.Id);
         processingPlan.Inputs["optimization"] = optimization.Id;
         processingPlan.Inputs["recoveryExecution"] =
             recoveryExecution.Id;
         processingPlan.Inputs["recoveryValidation"] =
             recoveryValidation.Id;
+        processingPlan.Inputs["stabilityRecoveryExecution"] =
+            stabilityRecoveryExecution.Id;
         definition.Nodes.Add(processingPlan);
 
         WorkflowNode scienceData = new WorkflowNode();
@@ -184,6 +281,8 @@ public static class OptimizationWorkflowDefinitionFactory
             recoveryExecution.Id;
         scienceData.Inputs["recoveryValidation"] =
             recoveryValidation.Id;
+        scienceData.Inputs["stabilityRecoveryExecution"] =
+            stabilityRecoveryExecution.Id;
         definition.Nodes.Add(scienceData);
 
         return definition;

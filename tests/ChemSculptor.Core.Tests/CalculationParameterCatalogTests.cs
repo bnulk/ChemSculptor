@@ -22,7 +22,8 @@ public class CalculationParameterCatalogTests
             CalculationOptionKeys.ScfIterationLimit,
             CalculationOptionKeys.Solvent,
             CalculationOptionKeys.Charge,
-            CalculationOptionKeys.Multiplicity
+            CalculationOptionKeys.Multiplicity,
+            CalculationOptionKeys.WavefunctionStabilityCheck
         };
         string[] optimizationKeys =
         {
@@ -103,6 +104,9 @@ public class CalculationParameterCatalogTests
         CalculationParameterDefinition initialHessian =
             GetRequired(
                 CalculationOptionKeys.OptimizationInitialHessian);
+        CalculationParameterDefinition stabilityCheck =
+            GetRequired(
+                CalculationOptionKeys.WavefunctionStabilityCheck);
 
         Assert.Equal("GD3BJ", dispersion.DefaultValue);
         Assert.Equal(
@@ -155,6 +159,14 @@ public class CalculationParameterCatalogTests
             new string[] { "None", "CalcFC", "ReadFC" },
             initialHessian.AllowedValues);
         Assert.Contains("CalcFC", initialHessian.Aliases);
+
+        Assert.Equal("Check", stabilityCheck.DefaultValue);
+        Assert.Equal(
+            new string[] { "Check", "Skip" },
+            stabilityCheck.AllowedValues);
+        Assert.Contains(
+            "跳过波函数稳定性检查",
+            stabilityCheck.Aliases);
     }
 
     private static CalculationParameterDefinition GetRequired(

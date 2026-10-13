@@ -96,6 +96,9 @@ public static class CommonSkillServiceRegistration
             OptimizationProcessingPlanSkill>(services);
         ServiceCollectionServiceExtensions.AddSingleton<
             ISkill,
+            OptimizationStabilityCheckSkill>(services);
+        ServiceCollectionServiceExtensions.AddSingleton<
+            ISkill,
             CalculationWorkflowProcessingPlanSkill>(services);
         ServiceCollectionServiceExtensions.AddSingleton<
             ISkill,

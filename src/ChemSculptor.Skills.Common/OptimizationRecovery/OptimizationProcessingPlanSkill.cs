@@ -10,6 +10,8 @@ public sealed class OptimizationProcessingPlanSkill : ISkill
     private const string OptimizationKey = "optimization";
     private const string RecoveryExecutionKey = "recoveryExecution";
     private const string RecoveryValidationKey = "recoveryValidation";
+    private const string StabilityRecoveryExecutionKey =
+        "stabilityRecoveryExecution";
 
     private readonly ICalculationRepository _repository;
     private readonly List<string> _capabilities;
@@ -81,12 +83,19 @@ public sealed class OptimizationProcessingPlanSkill : ISkill
             DeserializeOptional<RecoveryValidationResult>(
                 request,
                 RecoveryValidationKey);
+        RecoveryJobExecutionResult?
+            stabilityRecoveryExecution =
+                DeserializeOptional<
+                    RecoveryJobExecutionResult>(
+                        request,
+                        StabilityRecoveryExecutionKey);
 
         CalculationProcessingPlan plan =
             CreatePlan(
                 optimization,
                 recoveryExecution,
-                recoveryValidation);
+                recoveryValidation,
+                stabilityRecoveryExecution);
         await _repository.SaveProcessingPlanAsync(
             plan,
             cancellationToken);
@@ -113,12 +122,24 @@ public sealed class OptimizationProcessingPlanSkill : ISkill
     private static CalculationProcessingPlan CreatePlan(
         OptimizationCalculationSkillResult optimization,
         OptimizationRecoveryExecutionResult? recoveryExecution,
-        RecoveryValidationResult? recoveryValidation)
+        RecoveryValidationResult? recoveryValidation,
+        RecoveryJobExecutionResult?
+            stabilityRecoveryExecution)
     {
         CalculationProcessingPlan plan =
             new CalculationProcessingPlan();
         OptimizationResult finalResult = optimization.Result;
         CalculationJob finalJob = optimization.Job;
+
+        if (stabilityRecoveryExecution != null
+            && stabilityRecoveryExecution.OptimizationResult
+                != null
+            && stabilityRecoveryExecution.RecoveryJob != null)
+        {
+            finalResult =
+                stabilityRecoveryExecution.OptimizationResult;
+            finalJob = stabilityRecoveryExecution.RecoveryJob;
+        }
 
         if (recoveryExecution != null
             && recoveryExecution.Result != null

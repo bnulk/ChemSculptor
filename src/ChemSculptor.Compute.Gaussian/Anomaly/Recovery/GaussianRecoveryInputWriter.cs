@@ -137,6 +137,7 @@ public sealed class GaussianRecoveryInputWriter
             string sourceInputPath,
             string targetInputPath,
             CalculationSpec recoverySpec,
+            bool addStableOpt,
             CancellationToken cancellationToken = default)
     {
         GaussianRecoveryInputWriteResult result =
@@ -169,6 +170,12 @@ public sealed class GaussianRecoveryInputWriter
             Path.GetFileNameWithoutExtension(targetInputPath) + ".chk";
         string routeLine = _routeKeywordBuilder.Build(
             recoverySpec).RouteLine;
+
+        if (addStableOpt)
+        {
+            routeLine = routeLine + " stable=opt";
+        }
+
         bool routeUpdated = false;
 
         for (int index = 0; index < lines.Length; index++)

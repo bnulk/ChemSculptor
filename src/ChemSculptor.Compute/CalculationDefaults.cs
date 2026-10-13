@@ -137,6 +137,9 @@ public static class CalculationDefaults
             "GD3BJ";
         spec.ExtraOptions[CalculationOptionKeys.ScfIterationLimit] =
             DefaultScfIterationLimit.ToString(CultureInfo.InvariantCulture);
+        spec.ExtraOptions[
+            CalculationOptionKeys.WavefunctionStabilityCheck] =
+            "Check";
         spec.Parameters = new List<CalculationParameter>();
 
         AddParameter(

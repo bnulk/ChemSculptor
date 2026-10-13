@@ -5,6 +5,76 @@
 
 ---
 
+## v0.63.0（2026-10-13）：优化波函数稳定性检查
+
+### 版本
+
+- 当前版本：`0.63.0`
+- 日期：`2026-10-13`
+- 版本类型：新增功能
+
+### 改动目的
+
+在优化收敛后检查最终几何的波函数稳定性，并在不稳定时进入
+稳定性修正、重新优化和复检流程。同时支持用户显式跳过检查。
+
+### 代码改动
+
+扩展：
+
+```text
+src/ChemSculptor.Compute/CalculationOptionKeys.cs
+src/ChemSculptor.Compute/CalculationDefaults.cs
+src/ChemSculptor.Compute/CalculationParameterCatalog.cs
+src/ChemSculptor.Compute/CalculationParameterResolver.cs
+src/ChemSculptor.Compute/RuleBasedCalculationParameterExtractor.cs
+src/ChemSculptor.Compute.Gaussian/Anomaly/Recovery/
+  GaussianRecoveryInputWriter.cs
+src/ChemSculptor.Skills.Common/AnomalyWorkflow/RecoveryJobExecutionSkill.cs
+src/ChemSculptor.Skills.Gaussian/Anomaly/Recovery/
+  GaussianRecoveryJobProvider.cs
+src/ChemSculptor.Agent/OptimizationWorkflowDefinitionFactory.cs
+src/ChemSculptor.Agent/OptimizationCalculationService.cs
+src/ChemSculptor.Api/Contracts.cs
+src/ChemSculptor.Api/Endpoints/AgentEndpoints.cs
+src/ChemSculptor.WinForms/MainForm.cs
+src/ChemSculptor.WinForms/Models/Responses/ResponseModels.cs
+```
+
+新增：
+
+```text
+src/ChemSculptor.Skills.Common/OptimizationRecovery/
+  OptimizationStabilityCheckSkill.cs
+```
+
+### 行为
+
+```text
+默认：优化收敛后执行波函数稳定性检查
+跳过：客户端出现“不做/不检查/跳过/忽略/取消 + 波函数稳定性”
+稳定：结束
+不稳定：稳定性修正 -> 派生优化作业 -> 恢复执行 -> 稳定性复检
+```
+
+Gaussian 稳定性检查使用：
+
+```text
+guess=read geom=check stable
+```
+
+同一自旋多重度使用 `stable=opt` 修正波函数；不同自旋多重度使用稳定性结果
+给出的电子态创建派生优化作业。
+
+### 验证
+
+```text
+Release 构建：0 警告，0 错误
+测试：177/177 通过
+```
+
+---
+
 ## v0.62.0（2026-10-13）：优化测试矩阵
 
 ### 版本

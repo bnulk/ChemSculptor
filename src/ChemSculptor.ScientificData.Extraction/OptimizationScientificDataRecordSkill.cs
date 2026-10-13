@@ -15,6 +15,8 @@ public sealed class OptimizationScientificDataRecordSkill : ISkill
     private const string ProcessingPlanKey = "processingPlan";
     private const string RecoveryExecutionKey = "recoveryExecution";
     private const string RecoveryValidationKey = "recoveryValidation";
+    private const string StabilityRecoveryExecutionKey =
+        "stabilityRecoveryExecution";
 
     private readonly IScientificDataRepository _repository;
     private readonly List<string> _capabilities;
@@ -82,12 +84,19 @@ public sealed class OptimizationScientificDataRecordSkill : ISkill
             DeserializeOptional<RecoveryValidationResult>(
                 request,
                 RecoveryValidationKey);
+        RecoveryJobExecutionResult?
+            stabilityRecoveryExecution =
+                DeserializeOptional<
+                    RecoveryJobExecutionResult>(
+                        request,
+                        StabilityRecoveryExecutionKey);
 
         ScientificResult result = CreateScientificResult(
             optimization,
             processingPlan,
             recoveryExecution,
-            recoveryValidation);
+            recoveryValidation,
+            stabilityRecoveryExecution);
         await _repository.SaveAsync(result, cancellationToken);
 
         ScientificResultExtractionResult extractionResult =
@@ -116,10 +125,22 @@ public sealed class OptimizationScientificDataRecordSkill : ISkill
         OptimizationCalculationSkillResult optimization,
         CalculationWorkflowProcessingPlanSkillResult processingPlan,
         OptimizationRecoveryExecutionResult? recoveryExecution,
-        RecoveryValidationResult? recoveryValidation)
+        RecoveryValidationResult? recoveryValidation,
+        RecoveryJobExecutionResult?
+            stabilityRecoveryExecution)
     {
         OptimizationResult finalResult = optimization.Result;
         CalculationJob finalJob = optimization.Job;
+
+        if (stabilityRecoveryExecution != null
+            && stabilityRecoveryExecution.OptimizationResult
+                != null
+            && stabilityRecoveryExecution.RecoveryJob != null)
+        {
+            finalResult =
+                stabilityRecoveryExecution.OptimizationResult;
+            finalJob = stabilityRecoveryExecution.RecoveryJob;
+        }
 
         if (recoveryExecution != null
             && recoveryExecution.Result != null

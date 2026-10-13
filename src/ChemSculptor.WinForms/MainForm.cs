@@ -451,6 +451,23 @@ public sealed class MainForm : Form
                 : result.FinalJobId));
         AppendMessage(
             "hint",
+            "波函数稳定性：" +
+            (string.IsNullOrWhiteSpace(
+                result.WavefunctionStabilityStatus)
+                ? "未提供"
+                : result.WavefunctionStabilityStatus));
+
+        if (!string.IsNullOrWhiteSpace(
+            result.WavefunctionStabilitySummary))
+        {
+            AppendMessage(
+                "hint",
+                "稳定性说明：" +
+                result.WavefunctionStabilitySummary);
+        }
+
+        AppendMessage(
+            "hint",
             "最终结构：" +
             (string.IsNullOrWhiteSpace(result.FinalStructure)
                 ? "缺失"

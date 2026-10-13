@@ -43,6 +43,10 @@ public static class AnomalySkillIds
     public const string CheckOptimizationConvergence =
         "anomaly.check-optimization-convergence";
 
+    /// <summary>检查最终优化几何的波函数稳定性。</summary>
+    public const string CheckOptimizationStability =
+        "anomaly.check-optimization-stability";
+
     /// <summary>报告无法恢复的程序硬失败。</summary>
     public const string ReportOptimizationHardFailure =
         "anomaly.report-optimization-hard-failure";

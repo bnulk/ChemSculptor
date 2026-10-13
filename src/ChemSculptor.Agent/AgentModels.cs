@@ -96,4 +96,12 @@ public sealed class AgentResult
 
     /// <summary>最终采用的作业标识。</summary>
     public string FinalJobId { get; set; } = string.Empty;
+
+    /// <summary>波函数稳定性检查状态。</summary>
+    public string WavefunctionStabilityStatus { get; set; } =
+        string.Empty;
+
+    /// <summary>波函数稳定性检查摘要。</summary>
+    public string WavefunctionStabilitySummary { get; set; } =
+        string.Empty;
 }

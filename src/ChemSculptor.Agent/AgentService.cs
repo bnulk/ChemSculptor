@@ -442,6 +442,10 @@ public sealed class AgentService : IAgentService
         result.FinalJobId = submission.FinalJobId.Length == 0
             ? job.JobId
             : submission.FinalJobId;
+        result.WavefunctionStabilityStatus =
+            submission.WavefunctionStabilityStatus;
+        result.WavefunctionStabilitySummary =
+            submission.WavefunctionStabilitySummary;
 
         if (submission.Result != null)
         {

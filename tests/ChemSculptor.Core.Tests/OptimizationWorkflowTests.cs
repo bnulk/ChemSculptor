@@ -39,6 +39,16 @@ public class OptimizationWorkflowTests
         Assert.NotNull(
             FindNode(definition, "optimization-recovery-validation"));
         Assert.NotNull(
+            FindNode(definition, "optimization-stability-check"));
+        Assert.NotNull(
+            FindNode(
+                definition,
+                "optimization-stability-correction-plan"));
+        Assert.NotNull(
+            FindNode(
+                definition,
+                "optimization-stability-recheck"));
+        Assert.NotNull(
             FindNode(definition, "optimization-processing-plan"));
         Assert.NotNull(
             FindNode(definition, "optimization-science-data"));
@@ -61,6 +71,7 @@ public class OptimizationWorkflowTests
     [InlineData("normal")]
     [InlineData("scf")]
     [InlineData("optimization")]
+    [InlineData("stability")]
     public async Task RunsNormalScfAndOptimizationPaths(
         string path)
     {
@@ -113,7 +124,7 @@ public class OptimizationWorkflowTests
                 TaskState.Passed,
                 run.NodeStates["optimization-recovery-execution"]);
         }
-        else
+        else if (path == "optimization")
         {
             Assert.Equal(
                 TaskState.Skipped,
@@ -124,6 +135,21 @@ public class OptimizationWorkflowTests
             Assert.Equal(
                 TaskState.Passed,
                 run.NodeStates["optimization-recovery-execution"]);
+        }
+        else
+        {
+            Assert.Equal(
+                TaskState.Passed,
+                run.NodeStates[
+                    "optimization-stability-correction-plan"]);
+            Assert.Equal(
+                TaskState.Passed,
+                run.NodeStates[
+                    "optimization-stability-recovery-execution"]);
+            Assert.Equal(
+                TaskState.Skipped,
+                run.NodeStates[
+                    "optimization-stability-hard-failure"]);
         }
     }
 
@@ -170,11 +196,19 @@ public class OptimizationWorkflowTests
             path);
         Register(
             registry,
+            AnomalySkillIds.CheckOptimizationStability,
+            path);
+        Register(
+            registry,
             AnomalySkillIds.DiagnoseOptimizationFailure,
             path);
         Register(
             registry,
             AnomalySkillIds.PlanOptimizationCorrection,
+            path);
+        Register(
+            registry,
+            AnomalySkillIds.PlanWavefunctionStabilityCorrection,
             path);
         Register(
             registry,
@@ -187,6 +221,14 @@ public class OptimizationWorkflowTests
         Register(
             registry,
             AnomalySkillIds.ExecuteOptimizationRecoveryJob,
+            path);
+        Register(
+            registry,
+            AnomalySkillIds.CreateRecoveryJob,
+            path);
+        Register(
+            registry,
+            AnomalySkillIds.ExecuteRecoveryJob,
             path);
         Register(
             registry,
@@ -336,7 +378,7 @@ public class OptimizationWorkflowTests
             result.WorkflowId = request.WorkflowId;
             result.NodeId = request.NodeId;
             result.Succeeded = true;
-            result.Output = CreateOutput();
+            result.Output = CreateOutput(request.NodeId);
             return Task.FromResult(result);
         }
 
@@ -346,7 +388,7 @@ public class OptimizationWorkflowTests
             return Task.FromResult(true);
         }
 
-        private string CreateOutput()
+        private string CreateOutput(string nodeId)
         {
             if (Name == AnomalySkillIds.CheckOptimizationConvergence)
             {
@@ -368,10 +410,29 @@ public class OptimizationWorkflowTests
                 return "{\"summary\":\"passed\"}";
             }
 
+            if (Name == AnomalySkillIds.CheckOptimizationStability)
+            {
+                if (_path == "stability"
+                    && nodeId
+                        != "optimization-stability-recheck")
+                {
+                    return "{\"summary\":\"wavefunction-instability\"}";
+                }
+
+                return "{\"status\":1,\"summary\":\"stable\"}";
+            }
+
             if (Name == AnomalySkillIds.PlanOptimizationCorrection
                 || Name
                     == AnomalySkillIds
                         .SelectOptimizationRecoveryBranch)
+            {
+                return "{\"planCreated\":true,\"plan\":{}}";
+            }
+
+            if (Name
+                == AnomalySkillIds
+                    .PlanWavefunctionStabilityCorrection)
             {
                 return "{\"planCreated\":true,\"plan\":{}}";
             }

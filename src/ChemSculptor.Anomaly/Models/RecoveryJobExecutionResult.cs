@@ -22,4 +22,7 @@ public sealed class RecoveryJobExecutionResult
 
     /// <summary>派生单点计算解析出的通用结果。</summary>
     public CalculationResult? Result { get; set; }
+
+    /// <summary>派生几何优化解析出的通用结果。</summary>
+    public OptimizationResult? OptimizationResult { get; set; }
 }

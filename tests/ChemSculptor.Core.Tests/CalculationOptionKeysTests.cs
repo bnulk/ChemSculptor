@@ -21,6 +21,7 @@ public class CalculationOptionKeysTests
             CalculationOptionKeys.Solvent,
             CalculationOptionKeys.Charge,
             CalculationOptionKeys.Multiplicity,
+            CalculationOptionKeys.WavefunctionStabilityCheck,
             CalculationOptionKeys.OptimizationMaxCycles,
             CalculationOptionKeys.OptimizationConvergence,
             CalculationOptionKeys.OptimizationRestart,
@@ -57,6 +58,9 @@ public class CalculationOptionKeysTests
         Assert.Equal(
             "optimization-initial-hessian",
             CalculationOptionKeys.OptimizationInitialHessian);
+        Assert.Equal(
+            "wavefunction-stability-check",
+            CalculationOptionKeys.WavefunctionStabilityCheck);
         Assert.Equal(
             keys.Length,
             keys.Distinct(StringComparer.OrdinalIgnoreCase).Count());

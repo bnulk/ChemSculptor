@@ -345,6 +345,10 @@ public sealed class CalculationParameterResolver
             CalculationDefaults
                 .DefaultScfIterationLimit
                 .ToString(CultureInfo.InvariantCulture));
+        SetDefaultExtraOption(
+            spec,
+            CalculationOptionKeys.WavefunctionStabilityCheck,
+            "Check");
 
         if (spec.TaskType == CalculationTaskType.Optimization)
         {

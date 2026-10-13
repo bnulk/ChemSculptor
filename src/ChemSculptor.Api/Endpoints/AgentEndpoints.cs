@@ -75,6 +75,10 @@ public static class AgentEndpoints
         response.RmsDisplacement = result.RmsDisplacement;
         response.CorrectionCount = result.CorrectionCount;
         response.FinalJobId = result.FinalJobId;
+        response.WavefunctionStabilityStatus =
+            result.WavefunctionStabilityStatus;
+        response.WavefunctionStabilitySummary =
+            result.WavefunctionStabilitySummary;
 
         return Results.Ok(response);
     }

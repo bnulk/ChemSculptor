@@ -248,6 +248,7 @@ public sealed class RuleBasedCalculationParameterExtractor
             CalculationOptionKeys.Basis,
             "6-31G*");
 
+        AddWavefunctionStabilityCheckRules(rules);
         AddRoutePrintLevelRules(rules);
         AddDispersionRules(rules);
         AddSymmetryRules(rules);
@@ -258,6 +259,25 @@ public sealed class RuleBasedCalculationParameterExtractor
         AddOptimizationRules(rules);
 
         return rules;
+    }
+
+    private static void AddWavefunctionStabilityCheckRules(
+        List<ExtractionRule> rules)
+    {
+        AddRegexRule(
+            rules,
+            CalculationOptionKeys.WavefunctionStabilityCheck,
+            @"(?:不|不做|不要|无需|不需要|不进行|不检查|跳过|忽略|取消)\s*波函数稳定性(?:检查)?",
+            match => "Skip",
+            1.0,
+            5);
+        AddRegexRule(
+            rules,
+            CalculationOptionKeys.WavefunctionStabilityCheck,
+            @"波函数稳定性(?:检查)?",
+            match => "Check",
+            0.8,
+            2);
     }
 
     private static bool RuleAppliesToContext(

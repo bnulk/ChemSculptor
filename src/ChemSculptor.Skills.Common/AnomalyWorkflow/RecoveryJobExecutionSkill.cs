@@ -155,12 +155,16 @@ public sealed class RecoveryJobExecutionSkill : ISkill
         }
 
         if (!string.Equals(
-            option.IntentCode,
-            CorrectionIntentCodes.ChangeSpinMultiplicity,
-            StringComparison.OrdinalIgnoreCase))
+                option.IntentCode,
+                CorrectionIntentCodes.ChangeSpinMultiplicity,
+                StringComparison.OrdinalIgnoreCase)
+            && !string.Equals(
+                option.IntentCode,
+                CorrectionIntentCodes.WavefunctionOptimization,
+                StringComparison.OrdinalIgnoreCase))
         {
             result.Message =
-                "当前阶段只直接执行自旋多重度变更方案。";
+                "当前阶段只直接执行自旋多重度或波函数修正方案。";
             return result;
         }
 
@@ -253,6 +257,70 @@ public sealed class RecoveryJobExecutionSkill : ISkill
                 "recovery.post_processing_failed";
             diagnostic.Message = ex.Message;
             recoveryJob.Diagnostics.Add(diagnostic);
+        }
+
+        if (recoveryJob.Spec.TaskType
+            == CalculationTaskType.Optimization)
+        {
+            if (!(adapter is IOptimizationOutputParser optimizationParser))
+            {
+                result.Message =
+                    "当前程序适配器不支持优化恢复结果解析。";
+                return result;
+            }
+
+            OptimizationResult optimizationResult =
+                await optimizationParser.ParseOptimizationOutputAsync(
+                    recoveryJob.OutputFilePath,
+                    cancellationToken);
+            optimizationResult.JobId = recoveryJob.JobId;
+            optimizationResult.Program = recoveryJob.Spec.Program;
+            optimizationResult.Method = recoveryJob.Spec.Method;
+            optimizationResult.Basis = recoveryJob.Spec.Basis;
+            optimizationResult.Charge = recoveryJob.Spec.Charge;
+            optimizationResult.Multiplicity =
+                recoveryJob.Spec.Multiplicity;
+            optimizationResult.OutputFilePath =
+                recoveryJob.OutputFilePath;
+
+            CalculationResult artifactResult =
+                new CalculationResult();
+            artifactResult.JobId = recoveryJob.JobId;
+            artifactResult.Program = recoveryJob.Spec.Program;
+            artifactResult.Method = recoveryJob.Spec.Method;
+            artifactResult.Basis = recoveryJob.Spec.Basis;
+            artifactResult.Charge = recoveryJob.Spec.Charge;
+            artifactResult.Multiplicity =
+                recoveryJob.Spec.Multiplicity;
+            artifactResult.OutputFilePath =
+                recoveryJob.OutputFilePath;
+            artifactResult.NormalTermination =
+                optimizationResult.NormalTermination;
+            artifactResult.Energy =
+                optimizationResult.FinalEnergy;
+
+            CalculationArtifactDiscoveryContext
+                optimizationArtifactContext =
+                new CalculationArtifactDiscoveryContext();
+            optimizationArtifactContext.Job = recoveryJob;
+            optimizationArtifactContext.Result = artifactResult;
+            optimizationResult.Artifacts =
+                CalculationArtifactCollector.Collect(
+                    recoveryJob.RunDirectory,
+                    adapter.GetArtifactPatterns(
+                        optimizationArtifactContext));
+
+            await _calculationRepository.SaveJobAsync(
+                recoveryJob,
+                cancellationToken);
+
+            result.Succeeded =
+                optimizationResult.NormalTermination;
+            result.OptimizationResult = optimizationResult;
+            result.Message = result.Succeeded
+                ? "派生优化恢复作业已完成。"
+                : "派生优化作业已结束，但没有正常终止。";
+            return result;
         }
 
         CalculationResult calculationResult =

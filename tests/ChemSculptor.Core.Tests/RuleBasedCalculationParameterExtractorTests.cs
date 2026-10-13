@@ -123,6 +123,24 @@ public class RuleBasedCalculationParameterExtractorTests
             intent.State);
     }
 
+    /// <summary>验证“跳过波函数稳定性检查”被提取为 Skip。</summary>
+    [Fact]
+    public async Task ExtractsWavefunctionStabilitySkip()
+    {
+        RuleBasedCalculationParameterExtractor extractor =
+            new RuleBasedCalculationParameterExtractor();
+        CalculationParameterExtractionResult result =
+            await extractor.ExtractAsync(
+                "不做波函数稳定性检查",
+                CreateContext());
+        CalculationParameterIntent intent =
+            FindSingle(
+                result,
+                CalculationOptionKeys.WavefunctionStabilityCheck);
+
+        Assert.Equal("Skip", intent.Value);
+    }
+
     /// <summary>验证同一条文本中的对称性冲突不会被自动合并。</summary>
     [Fact]
     public async Task PreservesConflictingSymmetryIntents()

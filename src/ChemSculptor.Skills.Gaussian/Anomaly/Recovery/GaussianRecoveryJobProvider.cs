@@ -80,8 +80,16 @@ public sealed class GaussianRecoveryJobProvider
             == CalculationTaskType.Optimization)
         {
             return option.CanUseForRestart
-                && IsOptimizationCorrectionIntent(
-                    option.IntentCode);
+                && (IsOptimizationCorrectionIntent(
+                        option.IntentCode)
+                    || string.Equals(
+                        option.IntentCode,
+                        CorrectionIntentCodes.WavefunctionOptimization,
+                        StringComparison.OrdinalIgnoreCase)
+                    || string.Equals(
+                        option.IntentCode,
+                        CorrectionIntentCodes.ChangeSpinMultiplicity,
+                        StringComparison.OrdinalIgnoreCase));
         }
 
         if (!option.CanUseForRestart
@@ -281,6 +289,10 @@ public sealed class GaussianRecoveryJobProvider
                 sourceInputPath,
                 inputPath,
                 recoverySpec,
+                string.Equals(
+                    request.Plan.Option!.IntentCode,
+                    CorrectionIntentCodes.WavefunctionOptimization,
+                    StringComparison.OrdinalIgnoreCase),
                 cancellationToken);
 
         if (!writeResult.Succeeded)
@@ -418,6 +430,27 @@ public sealed class GaussianRecoveryJobProvider
                     spec,
                     change.Name,
                     change.NewValue);
+            }
+            else if (string.Equals(
+                change.Name,
+                "multiplicity",
+                StringComparison.OrdinalIgnoreCase))
+            {
+                int multiplicity;
+
+                if (int.TryParse(
+                        change.NewValue,
+                        out multiplicity)
+                    && multiplicity > 0)
+                {
+                    spec.Multiplicity = multiplicity;
+                    spec.ElectronicStateObjective =
+                        ElectronicStateObjective.TargetSpinState;
+                    spec.TargetMultiplicity = multiplicity;
+                    UpdateMultiplicityParameter(
+                        spec,
+                        multiplicity);
+                }
             }
         }
     }

@@ -48,4 +48,8 @@ public static class CalculationOptionKeys
     /// <summary>几何优化初始 Hessian 来源。</summary>
     public const string OptimizationInitialHessian =
         "optimization-initial-hessian";
+
+    /// <summary>波函数稳定性检查策略。</summary>
+    public const string WavefunctionStabilityCheck =
+        "wavefunction-stability-check";
 }

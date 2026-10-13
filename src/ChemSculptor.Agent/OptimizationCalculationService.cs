@@ -202,7 +202,7 @@ public sealed class OptimizationCalculationService
             string finalJobId = ResolveFinalJobId(
                 workflowRun,
                 jobId);
-            int correctionCount = finalJobId == jobId ? 0 : 1;
+            int correctionCount = CountCorrections(workflowRun);
             _results[jobId] = optimizationResult;
             _finalJobIds[jobId] = finalJobId;
             _correctionCounts[jobId] = correctionCount;
@@ -221,6 +221,17 @@ public sealed class OptimizationCalculationService
             result.Report = report;
             result.CorrectionCount = correctionCount;
             result.FinalJobId = finalJobId;
+            AnomalyCheckResult? stability =
+                ResolveStabilityResult(workflowRun);
+
+            if (stability != null)
+            {
+                result.WavefunctionStabilityStatus =
+                    MapStabilityStatus(stability.Status);
+                result.WavefunctionStabilitySummary =
+                    stability.Summary;
+            }
+
             result.Message = result.Succeeded
                 ? "几何优化已完成。"
                 : "几何优化工作流未通过验证。";
@@ -319,6 +330,24 @@ public sealed class OptimizationCalculationService
 
         TaskResult? recoveryTask;
         if (run.Results.TryGetValue(
+                "optimization-stability-recovery-execution",
+                out recoveryTask)
+            && !string.IsNullOrWhiteSpace(
+                recoveryTask.Output))
+        {
+            RecoveryJobExecutionResult stabilityRecovery =
+                JsonSerializer.Deserialize<
+                    RecoveryJobExecutionResult>(
+                        recoveryTask.Output,
+                        CreateJsonOptions())!;
+
+            if (stabilityRecovery.OptimizationResult != null)
+            {
+                return stabilityRecovery.OptimizationResult;
+            }
+        }
+
+        if (run.Results.TryGetValue(
             "optimization-recovery-execution",
             out recoveryTask)
             && !string.IsNullOrWhiteSpace(
@@ -344,6 +373,23 @@ public sealed class OptimizationCalculationService
         string originalJobId)
     {
         TaskResult? recoveryTask;
+
+        if (run.Results.TryGetValue(
+                "optimization-stability-recovery-execution",
+                out recoveryTask)
+            && !string.IsNullOrWhiteSpace(recoveryTask.Output))
+        {
+            RecoveryJobExecutionResult stabilityRecovery =
+                JsonSerializer.Deserialize<
+                    RecoveryJobExecutionResult>(
+                        recoveryTask.Output,
+                        CreateJsonOptions())!;
+
+            if (stabilityRecovery.RecoveryJob != null)
+            {
+                return stabilityRecovery.RecoveryJob.JobId;
+            }
+        }
 
         if (!run.Results.TryGetValue(
             "optimization-recovery-execution",
@@ -384,6 +430,84 @@ public sealed class OptimizationCalculationService
                     validationTask.Output,
                     CreateJsonOptions())!;
         return validation.Report;
+    }
+
+    private static int CountCorrections(WorkflowRun run)
+    {
+        int count = 0;
+        TaskResult? task;
+
+        if (run.Results.TryGetValue(
+                "optimization-recovery-execution",
+                out task)
+            && !string.IsNullOrWhiteSpace(task.Output))
+        {
+            count++;
+        }
+
+        if (run.Results.TryGetValue(
+                "optimization-stability-recovery-execution",
+                out task)
+            && !string.IsNullOrWhiteSpace(task.Output))
+        {
+            count++;
+        }
+
+        return count;
+    }
+
+    private static AnomalyCheckResult? ResolveStabilityResult(
+        WorkflowRun run)
+    {
+        TaskResult? task;
+
+        if (run.Results.TryGetValue(
+                "optimization-stability-recheck",
+                out task)
+            && !string.IsNullOrWhiteSpace(task.Output))
+        {
+            return JsonSerializer.Deserialize<AnomalyCheckResult>(
+                task.Output,
+                CreateJsonOptions());
+        }
+
+        if (run.Results.TryGetValue(
+                "optimization-stability-check",
+                out task)
+            && !string.IsNullOrWhiteSpace(task.Output))
+        {
+            return JsonSerializer.Deserialize<AnomalyCheckResult>(
+                task.Output,
+                CreateJsonOptions());
+        }
+
+        return null;
+    }
+
+    private static string MapStabilityStatus(
+        AnomalyCheckStatus status)
+    {
+        if (status == AnomalyCheckStatus.Passed)
+        {
+            return "Stable";
+        }
+
+        if (status == AnomalyCheckStatus.Finding)
+        {
+            return "Unstable";
+        }
+
+        if (status == AnomalyCheckStatus.Skipped)
+        {
+            return "Skipped";
+        }
+
+        if (status == AnomalyCheckStatus.ExecutionFailed)
+        {
+            return "Failed";
+        }
+
+        return status.ToString();
     }
 
     private async Task SaveParameterAuditAsync(

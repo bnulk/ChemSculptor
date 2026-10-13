@@ -248,6 +248,25 @@ public static class CalculationParameterCatalog
                 "八重态"
             }));
 
+        definitions.Add(CreateDefinition(
+            CalculationOptionKeys.WavefunctionStabilityCheck,
+            "波函数稳定性检查",
+            CalculationParameterValueKind.Enum,
+            new string[] { "Check", "Skip" },
+            "Check",
+            CalculationRiskLevel.Info,
+            new string[]
+            {
+                "波函数稳定性",
+                "波函数稳定性检查",
+                "稳定性检查",
+                "不做波函数稳定性检查",
+                "不检查波函数稳定性",
+                "跳过波函数稳定性检查",
+                "忽略波函数稳定性检查",
+                "取消波函数稳定性检查"
+            }));
+
         definitions.Add(CreateOptimizationDefinition(
             CalculationOptionKeys.OptimizationMaxCycles,
             "优化最大循环次数",

@@ -57,6 +57,12 @@ public sealed class AgentMessageResultDto
     public int CorrectionCount { get; set; }
 
     public string FinalJobId { get; set; } = string.Empty;
+
+    public string WavefunctionStabilityStatus { get; set; } =
+        string.Empty;
+
+    public string WavefunctionStabilitySummary { get; set; } =
+        string.Empty;
 }
 
 /// <summary>服务器返回的参数问题。</summary>
