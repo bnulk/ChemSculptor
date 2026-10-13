@@ -7,6 +7,10 @@ public static class CalculationSkillIds
     public const string CalculationSinglePoint =
         "calculation.single-point";
 
+    /// <summary>完成一次正常的几何优化计算。</summary>
+    public const string CalculationOptimization =
+        "calculation.optimization";
+
     /// <summary>通用计算结果验证。</summary>
     public const string CalculationResultValidation =
         "calculation.result-validation";
@@ -34,4 +38,8 @@ public static class CalculationSkillIds
     /// <summary>提取计算程序结果。</summary>
     public const string CalculationResultExtraction =
         "calculation.extract-result";
+
+    /// <summary>验证几何优化结果。</summary>
+    public const string CalculationOptimizationValidation =
+        "calculation.validate-optimization";
 }

@@ -5,6 +5,142 @@
 
 ---
 
+## v0.56.0（2026-10-13）：优化复合 Skill
+
+### 版本
+
+- 当前版本：`0.56.0`
+- 日期：`2026-10-13`
+- 版本类型：新增功能
+
+### 改动目的
+
+建立 `calculation.optimization`，在一次优化作业中完成输入准备、提交、
+等待、结果提取和优化验证，并从同一次输出中保留完整轨迹。
+
+### 代码改动
+
+新增：
+
+```text
+src/ChemSculptor.Skills.Common/OptimizationCalculation/
+  OptimizationCalculationSkill.cs
+  OptimizationCalculationValidationSkill.cs
+```
+
+扩展：
+
+```text
+src/ChemSculptor.Compute/CalculationSkillIds.cs
+src/ChemSculptor.Compute/SkillExecutionContracts.cs
+src/ChemSculptor.Compute/IOptimizationOutputParser.cs
+src/ChemSculptor.Compute.Gaussian/Gaussian16ProgramAdapter.cs
+src/ChemSculptor.Skills.Common/CalculationWorkflow/
+  CalculationResultExtractionWorkflowSkill.cs
+src/ChemSculptor.Skills.Common/CommonSkillServiceRegistration.cs
+```
+
+执行链：
+
+```text
+calculation.prepare-input
+  -> calculation.submit
+  -> calculation.wait
+  -> calculation.extract-result
+  -> calculation.validate-optimization
+```
+
+`calculation.extract-result` 在优化任务中通过
+`IOptimizationOutputParser` 解析一个 `OptimizationResult`，
+不会拆分提交多个单点作业。
+
+### 教程式说明
+
+```text
+OptimizationCalculationSkill
+  负责一次正常优化执行
+
+OptimizationCalculationValidationSkill
+  负责正常结果的必要检查
+
+优化异常、修正和重算
+  仍由后续外层工作流负责
+```
+
+### 验证
+
+```text
+Release 构建：0 警告，0 错误
+测试：154/154 通过
+```
+
+---
+
+## v0.55.0（2026-10-13）：优化输出解析与结果翻译
+
+### 版本
+
+- 当前版本：`0.55.0`
+- 日期：`2026-10-13`
+- 版本类型：新增功能
+
+### 改动目的
+
+从 Gaussian 优化输出中解析每一步的能量、SCF 状态、几何和收敛指标，
+并转换为通用 `OptimizationResult`。
+
+### 代码改动
+
+扩展：
+
+```text
+src/ChemSculptor.Compute.Gaussian/GaussianOutput.cs
+src/ChemSculptor.Compute.Gaussian/GaussianOutputParser.cs
+src/ChemSculptor.Compute.Gaussian/GaussianResultTranslator.cs
+```
+
+解析内容：
+
+```text
+Normal termination
+Error termination
+SCF Done
+Step number
+Optimization completed
+Maximum Force
+RMS Force
+Maximum Displacement
+RMS Displacement
+Standard orientation
+Input orientation
+```
+
+输出：
+
+```text
+OptimizationResult.StepCount
+OptimizationResult.Trajectory
+OptimizationResult.FinalEnergy
+OptimizationResult.FinalGeometry
+OptimizationResult.OptimizationConverged
+OptimizationResult.FinalConvergence
+OptimizationResult.FailureKind
+```
+
+### 教程式说明
+
+一个优化作业对应一个输出文件；解析器按步骤顺序读取所有
+`SCF Done`、几何块和收敛表，而不是把优化步骤作为多个作业提交。
+
+### 验证
+
+```text
+Release 构建：0 警告，0 错误
+测试：153/153 通过
+```
+
+---
+
 ## v0.54.0（2026-10-13）：优化 Gaussian route 翻译
 
 ### 版本

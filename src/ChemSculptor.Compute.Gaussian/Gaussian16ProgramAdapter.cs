@@ -8,7 +8,8 @@ namespace ChemSculptor.Compute.Gaussian;
 /// Gaussian 16 程序适配器。
 /// 负责把通用计算方案转换为 Gaussian 16 的输入文件、命令行参数和运行上下文。
 /// </summary>
-public sealed class Gaussian16ProgramAdapter : IQuantumProgramAdapter
+public sealed class Gaussian16ProgramAdapter
+    : IQuantumProgramAdapter, IOptimizationOutputParser
 {
     /// <summary>默认程序名称。</summary>
     public const string ProgramNameValue = "Gaussian 16";
@@ -325,6 +326,20 @@ public sealed class Gaussian16ProgramAdapter : IQuantumProgramAdapter
             await _outputParser.ParseAsync(outputPath, cancellationToken);
 
         return _resultTranslator.Translate(gaussianOutput);
+    }
+
+    /// <summary>解析 Gaussian 几何优化输出。</summary>
+    public async Task<OptimizationResult> ParseOptimizationOutputAsync(
+        string outputPath,
+        CancellationToken cancellationToken = default)
+    {
+        GaussianOutput gaussianOutput =
+            await _outputParser.ParseAsync(
+                outputPath,
+                cancellationToken);
+
+        return _resultTranslator.TranslateOptimization(
+            gaussianOutput);
     }
 
     /// <summary>把通用处理方案翻译为 Gaussian 专用方案。</summary>
