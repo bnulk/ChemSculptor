@@ -36,6 +36,21 @@ public class GaussianOptimizationOutputParserTests
             Assert.Equal(-76.200000, result.FinalEnergy);
             Assert.NotNull(result.FinalConvergence);
             Assert.True(result.FinalConvergence.Converged);
+            Assert.True(
+                result.FinalConvergence
+                    .MaximumForceConverged);
+            Assert.True(
+                result.FinalConvergence.RmsForceConverged);
+            Assert.True(
+                result.FinalConvergence
+                    .MaximumDisplacementConverged);
+            Assert.True(
+                result.FinalConvergence
+                    .RmsDisplacementConverged);
+            Assert.Equal(
+                0.000450,
+                result.FinalConvergence
+                    .MaximumForceThreshold);
             Assert.Equal(
                 0.000100,
                 result.FinalConvergence.MaximumForce);
@@ -57,6 +72,9 @@ public class GaussianOptimizationOutputParserTests
             Assert.Equal(7, firstStep.ScfIterations);
             Assert.NotNull(firstStep.Convergence);
             Assert.False(firstStep.Convergence.Converged);
+            Assert.False(
+                firstStep.Convergence
+                    .MaximumForceConverged);
             Assert.Equal(2, firstStep.Geometry.Atoms.Count);
 
             OptimizationStep secondStep =

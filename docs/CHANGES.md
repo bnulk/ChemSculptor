@@ -5,6 +5,94 @@
 
 ---
 
+## v0.57.0（2026-10-13）：优化结果验证
+
+### 版本
+
+- 当前版本：`0.57.0`
+- 日期：`2026-10-13`
+- 版本类型：新增功能
+
+### 改动目的
+
+复用单点验证中的 SCF 和能量检查，并增加优化步骤、总体结果和
+最终收敛指标的专项验证，使未收敛时能够指出具体未达标项。
+
+### 代码改动
+
+新增：
+
+```text
+src/ChemSculptor.Skills.Common/CalculationResultValidation/
+  NumericalCalculationValidationChecks.cs
+  OptimizationStepValidator.cs
+  OptimizationResultValidator.cs
+  OptimizationConvergenceValidator.cs
+```
+
+扩展：
+
+```text
+src/ChemSculptor.Compute/OptimizationModels.cs
+src/ChemSculptor.Compute/SkillExecutionContracts.cs
+src/ChemSculptor.Compute.Gaussian/GaussianOutput.cs
+src/ChemSculptor.Compute.Gaussian/GaussianOutputParser.cs
+src/ChemSculptor.Compute.Gaussian/GaussianResultTranslator.cs
+src/ChemSculptor.Skills.Common/CommonSkillServiceRegistration.cs
+src/ChemSculptor.Skills.Common/OptimizationCalculation/
+  OptimizationCalculationValidationSkill.cs
+```
+
+验证器职责：
+
+```text
+OptimizationStepValidator
+  逐步检查步骤存在、几何、SCF、能量存在和能量有限
+
+OptimizationResultValidator
+  检查正常结束、优化完成、失败类别、最终能量和最终几何
+
+OptimizationConvergenceValidator
+  检查最终收敛以及最大力、RMS 力、最大位移、RMS 位移
+```
+
+收敛指标现在保存：
+
+```text
+每一项的数值
+每一项的阈值
+每一项是否达标
+整体是否达标
+```
+
+### 教程式说明
+
+单点数值检查被提取为共享检查：
+
+```text
+SCF 是否收敛
+能量是否存在
+能量是否有限
+```
+
+优化仅在此基础上增加步骤和收敛专项检查。
+
+未收敛示例：
+
+```text
+optimization.convergence.maximum_force
+最大力未达标：0.01，阈值 0.00045。
+```
+
+### 验证
+
+```text
+Release 构建：0 警告，0 错误
+测试：157/157 通过
+```
+
+---
+
 ## v0.56.0（2026-10-13）：优化复合 Skill
 
 ### 版本

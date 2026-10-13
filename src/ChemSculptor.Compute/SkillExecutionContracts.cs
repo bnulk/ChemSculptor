@@ -85,6 +85,9 @@ public class CalculationResultValidationRequest
 
     /// <summary>通用计算结果。</summary>
     public CalculationResult Result { get; set; } = new CalculationResult();
+
+    /// <summary>几何优化结果；非优化验证时为空。</summary>
+    public OptimizationResult? OptimizationResult { get; set; }
 }
 
 /// <summary>计算结果验证技能结果。</summary>

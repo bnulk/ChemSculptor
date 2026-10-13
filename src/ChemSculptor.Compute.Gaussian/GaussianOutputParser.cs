@@ -408,6 +408,7 @@ public sealed class GaussianOutputParser
     {
         string itemName = match.Groups[1].Value;
         double value;
+        double threshold;
 
         if (!TryParseGaussianNumber(
             match.Groups[2].Value,
@@ -416,6 +417,17 @@ public sealed class GaussianOutputParser
             return;
         }
 
+        if (!TryParseGaussianNumber(
+            match.Groups[3].Value,
+            out threshold))
+        {
+            return;
+        }
+
+        bool itemConverged = string.Equals(
+            match.Groups[4].Value,
+            "YES",
+            StringComparison.OrdinalIgnoreCase);
         string normalizedItemName =
             Regex.Replace(
                 itemName,
@@ -425,24 +437,30 @@ public sealed class GaussianOutputParser
         if (normalizedItemName == "MAXIMUM FORCE")
         {
             convergence.MaximumForce = value;
+            convergence.MaximumForceThreshold = threshold;
+            convergence.MaximumForceConverged = itemConverged;
         }
         else if (normalizedItemName == "RMS FORCE")
         {
             convergence.RmsForce = value;
+            convergence.RmsForceThreshold = threshold;
+            convergence.RmsForceConverged = itemConverged;
         }
         else if (normalizedItemName == "MAXIMUM DISPLACEMENT")
         {
             convergence.MaximumDisplacement = value;
+            convergence.MaximumDisplacementThreshold = threshold;
+            convergence.MaximumDisplacementConverged =
+                itemConverged;
         }
         else if (normalizedItemName == "RMS DISPLACEMENT")
         {
             convergence.RmsDisplacement = value;
+            convergence.RmsDisplacementThreshold = threshold;
+            convergence.RmsDisplacementConverged =
+                itemConverged;
         }
 
-        bool itemConverged = string.Equals(
-            match.Groups[4].Value,
-            "YES",
-            StringComparison.OrdinalIgnoreCase);
         convergence.Converged =
             (convergence.Converged ?? true)
             && itemConverged;

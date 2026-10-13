@@ -14,14 +14,38 @@ public sealed class GaussianOptimizationConvergence
     /// <summary>最大力。</summary>
     public double? MaximumForce { get; set; }
 
+    /// <summary>最大力是否达标。</summary>
+    public bool? MaximumForceConverged { get; set; }
+
+    /// <summary>最大力阈值。</summary>
+    public double? MaximumForceThreshold { get; set; }
+
     /// <summary>均方根力。</summary>
     public double? RmsForce { get; set; }
+
+    /// <summary>均方根力是否达标。</summary>
+    public bool? RmsForceConverged { get; set; }
+
+    /// <summary>均方根力阈值。</summary>
+    public double? RmsForceThreshold { get; set; }
 
     /// <summary>最大位移。</summary>
     public double? MaximumDisplacement { get; set; }
 
+    /// <summary>最大位移是否达标。</summary>
+    public bool? MaximumDisplacementConverged { get; set; }
+
+    /// <summary>最大位移阈值。</summary>
+    public double? MaximumDisplacementThreshold { get; set; }
+
     /// <summary>均方根位移。</summary>
     public double? RmsDisplacement { get; set; }
+
+    /// <summary>均方根位移是否达标。</summary>
+    public bool? RmsDisplacementConverged { get; set; }
+
+    /// <summary>均方根位移阈值。</summary>
+    public double? RmsDisplacementThreshold { get; set; }
 }
 
 /// <summary>Gaussian 优化轨迹中的一个步骤。</summary>

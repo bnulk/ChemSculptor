@@ -196,11 +196,27 @@ public sealed class GaussianResultTranslator
         convergence.Converged = source.Converged;
         convergence.Criteria = source.Criteria;
         convergence.MaximumForce = source.MaximumForce;
+        convergence.MaximumForceConverged =
+            source.MaximumForceConverged;
+        convergence.MaximumForceThreshold =
+            source.MaximumForceThreshold;
         convergence.RmsForce = source.RmsForce;
+        convergence.RmsForceConverged =
+            source.RmsForceConverged;
+        convergence.RmsForceThreshold =
+            source.RmsForceThreshold;
         convergence.MaximumDisplacement =
             source.MaximumDisplacement;
+        convergence.MaximumDisplacementConverged =
+            source.MaximumDisplacementConverged;
+        convergence.MaximumDisplacementThreshold =
+            source.MaximumDisplacementThreshold;
         convergence.RmsDisplacement =
             source.RmsDisplacement;
+        convergence.RmsDisplacementConverged =
+            source.RmsDisplacementConverged;
+        convergence.RmsDisplacementThreshold =
+            source.RmsDisplacementThreshold;
         return convergence;
     }
 

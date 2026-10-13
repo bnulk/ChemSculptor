@@ -110,15 +110,12 @@ public sealed class SinglePointCalculationResultValidator : ICalculationResultVa
             request.Result.NormalTermination,
             "计算没有正常结束。");
 
-        AddRequiredCheck(
-            report,
-            "calculation.scf_converged",
-            "SCF 已收敛",
-            CalculationValidationScope.Numerical,
-            "true",
-            GetScfConvergenceText(request.Result),
-            request.Result.ScfConverged == true,
-            "SCF 没有收敛，或输出中没有可确认的收敛信息。");
+        NumericalCalculationValidationChecks
+            .AddScfConvergenceCheck(
+                report,
+                "calculation.scf_converged",
+                "SCF 已收敛",
+                request.Result.ScfConverged);
 
         AddRequiredCheck(
             report,
@@ -140,25 +137,19 @@ public sealed class SinglePointCalculationResultValidator : ICalculationResultVa
             request.Result.FailureKind == CalculationFailureKind.None,
             "计算被标记为失败：" + request.Result.FailureKind.ToString());
 
-        AddRequiredCheck(
-            report,
-            "calculation.energy_present",
-            "存在最终能量",
-            CalculationValidationScope.Numerical,
-            "存在",
-            GetEnergyText(request.Result),
-            request.Result.Energy.HasValue,
-            "结果中没有最终能量。");
+        NumericalCalculationValidationChecks
+            .AddEnergyPresentCheck(
+                report,
+                "calculation.energy_present",
+                "存在最终能量",
+                request.Result.Energy);
 
-        AddRequiredCheck(
-            report,
-            "calculation.energy_finite",
-            "最终能量是有限数值",
-            CalculationValidationScope.Numerical,
-            "有限数值",
-            GetEnergyText(request.Result),
-            request.Result.Energy.HasValue && double.IsFinite(request.Result.Energy.Value),
-            "最终能量不是有限数值。");
+        NumericalCalculationValidationChecks
+            .AddEnergyFiniteCheck(
+                report,
+                "calculation.energy_finite",
+                "最终能量是有限数值",
+                request.Result.Energy);
 
         AddRequiredCheck(
             report,
@@ -262,28 +253,4 @@ public sealed class SinglePointCalculationResultValidator : ICalculationResultVa
         }
     }
 
-    private static string GetEnergyText(CalculationResult result)
-    {
-        if (!result.Energy.HasValue)
-        {
-            return "缺失";
-        }
-
-        return result.Energy.Value.ToString(
-            "G17",
-            System.Globalization.CultureInfo.InvariantCulture);
-    }
-
-    private static string GetScfConvergenceText(
-        CalculationResult result)
-    {
-        if (!result.ScfConverged.HasValue)
-        {
-            return "未知";
-        }
-
-        return result.ScfConverged.Value
-            ? "已收敛"
-            : "未收敛";
-    }
 }

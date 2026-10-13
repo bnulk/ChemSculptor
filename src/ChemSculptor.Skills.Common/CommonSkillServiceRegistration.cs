@@ -21,6 +21,15 @@ public static class CommonSkillServiceRegistration
             ICalculationResultValidator,
             SinglePointCalculationResultValidator>(services);
         ServiceCollectionServiceExtensions.AddSingleton<
+            ICalculationResultValidator,
+            OptimizationStepValidator>(services);
+        ServiceCollectionServiceExtensions.AddSingleton<
+            ICalculationResultValidator,
+            OptimizationResultValidator>(services);
+        ServiceCollectionServiceExtensions.AddSingleton<
+            ICalculationResultValidator,
+            OptimizationConvergenceValidator>(services);
+        ServiceCollectionServiceExtensions.AddSingleton<
             CalculationValidationService>(services);
         ServiceCollectionServiceExtensions.AddSingleton<
             WavefunctionStabilityCorrectionPlanner>(services);
