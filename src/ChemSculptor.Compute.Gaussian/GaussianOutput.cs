@@ -1,4 +1,55 @@
+using ChemSculptor.InputProcessor.GeometryIntake;
+
 namespace ChemSculptor.Compute.Gaussian;
+
+/// <summary>Gaussian 优化步骤的收敛指标。</summary>
+public sealed class GaussianOptimizationConvergence
+{
+    /// <summary>是否全部满足收敛条件；没有报告时为空。</summary>
+    public bool? Converged { get; set; }
+
+    /// <summary>优化收敛标准。</summary>
+    public string Criteria { get; set; } = "Default";
+
+    /// <summary>最大力。</summary>
+    public double? MaximumForce { get; set; }
+
+    /// <summary>均方根力。</summary>
+    public double? RmsForce { get; set; }
+
+    /// <summary>最大位移。</summary>
+    public double? MaximumDisplacement { get; set; }
+
+    /// <summary>均方根位移。</summary>
+    public double? RmsDisplacement { get; set; }
+}
+
+/// <summary>Gaussian 优化轨迹中的一个步骤。</summary>
+public sealed class GaussianOptimizationStep
+{
+    /// <summary>步骤编号，从 1 开始。</summary>
+    public int StepNumber { get; set; }
+
+    /// <summary>计算该步骤时使用的几何结构。</summary>
+    public CanonicalGeometry Geometry { get; set; } =
+        new CanonicalGeometry();
+
+    /// <summary>步骤能量。</summary>
+    public double? Energy { get; set; }
+
+    /// <summary>SCF 是否收敛。</summary>
+    public bool? ScfConverged { get; set; }
+
+    /// <summary>最终 SCF 迭代次数。</summary>
+    public int? ScfIterations { get; set; }
+
+    /// <summary>该步骤的收敛指标。</summary>
+    public GaussianOptimizationConvergence? Convergence
+    {
+        get;
+        set;
+    }
+}
 
 /// <summary>
 /// Gaussian 专用输出模型。
@@ -29,4 +80,30 @@ public sealed class GaussianOutput
 
     /// <summary>错误结束行。</summary>
     public List<string> ErrorMessages { get; set; } = new List<string>();
+
+    /// <summary>是否找到优化完成标志。</summary>
+    public bool OptimizationCompleted { get; set; }
+
+    /// <summary>最后解析到的优化步骤编号。</summary>
+    public int? LastStepNumber { get; set; }
+
+    /// <summary>优化允许的最大步骤数。</summary>
+    public int? MaximumOptimizationCycles { get; set; }
+
+    /// <summary>最终几何结构。</summary>
+    public CanonicalGeometry? FinalGeometry { get; set; }
+
+    /// <summary>最终收敛指标。</summary>
+    public GaussianOptimizationConvergence? FinalConvergence
+    {
+        get;
+        set;
+    }
+
+    /// <summary>优化轨迹。</summary>
+    public List<GaussianOptimizationStep> OptimizationSteps
+    {
+        get;
+        set;
+    } = new List<GaussianOptimizationStep>();
 }
