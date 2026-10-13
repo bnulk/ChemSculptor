@@ -6,7 +6,7 @@ using ChemSculptor.InputProcessor.GeometryIntake;
 namespace ChemSculptor.Core.Tests;
 
 /// <summary>优化异常检查测试。</summary>
-public class OptimizationConvergenceCheckTests
+public class OptimizationAnomalyTests
 {
     /// <summary>验证优化未收敛时会给出具体异常、证据和摘要。</summary>
     [Fact]

@@ -4,7 +4,7 @@ using ChemSculptor.Compute.Gaussian;
 namespace ChemSculptor.Core.Tests;
 
 /// <summary>Gaussian 几何优化输出解析测试。</summary>
-public class GaussianOptimizationOutputParserTests
+public class OptimizationParserTests
 {
     /// <summary>验证每一步能量、SCF 状态、几何和最终收敛状态。</summary>
     [Fact]

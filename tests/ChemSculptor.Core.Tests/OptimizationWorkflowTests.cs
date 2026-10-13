@@ -8,7 +8,7 @@ using ChemSculptor.ScientificData.Models;
 namespace ChemSculptor.Core.Tests;
 
 /// <summary>优化完整工作流定义和分支测试。</summary>
-public class OptimizationWorkflowDefinitionFactoryTests
+public class OptimizationWorkflowTests
 {
     /// <summary>验证工作流包含完整节点和条件分支。</summary>
     [Fact]

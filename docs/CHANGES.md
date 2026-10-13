@@ -5,6 +5,69 @@
 
 ---
 
+## v0.62.0（2026-10-13）：优化测试矩阵
+
+### 版本
+
+- 当前版本：`0.62.0`
+- 日期：`2026-10-13`
+- 版本类型：测试与验证
+
+### 改动目的
+
+证明优化 Skill 和优化工作流可以复现，并覆盖正常、异常、恢复和归档路径。
+
+### 测试层次
+
+```text
+OptimizationParserTests
+OptimizationValidatorTests
+OptimizationAnomalyTests
+OptimizationRouteKeywordBuilderTests
+OptimizationCalculationSkillTests
+OptimizationWorkflowTests
+OptimizationAgentIntegrationTests
+OptimizationEndToEndTests
+```
+
+### 端到端输入
+
+```text
+#p cam-b3lyp/6-31G* opt em=GD3BJ scfcyc=200 nosymm
+```
+
+### 覆盖内容
+
+```text
+生成 opt 输入
+解析优化轨迹
+识别每一步单点
+复用 SCF 异常检查
+识别优化收敛
+生成恢复作业
+复检恢复结果
+保存科学数据
+返回客户端摘要
+```
+
+### 最终边界
+
+```text
+优化 Skill 只负责一次优化作业
+优化工作流负责轨迹、异常、恢复和归档
+单点能力复用为步骤检查
+任何优化修复都通过派生作业完成
+```
+
+### 验证
+
+```text
+Release 构建：0 警告，0 错误
+测试：174/174 通过
+```
+
+---
+
 ## v0.61.0（2026-10-13）：优化接入
 
 ### 版本

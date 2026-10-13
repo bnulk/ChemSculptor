@@ -5,7 +5,7 @@ using ChemSculptor.Skills.Common.CalculationResultValidation;
 namespace ChemSculptor.Core.Tests;
 
 /// <summary>优化结果验证器测试。</summary>
-public class OptimizationResultValidatorTests
+public class OptimizationValidatorTests
 {
     /// <summary>验证完整收敛的优化结果可以通过。</summary>
     [Fact]
