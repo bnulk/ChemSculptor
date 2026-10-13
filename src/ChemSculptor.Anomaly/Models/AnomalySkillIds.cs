@@ -38,4 +38,16 @@ public static class AnomalySkillIds
     /// <summary>验证优化恢复结果。</summary>
     public const string ValidateOptimizationRecovery =
         "anomaly.validate-optimization-recovery";
+
+    /// <summary>检查优化收敛异常。</summary>
+    public const string CheckOptimizationConvergence =
+        "anomaly.check-optimization-convergence";
+
+    /// <summary>报告无法恢复的程序硬失败。</summary>
+    public const string ReportOptimizationHardFailure =
+        "anomaly.report-optimization-hard-failure";
+
+    /// <summary>选择 SCF 或优化恢复分支。</summary>
+    public const string SelectOptimizationRecoveryBranch =
+        "anomaly.select-optimization-recovery-branch";
 }

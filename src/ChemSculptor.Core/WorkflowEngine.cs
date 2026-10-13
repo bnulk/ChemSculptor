@@ -194,6 +194,25 @@ public sealed class WorkflowEngine
         IReadOnlyDictionary<string, TaskResult> completed,
         CancellationToken cancellationToken)
     {
+        if (ShouldSkipNode(run, node, completed))
+        {
+            TaskResult skipped = new TaskResult();
+            skipped.WorkflowId = run.Id;
+            skipped.NodeId = node.Id;
+            skipped.Succeeded = true;
+            skipped.Output = string.Empty;
+            skipped.Diagnostics = "节点条件不满足，已跳过。";
+            run.NodeStates[node.Id] = TaskState.Skipped;
+            await _repository.SaveAsync(run, cancellationToken);
+            await EmitAsync(
+                WorkflowEventTypes.TaskCompleted,
+                run.Id,
+                node.Id,
+                skipped.Diagnostics,
+                cancellationToken);
+            return skipped;
+        }
+
         // 容器未注册属于技术性错误，直接抛出以便上层记录。
         ISkill? skill = _skills.Resolve(node.Skill);
         if (skill == null)
@@ -285,6 +304,37 @@ public sealed class WorkflowEngine
 
         await EmitAsync(eventType, run.Id, node.Id, result.Diagnostics, cancellationToken);
         return result;
+    }
+
+    private static bool ShouldSkipNode(
+        WorkflowRun run,
+        WorkflowNode node,
+        IReadOnlyDictionary<string, TaskResult> completed)
+    {
+        if (string.IsNullOrWhiteSpace(node.ConditionInput)
+            || node.ConditionAnyContains.Count == 0)
+        {
+            return false;
+        }
+
+        string conditionValue = ResolveNodeInput(
+            run,
+            completed,
+            node.ConditionInput);
+
+        for (int index = 0;
+            index < node.ConditionAnyContains.Count;
+            index++)
+        {
+            if (conditionValue.IndexOf(
+                node.ConditionAnyContains[index],
+                StringComparison.OrdinalIgnoreCase) >= 0)
+            {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     private static string ResolveNodeInput(

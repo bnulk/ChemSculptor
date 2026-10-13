@@ -46,6 +46,10 @@ OptimizationConvergenceCheck 已实现
 优化派生作业执行 Skill 已实现
 优化恢复验证 Skill 已实现
 Gaussian 优化恢复输入可以重建 route
+OptimizationWorkflowDefinitionFactory 已实现
+工作流节点支持条件跳过
+正常、SCF 异常、优化未收敛三条路径已验证
+程序硬失败会中止并报告
 ```
 
 ## 当前边界
@@ -61,29 +65,30 @@ ORCA、原始关键词扩展和审批机制暂不实现
 
 ```text
 Release 构建：0 警告，0 错误
-测试：162/162 通过
+测试：167/167 通过
 ```
 
 ## 尚未完成
 
 ```text
-尚未实现优化完整工作流
-尚未实现 OptimizationCalculationService 与 Agent 接入
-尚未把优化异常和验证报告接入客户端显示
+优化工作流尚未接入 Agent 路由和请求服务
+尚未实现 OptimizationCalculationService
+尚未把优化工作流状态和报告接入客户端显示
 ```
 
 ## 下一步精确任务
 
-下一步严格执行优化第 9 步：
+下一步严格执行优化第 10 步：
 
 ```text
-定义优化正常执行、验证、异常、恢复和复检的完整 DAG
-明确条件分支、重试上限、停止条件和人工确认位置
-只在确认异常时进入恢复
-恢复失败或达到预算时稳定停止
+接入 Agent 的优化任务路由
+建立 OptimizationCalculationService
+把 optimization-complete 工作流注册到请求入口
+让 Api 和 WinForms 能提交、查询和显示优化状态
 ```
 
-工作流只编排 Skill，不复制诊断、修正或执行逻辑。
+接入层不得复制工作流节点逻辑；
+只负责请求、路由、状态查询和结果呈现。
 
 ## 注意事项
 

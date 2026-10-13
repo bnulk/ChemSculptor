@@ -42,4 +42,8 @@ public static class CalculationSkillIds
     /// <summary>验证几何优化结果。</summary>
     public const string CalculationOptimizationValidation =
         "calculation.validate-optimization";
+
+    /// <summary>生成优化任务处理方案。</summary>
+    public const string CalculationOptimizationProcessingPlan =
+        "calculation.optimization-processing-plan";
 }

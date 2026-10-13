@@ -44,4 +44,17 @@ public sealed class WorkflowNode
     /// </summary>
     public Dictionary<string, string> Inputs { get; set; } =
         new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+
+    /// <summary>
+    /// 条件输入引用。
+    /// 为空时节点无条件执行；否则先读取指定上游节点或 $input 的值。
+    /// </summary>
+    public string ConditionInput { get; set; } = string.Empty;
+
+    /// <summary>
+    /// 条件输入需要包含的任一文本。
+    /// 为空时条件始终满足。
+    /// </summary>
+    public List<string> ConditionAnyContains { get; set; } =
+        new List<string>();
 }

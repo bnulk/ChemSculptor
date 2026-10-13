@@ -5,6 +5,110 @@
 
 ---
 
+## v0.60.0（2026-10-13）：优化完整工作流
+
+### 版本
+
+- 当前版本：`0.60.0`
+- 日期：`2026-10-13`
+- 版本类型：新增功能
+
+### 改动目的
+
+建立 `optimization-complete` 工作流，把优化正常执行、验证、异常、
+修正、恢复、复检、处理方案和科学数据记录串联为可条件分支的 DAG。
+
+### 代码改动
+
+新增：
+
+```text
+src/ChemSculptor.Agent/OptimizationWorkflowDefinitionFactory.cs
+```
+
+扩展：
+
+```text
+src/ChemSculptor.Domain/WorkflowDefinition.cs
+src/ChemSculptor.Domain/WorkflowState.cs
+src/ChemSculptor.Core/WorkflowEngine.cs
+src/ChemSculptor.Anomaly/Models/AnomalySkillIds.cs
+src/ChemSculptor.Compute/CalculationSkillIds.cs
+src/ChemSculptor.ScientificData/Models/ScientificDataSkillIds.cs
+```
+
+新增 Skill：
+
+```text
+OptimizationConvergenceCheckSkill
+OptimizationRecoveryBranchSelectionSkill
+OptimizationHardFailureReportSkill
+OptimizationProcessingPlanSkill
+OptimizationScientificDataRecordSkill
+```
+
+### 工作流结构
+
+```text
+优化执行
+  -> 优化验证
+  -> 异常检查
+  -> 异常诊断
+  -> SCF 修复分支 / 优化修复分支
+  -> 分支选择
+  -> 派生恢复作业
+  -> 恢复执行
+  -> 恢复复检
+  -> 处理方案
+  -> 科学数据记录
+```
+
+### 条件分支
+
+工作流节点现在支持：
+
+```text
+ConditionInput
+ConditionAnyContains
+```
+
+条件不满足时节点进入 `Skipped` 状态，依赖节点仍可继续编排。
+
+覆盖分支：
+
+```text
+SCF 异常 -> SCF 修复分支
+优化未收敛 -> 优化修复分支
+正常结束 -> 直接进入结果归档
+程序硬失败 -> 中止并报告
+```
+
+### 教程式说明
+
+工作流引擎仍然是通用 DAG 调度器：
+
+```text
+不是把条件逻辑写进某个化学 Skill
+而是由节点声明条件输入和匹配文本
+满足条件才执行，不满足则跳过
+```
+
+### 验证
+
+```text
+Release 构建：0 警告，0 错误
+测试：167/167 通过
+
+验证三条路径：
+正常路径
+SCF 异常路径
+优化未收敛恢复路径
+
+并验证程序硬失败会终止工作流。
+```
+
+---
+
 ## v0.59.0（2026-10-13）：优化恢复链
 
 ### 版本

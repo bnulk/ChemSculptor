@@ -6,4 +6,8 @@ public static class ScientificDataSkillIds
     /// <summary>从计算结果提取并保存科学数据。</summary>
     public const string RecordCalculationResult =
         "science.record-calculation-result";
+
+    /// <summary>从优化结果提取并保存科学数据。</summary>
+    public const string RecordOptimizationResult =
+        "science.record-optimization-result";
 }

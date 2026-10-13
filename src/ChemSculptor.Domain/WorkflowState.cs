@@ -66,6 +66,9 @@ public enum TaskState
     /// <summary>等待人工审批。</summary>
     AwaitingApproval,
 
+    /// <summary>节点条件不满足，已跳过。</summary>
+    Skipped,
+
     /// <summary>已取消。</summary>
     Canceled
 }

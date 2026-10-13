@@ -84,6 +84,18 @@ public static class CommonSkillServiceRegistration
             OptimizationRecoveryValidationSkill>(services);
         ServiceCollectionServiceExtensions.AddSingleton<
             ISkill,
+            OptimizationConvergenceCheckSkill>(services);
+        ServiceCollectionServiceExtensions.AddSingleton<
+            ISkill,
+            OptimizationRecoveryBranchSelectionSkill>(services);
+        ServiceCollectionServiceExtensions.AddSingleton<
+            ISkill,
+            OptimizationHardFailureReportSkill>(services);
+        ServiceCollectionServiceExtensions.AddSingleton<
+            ISkill,
+            OptimizationProcessingPlanSkill>(services);
+        ServiceCollectionServiceExtensions.AddSingleton<
+            ISkill,
             CalculationWorkflowProcessingPlanSkill>(services);
         ServiceCollectionServiceExtensions.AddSingleton<
             ISkill,

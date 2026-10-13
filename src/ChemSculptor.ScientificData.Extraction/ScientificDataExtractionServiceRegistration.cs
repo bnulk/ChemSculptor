@@ -38,6 +38,9 @@ public static class ScientificDataExtractionServiceRegistration
         ServiceCollectionServiceExtensions.AddSingleton<
             ISkill,
             ScientificDataExtractionSkill>(services);
+        ServiceCollectionServiceExtensions.AddSingleton<
+            ISkill,
+            OptimizationScientificDataRecordSkill>(services);
         return services;
     }
 }
