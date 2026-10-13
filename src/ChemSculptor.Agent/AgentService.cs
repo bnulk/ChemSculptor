@@ -13,6 +13,8 @@ public sealed class AgentService : IAgentService
 {
     private readonly IConversationService _conversationService;
     private readonly ISinglePointCalculationService _singlePointService;
+    private readonly IOptimizationCalculationService
+        _optimizationService;
     private readonly CalculationParameterConversationService
         _parameterConversationService;
     private readonly IGeometryTextParser _geometryParser;
@@ -21,6 +23,7 @@ public sealed class AgentService : IAgentService
     public AgentService(
         IConversationService conversationService,
         ISinglePointCalculationService singlePointService,
+        IOptimizationCalculationService optimizationService,
         CalculationParameterConversationService parameterConversationService,
         IGeometryTextParser geometryParser)
     {
@@ -34,6 +37,12 @@ public sealed class AgentService : IAgentService
         {
             throw new ArgumentNullException(
                 nameof(singlePointService));
+        }
+
+        if (optimizationService == null)
+        {
+            throw new ArgumentNullException(
+                nameof(optimizationService));
         }
 
         if (parameterConversationService == null)
@@ -50,6 +59,7 @@ public sealed class AgentService : IAgentService
 
         _conversationService = conversationService;
         _singlePointService = singlePointService;
+        _optimizationService = optimizationService;
         _parameterConversationService = parameterConversationService;
         _geometryParser = geometryParser;
     }
@@ -71,6 +81,16 @@ public sealed class AgentService : IAgentService
 
         if (pending != null)
         {
+            if (pending.TaskType
+                == CalculationTaskType.Optimization)
+            {
+                return await HandleOptimizationConversationAsync(
+                    request,
+                    null,
+                    pending,
+                    cancellationToken);
+            }
+
             return await HandleParameterConversationAsync(
                 request,
                 null,
@@ -96,6 +116,16 @@ public sealed class AgentService : IAgentService
             unsupported.Diagnostics =
                 new List<string>(conversationReply.Diagnostics);
             return unsupported;
+        }
+
+        if (conversationReply.Intent.TaskType
+            == CalculationTaskType.Optimization)
+        {
+            return await HandleOptimizationConversationAsync(
+                request,
+                conversationReply,
+                null,
+                cancellationToken);
         }
 
         if (conversationReply.Intent.TaskType
@@ -259,6 +289,224 @@ public sealed class AgentService : IAgentService
         }
 
         return calculationRequest;
+    }
+
+    private async Task<AgentResult>
+        HandleOptimizationConversationAsync(
+            AgentRequest request,
+            ConversationReply? conversationReply,
+            PendingCalculationParameterRequest? pending,
+            CancellationToken cancellationToken)
+    {
+        string coordinateText = string.IsNullOrWhiteSpace(
+            request.CoordinateText)
+            ? pending == null
+                ? string.Empty
+                : pending.CoordinateText
+            : request.CoordinateText;
+
+        int? neutralElectronCount =
+            await TryGetNeutralElectronCountAsync(
+                coordinateText,
+                cancellationToken);
+
+        CalculationParameterResolutionContext resolutionContext =
+            new CalculationParameterResolutionContext();
+        resolutionContext.Engine =
+            CalculationDefaults.DefaultProgram;
+        resolutionContext.TaskType =
+            CalculationTaskType.Optimization;
+        resolutionContext.ElectronCount = neutralElectronCount;
+
+        ParameterConversationTurn turn =
+            await _parameterConversationService.HandleAsync(
+                request.SessionId,
+                request.Text,
+                coordinateText,
+                CalculationDefaults.CreateDefaultOptimization(),
+                resolutionContext,
+                cancellationToken);
+
+        if (turn.Status
+            == ParameterConversationTurnStatus.ReadyToSubmit)
+        {
+            OptimizationRequest optimizationRequest =
+                BuildOptimizationRequest(
+                    request,
+                    turn);
+            OptimizationSubmissionResult submission =
+                await _optimizationService.SubmitAsync(
+                    optimizationRequest,
+                    cancellationToken);
+            AgentResult submitted =
+                BuildOptimizationResult(submission);
+            submitted.RequiresUserAction = false;
+            submitted.AppliedParameters =
+                turn.Resolution == null
+                    ? new List<ResolvedCalculationParameter>()
+                    : new List<ResolvedCalculationParameter>(
+                        turn.Resolution.AppliedParameters);
+            return submitted;
+        }
+
+        if (turn.Status
+            == ParameterConversationTurnStatus.NeedsClarification)
+        {
+            AgentResult clarification =
+                BuildClarificationResult(turn);
+            clarification.TaskType =
+                CalculationTaskType.Optimization;
+            return clarification;
+        }
+
+        if (turn.Status
+            == ParameterConversationTurnStatus.Rejected)
+        {
+            AgentResult rejected =
+                BuildRejectedResult(turn);
+            rejected.TaskType =
+                CalculationTaskType.Optimization;
+            return rejected;
+        }
+
+        AgentResult stateResult = new AgentResult();
+        stateResult.IsSupported = true;
+        stateResult.TaskType =
+            CalculationTaskType.Optimization;
+        stateResult.Status = turn.Status.ToString();
+        stateResult.Message = turn.Message;
+        return stateResult;
+    }
+
+    private static OptimizationRequest BuildOptimizationRequest(
+        AgentRequest request,
+        ParameterConversationTurn turn)
+    {
+        OptimizationRequest optimizationRequest =
+            new OptimizationRequest();
+        optimizationRequest.SessionId = request.SessionId;
+        optimizationRequest.Goal = string.IsNullOrWhiteSpace(
+            turn.OriginalText)
+            ? request.Text
+            : turn.OriginalText;
+        optimizationRequest.CoordinateText =
+            turn.CoordinateText;
+        optimizationRequest.ResolvedSpec =
+            turn.Resolution == null
+                ? CalculationDefaults.CreateDefaultOptimization()
+                : turn.Resolution.Spec;
+        optimizationRequest.ResolvedParameters =
+            turn.Resolution == null
+                ? new List<ResolvedCalculationParameter>()
+                : new List<ResolvedCalculationParameter>(
+                    turn.Resolution.AppliedParameters);
+
+        if (optimizationRequest.ResolvedSpec != null)
+        {
+            optimizationRequest.Charge =
+                optimizationRequest.ResolvedSpec.Charge;
+
+            if (optimizationRequest.ResolvedSpec.Multiplicity > 0)
+            {
+                optimizationRequest.Multiplicity =
+                    optimizationRequest.ResolvedSpec.Multiplicity;
+            }
+        }
+
+        return optimizationRequest;
+    }
+
+    private static AgentResult BuildOptimizationResult(
+        OptimizationSubmissionResult submission)
+    {
+        AgentResult result = new AgentResult();
+        result.TaskType = CalculationTaskType.Optimization;
+
+        if (!submission.Succeeded || submission.Job == null)
+        {
+            result.IsSupported = false;
+            result.Error = submission.Error;
+            result.Diagnostics =
+                new List<string>(submission.Diagnostics);
+            return result;
+        }
+
+        CalculationJob job = submission.Job;
+        result.IsSupported = true;
+        result.JobId = job.JobId;
+        result.Status = job.State.ToString();
+        result.InputFilePath = job.SourceInputFilePath;
+        result.OutputFilePath = job.OutputFilePath;
+        result.Message = submission.Message;
+        result.CorrectionCount = submission.CorrectionCount;
+        result.FinalJobId = submission.FinalJobId.Length == 0
+            ? job.JobId
+            : submission.FinalJobId;
+
+        if (submission.Result != null)
+        {
+            OptimizationResult optimization = submission.Result;
+            result.OptimizationConverged =
+                optimization.OptimizationConverged;
+            result.OptimizationStepCount =
+                optimization.StepCount;
+            result.FinalEnergy = optimization.FinalEnergy;
+            result.FinalStructure =
+                FormatOptimizationGeometry(
+                    optimization.FinalGeometry);
+
+            if (optimization.FinalConvergence != null)
+            {
+                result.MaximumForce =
+                    optimization.FinalConvergence.MaximumForce;
+                result.RmsForce =
+                    optimization.FinalConvergence.RmsForce;
+                result.MaximumDisplacement =
+                    optimization.FinalConvergence
+                        .MaximumDisplacement;
+                result.RmsDisplacement =
+                    optimization.FinalConvergence
+                        .RmsDisplacement;
+            }
+        }
+
+        return result;
+    }
+
+    private static string FormatOptimizationGeometry(
+        ChemSculptor.InputProcessor.GeometryIntake.CanonicalGeometry?
+            geometry)
+    {
+        if (geometry == null || geometry.Atoms.Count == 0)
+        {
+            return "缺失";
+        }
+
+        string text = string.Empty;
+
+        for (int index = 0;
+            index < geometry.Atoms.Count;
+            index++)
+        {
+            ChemSculptor.InputProcessor.GeometryIntake.CanonicalAtom
+                atom = geometry.Atoms[index];
+
+            if (index > 0)
+            {
+                text = text + "; ";
+            }
+
+            text = text +
+                atom.Element +
+                " " +
+                atom.X.ToString("F6") +
+                " " +
+                atom.Y.ToString("F6") +
+                " " +
+                atom.Z.ToString("F6");
+        }
+
+        return text;
     }
 
     private static AgentResult BuildClarificationResult(

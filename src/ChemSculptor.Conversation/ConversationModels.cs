@@ -101,6 +101,10 @@ public sealed class PendingCalculationParameterRequest
     public CalculationSpec CurrentSpec { get; set; } =
         new CalculationSpec();
 
+    /// <summary>当前参数收集对应的任务类型。</summary>
+    public CalculationTaskType TaskType { get; set; } =
+        CalculationTaskType.SinglePoint;
+
     /// <summary>已经提取的全部参数意图。</summary>
     public List<CalculationParameterIntent> ParameterIntents
     {

@@ -63,46 +63,74 @@ public sealed class OptimizationCalculationValidationSkill : ISkill
         TaskRequest request,
         CancellationToken cancellationToken = default)
     {
-        string? waitJson;
-        string? extractionJson;
+        CalculationWaitSkillResult waitResult;
+        OptimizationResult optimizationResult;
+        string? optimizationJson;
 
-        if (!request.Inputs.TryGetValue("wait", out waitJson))
+        if (request.Inputs.TryGetValue(
+            "optimization",
+            out optimizationJson)
+            && !string.IsNullOrWhiteSpace(optimizationJson))
         {
-            throw new InvalidOperationException(
-                "优化验证节点缺少 wait 输入。");
-        }
+            OptimizationCalculationSkillResult composite =
+                SkillJson.Deserialize<
+                    OptimizationCalculationSkillResult>(
+                        optimizationJson);
 
-        if (!request.Inputs.TryGetValue(
-            "extraction",
-            out extractionJson))
+            if (composite.Result == null)
+            {
+                throw new InvalidOperationException(
+                    "优化复合结果中没有 OptimizationResult。");
+            }
+
+            waitResult = composite.Wait;
+            optimizationResult = composite.Result;
+        }
+        else
         {
-            throw new InvalidOperationException(
-                "优化验证节点缺少 extraction 输入。");
+            string? waitJson;
+            string? extractionJson;
+
+            if (!request.Inputs.TryGetValue(
+                "wait",
+                out waitJson))
+            {
+                throw new InvalidOperationException(
+                    "优化验证节点缺少 wait 或 optimization 输入。");
+            }
+
+            if (!request.Inputs.TryGetValue(
+                "extraction",
+                out extractionJson))
+            {
+                throw new InvalidOperationException(
+                    "优化验证节点缺少 extraction 输入。");
+            }
+
+            if (string.IsNullOrWhiteSpace(waitJson)
+                || string.IsNullOrWhiteSpace(extractionJson))
+            {
+                throw new InvalidOperationException(
+                    "优化验证节点输入不能为空。");
+            }
+
+            waitResult =
+                SkillJson.Deserialize<CalculationWaitSkillResult>(
+                    waitJson);
+            CalculationResultExtractionResult extractionResult =
+                SkillJson.Deserialize<
+                    CalculationResultExtractionResult>(
+                        extractionJson);
+
+            if (extractionResult.OptimizationResult == null)
+            {
+                throw new InvalidOperationException(
+                    "结果提取中没有 OptimizationResult。");
+            }
+
+            optimizationResult =
+                extractionResult.OptimizationResult;
         }
-
-        if (string.IsNullOrWhiteSpace(waitJson)
-            || string.IsNullOrWhiteSpace(extractionJson))
-        {
-            throw new InvalidOperationException(
-                "优化验证节点输入不能为空。");
-        }
-
-        CalculationWaitSkillResult waitResult =
-            SkillJson.Deserialize<CalculationWaitSkillResult>(
-                waitJson);
-        CalculationResultExtractionResult extractionResult =
-            SkillJson.Deserialize<
-                CalculationResultExtractionResult>(
-                    extractionJson);
-
-        if (extractionResult.OptimizationResult == null)
-        {
-            throw new InvalidOperationException(
-                "结果提取中没有 OptimizationResult。");
-        }
-
-        OptimizationResult optimizationResult =
-            extractionResult.OptimizationResult;
         CalculationResultValidationRequest validationRequest =
             new CalculationResultValidationRequest();
         validationRequest.Job = waitResult.Job;

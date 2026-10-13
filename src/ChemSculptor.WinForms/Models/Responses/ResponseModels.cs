@@ -37,6 +37,26 @@ public sealed class AgentMessageResultDto
         get;
         set;
     } = new List<AgentAppliedParameterDto>();
+
+    public bool? OptimizationConverged { get; set; }
+
+    public int OptimizationStepCount { get; set; }
+
+    public double? FinalEnergy { get; set; }
+
+    public string FinalStructure { get; set; } = string.Empty;
+
+    public double? MaximumForce { get; set; }
+
+    public double? RmsForce { get; set; }
+
+    public double? MaximumDisplacement { get; set; }
+
+    public double? RmsDisplacement { get; set; }
+
+    public int CorrectionCount { get; set; }
+
+    public string FinalJobId { get; set; } = string.Empty;
 }
 
 /// <summary>服务器返回的参数问题。</summary>

@@ -43,6 +43,9 @@ public static class AgentServiceRegistration
         ServiceCollectionServiceExtensions.AddSingleton<
             ISinglePointCalculationService,
             SinglePointCalculationService>(services);
+        ServiceCollectionServiceExtensions.AddSingleton<
+            IOptimizationCalculationService,
+            OptimizationCalculationService>(services);
         ServiceCollectionServiceExtensions.AddSingleton<ICalculationQueryService, CalculationQueryService>(
             services);
         ServiceCollectionServiceExtensions.AddSingleton<IAgentService, AgentService>(

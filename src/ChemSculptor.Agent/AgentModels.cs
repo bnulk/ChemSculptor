@@ -66,4 +66,34 @@ public sealed class AgentResult
         get;
         set;
     } = new List<ResolvedCalculationParameter>();
+
+    /// <summary>优化是否收敛。</summary>
+    public bool? OptimizationConverged { get; set; }
+
+    /// <summary>优化步骤数量。</summary>
+    public int OptimizationStepCount { get; set; }
+
+    /// <summary>优化最终能量。</summary>
+    public double? FinalEnergy { get; set; }
+
+    /// <summary>最终结构摘要。</summary>
+    public string FinalStructure { get; set; } = string.Empty;
+
+    /// <summary>最大力。</summary>
+    public double? MaximumForce { get; set; }
+
+    /// <summary>RMS 力。</summary>
+    public double? RmsForce { get; set; }
+
+    /// <summary>最大位移。</summary>
+    public double? MaximumDisplacement { get; set; }
+
+    /// <summary>RMS 位移。</summary>
+    public double? RmsDisplacement { get; set; }
+
+    /// <summary>优化恢复修正次数。</summary>
+    public int CorrectionCount { get; set; }
+
+    /// <summary>最终采用的作业标识。</summary>
+    public string FinalJobId { get; set; } = string.Empty;
 }

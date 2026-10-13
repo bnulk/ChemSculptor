@@ -267,6 +267,18 @@ public sealed class OptimizationSubmissionResult
     /// <summary>已创建的作业。</summary>
     public CalculationJob? Job { get; set; }
 
+    /// <summary>已完成的优化结果。</summary>
+    public OptimizationResult? Result { get; set; }
+
+    /// <summary>结果验证报告。</summary>
+    public CalculationValidationReport? Report { get; set; }
+
+    /// <summary>恢复修正次数。</summary>
+    public int CorrectionCount { get; set; }
+
+    /// <summary>最终采用的作业标识。</summary>
+    public string FinalJobId { get; set; } = string.Empty;
+
     /// <summary>诊断信息。</summary>
     public List<string> Diagnostics { get; set; } =
         new List<string>();

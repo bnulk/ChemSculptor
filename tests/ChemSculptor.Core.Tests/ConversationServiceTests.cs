@@ -115,12 +115,65 @@ public class ConversationServiceTests
 
         ConversationRequest request = new ConversationRequest();
         request.SessionId = "session-2";
-        request.Text = "优化这个分子";
+        request.Text = "频率计算";
 
         ConversationReply reply = await service.HandleMessageAsync(request);
 
         Assert.False(reply.Intent.IsSupported);
-        Assert.Contains("只支持单点计算", reply.ReplyMessage);
+        Assert.Contains("只支持", reply.ReplyMessage);
+    }
+
+    /// <summary>验证优化文本被解释为几何优化。</summary>
+    [Fact]
+    public async Task OptimizationMessageIsRecognized()
+    {
+        RuleBasedTaskInterpreter interpreter =
+            new RuleBasedTaskInterpreter();
+        InMemoryConversationRepository repository =
+            new InMemoryConversationRepository();
+        ConversationService service =
+            new ConversationService(interpreter, repository);
+
+        ConversationRequest request = new ConversationRequest();
+        request.SessionId = "session-optimization";
+        request.Text =
+            "优化水分子使用 opt，maxcycles=200";
+
+        ConversationReply reply =
+            await service.HandleMessageAsync(request);
+
+        Assert.True(reply.Intent.IsSupported);
+        Assert.Equal(
+            CalculationTaskType.Optimization,
+            reply.Intent.TaskType);
+        Assert.Equal(
+            "optimization-complete",
+            reply.Intent.WorkflowId);
+    }
+
+    /// <summary>验证包含 opt 的 route 行被解释为几何优化。</summary>
+    [Fact]
+    public async Task GaussianRouteWithOptIsRecognizedAsOptimization()
+    {
+        RuleBasedTaskInterpreter interpreter =
+            new RuleBasedTaskInterpreter();
+        InMemoryConversationRepository repository =
+            new InMemoryConversationRepository();
+        ConversationService service =
+            new ConversationService(interpreter, repository);
+
+        ConversationRequest request = new ConversationRequest();
+        request.SessionId = "session-opt-route";
+        request.Text =
+            "#p cam-b3lyp/6-31G* opt em=GD3BJ nosymm";
+
+        ConversationReply reply =
+            await service.HandleMessageAsync(request);
+
+        Assert.True(reply.Intent.IsSupported);
+        Assert.Equal(
+            CalculationTaskType.Optimization,
+            reply.Intent.TaskType);
     }
 
     /// <summary>验证用户消息和智能体回复会写入会话历史。</summary>

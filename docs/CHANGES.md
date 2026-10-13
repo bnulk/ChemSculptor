@@ -5,6 +5,87 @@
 
 ---
 
+## v0.61.0（2026-10-13）：优化接入
+
+### 版本
+
+- 当前版本：`0.61.0`
+- 日期：`2026-10-13`
+- 版本类型：新增功能
+
+### 改动目的
+
+让用户可以通过对话窗口和 Codex Skill 使用几何优化，并显示优化收敛、
+能量、几何、力和位移等核心摘要。
+
+### 代码改动
+
+扩展：
+
+```text
+src/ChemSculptor.Compute/TaskInterpretation.cs
+src/ChemSculptor.Agent/AgentModels.cs
+src/ChemSculptor.Agent/AgentService.cs
+src/ChemSculptor.Agent/AgentServiceRegistration.cs
+src/ChemSculptor.Api/Contracts.cs
+src/ChemSculptor.Api/Endpoints/AgentEndpoints.cs
+src/ChemSculptor.WinForms/MainForm.cs
+src/ChemSculptor.WinForms/Models/Responses/ResponseModels.cs
+```
+
+新增：
+
+```text
+src/ChemSculptor.Agent/OptimizationCalculationService.cs
+.agents/skills/geometry-optimization/SKILL.md
+.agents/skills/geometry-optimization/agents/openai.yaml
+```
+
+### 支持输入
+
+```text
+优化水分子使用 opt，maxcycles=200
+```
+
+```text
+#p cam-b3lyp/6-31G* opt em=GD3BJ nosymm
+```
+
+### 客户端显示
+
+```text
+优化是否收敛
+优化步数
+最终能量
+最终结构
+最大力 / RMS 力
+最大位移 / RMS 位移
+修正次数
+最终采用的作业
+```
+
+### 教程式说明
+
+对话输入先经过任务解释：
+
+```text
+优化 / optimization / opt
+  -> Optimization
+  -> optimization-complete
+```
+
+然后将优化任务交给 `OptimizationCalculationService`，由完整工作流处理正常路径、
+异常分支、恢复和科学数据记录。
+
+### 验证
+
+```text
+Release 构建：0 警告，0 错误
+测试：170/170 通过
+```
+
+---
+
 ## v0.60.0（2026-10-13）：优化完整工作流
 
 ### 版本

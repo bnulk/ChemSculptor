@@ -397,6 +397,88 @@ public sealed class MainForm : Form
         }
     }
 
+    /// <summary>显示优化结果摘要。</summary>
+    private void AppendOptimizationFeedback(
+        AgentMessageResultDto result)
+    {
+        if (!string.Equals(
+            result.TaskType,
+            "Optimization",
+            StringComparison.OrdinalIgnoreCase))
+        {
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(result.JobId))
+        {
+            return;
+        }
+
+        AppendMessage("system", "优化结果：");
+        AppendMessage(
+            "hint",
+            "是否收敛：" +
+            FormatBoolean(result.OptimizationConverged));
+        AppendMessage(
+            "hint",
+            "步数：" +
+            result.OptimizationStepCount.ToString());
+        AppendMessage(
+            "hint",
+            "最终能量：" +
+            FormatNumber(result.FinalEnergy));
+        AppendMessage(
+            "hint",
+            "最大力 / RMS 力：" +
+            FormatNumber(result.MaximumForce) +
+            " / " +
+            FormatNumber(result.RmsForce));
+        AppendMessage(
+            "hint",
+            "最大位移 / RMS 位移：" +
+            FormatNumber(result.MaximumDisplacement) +
+            " / " +
+            FormatNumber(result.RmsDisplacement));
+        AppendMessage(
+            "hint",
+            "修正次数：" +
+            result.CorrectionCount.ToString());
+        AppendMessage(
+            "hint",
+            "最终采用作业：" +
+            (string.IsNullOrWhiteSpace(result.FinalJobId)
+                ? result.JobId
+                : result.FinalJobId));
+        AppendMessage(
+            "hint",
+            "最终结构：" +
+            (string.IsNullOrWhiteSpace(result.FinalStructure)
+                ? "缺失"
+                : result.FinalStructure));
+    }
+
+    private static string FormatBoolean(bool? value)
+    {
+        if (!value.HasValue)
+        {
+            return "未知";
+        }
+
+        return value.Value ? "是" : "否";
+    }
+
+    private static string FormatNumber(double? value)
+    {
+        if (!value.HasValue)
+        {
+            return "缺失";
+        }
+
+        return value.Value.ToString(
+            "G10",
+            System.Globalization.CultureInfo.InvariantCulture);
+    }
+
     /// <summary>把一条消息渲染成对话卡片。</summary>
     private void AddBubble(ChatMessage message)
     {
@@ -570,6 +652,7 @@ public sealed class MainForm : Form
             }
 
             AppendParameterFeedback(result);
+            AppendOptimizationFeedback(result);
 
             if (result.RequiresUserAction
                 && string.IsNullOrWhiteSpace(result.JobId))

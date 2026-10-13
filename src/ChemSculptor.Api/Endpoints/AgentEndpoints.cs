@@ -62,6 +62,19 @@ public static class AgentEndpoints
         response.Questions = ConvertQuestions(result.Questions);
         response.AppliedParameters =
             ConvertParameters(result.AppliedParameters);
+        response.OptimizationConverged =
+            result.OptimizationConverged;
+        response.OptimizationStepCount =
+            result.OptimizationStepCount;
+        response.FinalEnergy = result.FinalEnergy;
+        response.FinalStructure = result.FinalStructure;
+        response.MaximumForce = result.MaximumForce;
+        response.RmsForce = result.RmsForce;
+        response.MaximumDisplacement =
+            result.MaximumDisplacement;
+        response.RmsDisplacement = result.RmsDisplacement;
+        response.CorrectionCount = result.CorrectionCount;
+        response.FinalJobId = result.FinalJobId;
 
         return Results.Ok(response);
     }

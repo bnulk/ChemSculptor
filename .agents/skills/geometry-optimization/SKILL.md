@@ -1,0 +1,102 @@
+---
+name: geometry-optimization
+description: "使用 ChemSculptor 完成一次稳定的几何优化；异常时转交 optimization-complete 工作流进行诊断、修正和恢复。"
+---
+
+# Geometry Optimization
+
+## 适用范围
+
+用于输入完整、目标是完成一次几何优化的场景。
+
+首期只支持：
+
+```text
+engine = Gaussian 16
+task-type = Optimization
+```
+
+不用于频率计算、激发态计算或 MECP 搜索。
+
+## 必需输入
+
+必须明确：
+
+```text
+结构
+电荷
+多重度
+方法
+基组
+色散校正
+对称性
+SCF 迭代上限
+优化最大循环次数
+优化收敛标准
+溶剂
+引擎
+```
+
+支持对话输入：
+
+```text
+优化水分子使用 opt，maxcycles=200
+```
+
+也支持受控的 Gaussian route 行：
+
+```text
+#p cam-b3lyp/6-31G* opt em=GD3BJ nosymm
+```
+
+`#p/#n/#t/#` 只控制输出级别。`opt` 表示几何优化；没有显式任务关键词时
+默认是单点计算。
+
+## 执行
+
+优化只提交一个作业，不允许在内部拆成多个单点作业。正常路径：
+
+```text
+calculation.optimization
+  -> optimization validation
+  -> optimization anomaly check
+  -> processing plan
+  -> scientific data record
+```
+
+异常路径：
+
+```text
+diagnosis
+  -> SCF repair branch / optimization repair branch
+  -> recovery job
+  -> recovery execution
+  -> recovery validation
+```
+
+## 结果检查
+
+必须显示或保留：
+
+```text
+是否收敛
+优化步数
+最终能量
+最终结构
+最大力 / RMS 力
+最大位移 / RMS 位移
+修正次数
+最终采用的作业
+```
+
+## 停止条件
+
+```text
+程序硬失败
+输出缺失
+正常结束标志缺失
+几何无效
+恢复预算耗尽
+```
+
+硬失败必须中止并报告，不得伪造成功结果。

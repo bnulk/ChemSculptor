@@ -24,13 +24,13 @@ public class AgentServiceTests
 
             AgentRequest request = new AgentRequest();
             request.SessionId = "session-1";
-            request.Text = "优化这个分子";
+            request.Text = "频率计算";
             request.CoordinateText = "O 0.0 0.0 0.0";
 
             AgentResult result = await service.HandleMessageAsync(request);
 
             Assert.False(result.IsSupported);
-            Assert.Contains("只支持单点计算", result.Error);
+            Assert.Contains("只支持", result.Error);
         }
         finally
         {
@@ -63,6 +63,50 @@ public class AgentServiceTests
             Assert.Equal("Running", result.Status);
             Assert.Contains("output.log", result.OutputFilePath);
             Assert.Equal(result.JobId, workflowEngine.StartedJobId);
+        }
+        finally
+        {
+            DeleteTemporaryRoot(root);
+        }
+    }
+
+    /// <summary>验证优化对话会路由到优化服务。</summary>
+    [Fact]
+    public async Task OptimizationMessageRoutesToOptimizationService()
+    {
+        string root = CreateTemporaryRoot();
+
+        try
+        {
+            RecordingWorkflowEngine workflowEngine;
+            RecordingOptimizationService optimizationService;
+            AgentService service = CreateAgentService(
+                root,
+                out workflowEngine,
+                out optimizationService);
+
+            AgentRequest request = new AgentRequest();
+            request.SessionId = "session-optimization-agent";
+            request.Text =
+                "优化水分子使用 opt，maxcycles=200";
+            request.CoordinateText =
+                "O 0.000000 0.000000 0.117300\n" +
+                "H 0.000000 0.757200 -0.469200\n" +
+                "H 0.000000 -0.757200 -0.469200";
+
+            AgentResult result =
+                await service.HandleMessageAsync(request);
+
+            Assert.True(result.IsSupported);
+            Assert.Equal(
+                CalculationTaskType.Optimization,
+                result.TaskType);
+            Assert.Equal("200", optimizationService.LastRequest
+                .ResolvedSpec!.ExtraOptions[
+                    CalculationOptionKeys.OptimizationMaxCycles]);
+            Assert.Equal(2, result.OptimizationStepCount);
+            Assert.True(result.OptimizationConverged);
+            Assert.Equal("job-optimization-agent-test", result.FinalJobId);
         }
         finally
         {
@@ -295,6 +339,18 @@ public class AgentServiceTests
         string root,
         out RecordingWorkflowEngine workflowEngine)
     {
+        RecordingOptimizationService optimizationService;
+        return CreateAgentService(
+            root,
+            out workflowEngine,
+            out optimizationService);
+    }
+
+    private static AgentService CreateAgentService(
+        string root,
+        out RecordingWorkflowEngine workflowEngine,
+        out RecordingOptimizationService optimizationService)
+    {
         CalculationWorkspaceOptions options = new CalculationWorkspaceOptions();
         options.RootDirectory = root;
 
@@ -322,9 +378,11 @@ public class AgentServiceTests
                 new RuleBasedCalculationParameterExtractor(),
                 new CalculationParameterResolver());
 
+        optimizationService = new RecordingOptimizationService();
         return new AgentService(
             conversationService,
             singlePointService,
+            optimizationService,
             parameterService,
             new GeometryTextParser());
     }
@@ -406,6 +464,81 @@ public class AgentServiceTests
             run.Definition = definition;
             run.State = WorkflowState.Running;
             return Task.FromResult(run);
+        }
+    }
+
+    private sealed class RecordingOptimizationService
+        : IOptimizationCalculationService
+    {
+        public OptimizationRequest LastRequest { get; private set; } =
+            new OptimizationRequest();
+
+        public Task<OptimizationSubmissionResult> SubmitAsync(
+            OptimizationRequest request,
+            CancellationToken cancellationToken = default)
+        {
+            LastRequest = request;
+            OptimizationSubmissionResult result =
+                new OptimizationSubmissionResult();
+            CalculationJob job = new CalculationJob();
+            job.JobId = "job-optimization-agent-test";
+            job.State = CalculationJobState.Validated;
+            job.SourceInputFilePath = Path.Combine(
+                Path.GetTempPath(),
+                "optimization.gjf");
+            job.OutputFilePath = Path.Combine(
+                Path.GetTempPath(),
+                "optimization.log");
+
+            OptimizationResult optimizationResult =
+                new OptimizationResult();
+            optimizationResult.JobId = job.JobId;
+            optimizationResult.OptimizationConverged = true;
+            optimizationResult.StepCount = 2;
+            optimizationResult.FinalEnergy = -76.2;
+
+            OptimizationConvergence convergence =
+                new OptimizationConvergence();
+            convergence.MaximumForce = 0.0001;
+            convergence.RmsForce = 0.00004;
+            convergence.MaximumDisplacement = 0.0003;
+            convergence.RmsDisplacement = 0.0001;
+            optimizationResult.FinalConvergence = convergence;
+
+            result.Succeeded = true;
+            result.Job = job;
+            result.Result = optimizationResult;
+            result.FinalJobId = job.JobId;
+            result.Message = "测试优化已完成。";
+            return Task.FromResult(result);
+        }
+
+        public Task<CalculationJob?> GetJobAsync(
+            string jobId,
+            CancellationToken cancellationToken = default)
+        {
+            return Task.FromResult<CalculationJob?>(null);
+        }
+
+        public Task<OptimizationResult?> GetResultAsync(
+            string jobId,
+            CancellationToken cancellationToken = default)
+        {
+            return Task.FromResult<OptimizationResult?>(null);
+        }
+
+        public Task<CalculationValidationReport?> GetValidationAsync(
+            string jobId,
+            CancellationToken cancellationToken = default)
+        {
+            return Task.FromResult<CalculationValidationReport?>(null);
+        }
+
+        public Task<bool> CancelAsync(
+            string jobId,
+            CancellationToken cancellationToken = default)
+        {
+            return Task.FromResult(false);
         }
     }
 }

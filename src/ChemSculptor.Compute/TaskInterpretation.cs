@@ -61,6 +61,13 @@ public sealed class RuleBasedTaskInterpreter : ITaskInterpreter
     /// <summary>单点计算的缩写关键词。</summary>
     private const string SinglePointAbbreviation = "sp";
 
+    /// <summary>几何优化的中文关键词。</summary>
+    private const string OptimizationKeyword = "优化";
+
+    /// <summary>几何优化的英文关键词。</summary>
+    private const string OptimizationEnglishKeyword =
+        "optimization";
+
     /// <summary>Gaussian route 前缀。</summary>
     private const string GaussianRoutePrefix = "#p";
 
@@ -85,7 +92,7 @@ public sealed class RuleBasedTaskInterpreter : ITaskInterpreter
         if (IsGaussianRouteLine(normalizedText))
         {
             // #、#p、#n、#t 只控制输出信息量。
-            // 当前阶段尚无其它任务关键词时，按默认单点任务处理。
+            // 存在 opt 时按几何优化处理，否则按单点任务处理。
             if (ContainsUnsupportedRouteTask(normalizedText))
             {
                 interpretedTask.IsSupported = false;
@@ -95,11 +102,42 @@ public sealed class RuleBasedTaskInterpreter : ITaskInterpreter
                 return Task.FromResult(interpretedTask);
             }
 
-            interpretedTask.TaskType =
-                CalculationTaskType.SinglePoint;
-            interpretedTask.WorkflowId = "single_point";
+            if (ContainsKeyword(normalizedText, "opt"))
+            {
+                interpretedTask.TaskType =
+                    CalculationTaskType.Optimization;
+                interpretedTask.WorkflowId =
+                    "optimization-complete";
+            }
+            else
+            {
+                interpretedTask.TaskType =
+                    CalculationTaskType.SinglePoint;
+                interpretedTask.WorkflowId = "single_point";
+            }
+
             interpretedTask.IsSupported = true;
             interpretedTask.Confidence = 0.9;
+            InterpretElectronicState(
+                normalizedText,
+                interpretedTask);
+            return Task.FromResult(interpretedTask);
+        }
+
+        if (ContainsKeyword(
+                normalizedText,
+                OptimizationKeyword)
+            || ContainsKeyword(
+                normalizedText,
+                OptimizationEnglishKeyword)
+            || ContainsKeyword(normalizedText, "opt"))
+        {
+            interpretedTask.TaskType =
+                CalculationTaskType.Optimization;
+            interpretedTask.WorkflowId =
+                "optimization-complete";
+            interpretedTask.IsSupported = true;
+            interpretedTask.Confidence = 1.0;
             InterpretElectronicState(
                 normalizedText,
                 interpretedTask);
@@ -141,8 +179,7 @@ public sealed class RuleBasedTaskInterpreter : ITaskInterpreter
 
     private static bool ContainsUnsupportedRouteTask(string text)
     {
-        return ContainsKeyword(text, "opt")
-            || ContainsKeyword(text, "freq")
+        return ContainsKeyword(text, "freq")
             || ContainsKeyword(text, "frequency")
             || ContainsKeyword(text, "td")
             || ContainsKeyword(text, "cis")

@@ -295,6 +295,7 @@ public sealed class CalculationParameterConversationService
                 : previous.CoordinateText
             : coordinateText;
         pending.CurrentSpec = resolution.Spec;
+        pending.TaskType = resolution.Spec.TaskType;
         pending.ParameterIntents =
             new List<CalculationParameterIntent>(intents);
         pending.Questions =
