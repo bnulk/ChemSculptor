@@ -13,6 +13,9 @@ public sealed class AnomalyContext
     /// <summary>通用计算结果。</summary>
     public CalculationResult? Result { get; set; }
 
+    /// <summary>几何优化结果。</summary>
+    public OptimizationResult? OptimizationResult { get; set; }
+
     /// <summary>通用结果验证报告。</summary>
     public CalculationValidationReport? Validation { get; set; }
 

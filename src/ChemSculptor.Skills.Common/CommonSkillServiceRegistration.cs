@@ -2,6 +2,8 @@ using ChemSculptor.Compute;
 using ChemSculptor.Domain;
 using ChemSculptor.InputProcessor;
 using ChemSculptor.Anomaly.Planning;
+using ChemSculptor.Anomaly.Abstractions;
+using ChemSculptor.Anomaly.Checks;
 using ChemSculptor.Skills.Common.AnomalyWorkflow;
 using ChemSculptor.Skills.Common.CalculationWorkflow;
 using ChemSculptor.Skills.Common.CalculationResultValidation;
@@ -33,6 +35,9 @@ public static class CommonSkillServiceRegistration
             CalculationValidationService>(services);
         ServiceCollectionServiceExtensions.AddSingleton<
             WavefunctionStabilityCorrectionPlanner>(services);
+        ServiceCollectionServiceExtensions.AddSingleton<
+            IAnomalyCheck,
+            OptimizationConvergenceCheck>(services);
         ServiceCollectionServiceExtensions.AddSingleton<
             IQuantumProgramAdapterRegistry,
             QuantumProgramAdapterRegistry>(services);

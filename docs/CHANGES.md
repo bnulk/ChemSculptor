@@ -5,6 +5,89 @@
 
 ---
 
+## v0.58.0（2026-10-13）：优化异常检查
+
+### 版本
+
+- 当前版本：`0.58.0`
+- 日期：`2026-10-13`
+- 版本类型：新增功能
+
+### 改动目的
+
+复用单点异常语义，并为几何优化增加稳定的异常错误码、证据和摘要。
+
+### 代码改动
+
+新增：
+
+```text
+src/ChemSculptor.Anomaly/Models/OptimizationAnomalyCodes.cs
+src/ChemSculptor.Anomaly/Checks/OptimizationConvergenceCheck.cs
+```
+
+扩展：
+
+```text
+src/ChemSculptor.Anomaly/Models/CommonAnomalyCodes.cs
+src/ChemSculptor.Anomaly/Models/CommonAnomalyCheckCodes.cs
+src/ChemSculptor.Anomaly/Models/AnomalyContext.cs
+src/ChemSculptor.Skills.Common/CommonSkillServiceRegistration.cs
+```
+
+共用单点异常：
+
+```text
+scf.not_converged
+scf.max_cycles
+scf.guess_failed
+output.missing
+normal_termination.missing
+energy.missing
+```
+
+优化独有异常：
+
+```text
+optimization.not_converged
+optimization.max_cycles_exceeded
+optimization.force_not_converged
+optimization.displacement_not_converged
+optimization.oscillation
+optimization.step_rejected
+optimization.trust_radius_failure
+optimization.checkpoint_missing
+optimization.geometry_invalid
+```
+
+### 教程式说明
+
+`OptimizationConvergenceCheck` 从 `AnomalyContext.OptimizationResult`
+读取步骤、最终收敛指标、失败类别和诊断。
+
+每个异常发现都包含：
+
+```text
+稳定错误码
+面向人的标题
+异常分类和严重程度
+至少一条 AnomalyEvidence
+摘要
+是否阻塞
+是否需要科学判断
+```
+
+检查结果没有异常时返回 `Passed`；发现异常时返回 `Finding`。
+
+### 验证
+
+```text
+Release 构建：0 警告，0 错误
+测试：161/161 通过
+```
+
+---
+
 ## v0.57.0（2026-10-13）：优化结果验证
 
 ### 版本
