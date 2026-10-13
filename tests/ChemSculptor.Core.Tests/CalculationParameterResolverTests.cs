@@ -79,6 +79,195 @@ public class CalculationParameterResolverTests
                 && parameter.RawText == "加色散");
     }
 
+    /// <summary>验证优化参数默认值会写入优化方案。</summary>
+    [Fact]
+    public void AppliesOptimizationDefaults()
+    {
+        CalculationSpec spec =
+            CalculationDefaults.CreateDefaultOptimization();
+
+        CalculationParameterResolutionResult result =
+            new CalculationParameterResolver().Resolve(
+                spec,
+                new List<CalculationParameterIntent>(),
+                CreateContext(
+                    16,
+                    CalculationTaskType.Optimization));
+
+        Assert.Equal(
+            CalculationParameterResolutionStatus.Resolved,
+            result.Status);
+        Assert.Equal(
+            CalculationTaskType.Optimization,
+            result.Spec.TaskType);
+        Assert.Equal(
+            CalculationDefaults.DefaultOptimizationMaxCycles
+                .ToString(),
+            result.Spec.ExtraOptions[
+                CalculationOptionKeys.OptimizationMaxCycles]);
+        Assert.Equal(
+            CalculationDefaults.DefaultOptimizationConvergence,
+            result.Spec.ExtraOptions[
+                CalculationOptionKeys.OptimizationConvergence]);
+        Assert.Equal(
+            "false",
+            result.Spec.ExtraOptions[
+                CalculationOptionKeys.OptimizationRestart]);
+        Assert.Equal(
+            CalculationDefaults.DefaultOptimizationInitialHessian,
+            result.Spec.ExtraOptions[
+                CalculationOptionKeys.OptimizationInitialHessian]);
+    }
+
+    /// <summary>验证优化参数覆盖并保留用户来源和原始文本。</summary>
+    [Fact]
+    public void ResolvesOptimizationOverridesAndPreservesSources()
+    {
+        CalculationSpec spec =
+            CalculationDefaults.CreateDefaultOptimization();
+        List<CalculationParameterIntent> intents =
+            new List<CalculationParameterIntent>();
+        intents.Add(CreateIntent(
+            CalculationOptionKeys.OptimizationMaxCycles,
+            "300",
+            "opt=maxcycles=300"));
+        intents.Add(CreateIntent(
+            CalculationOptionKeys.OptimizationConvergence,
+            "Tight",
+            "opt=tight"));
+        intents.Add(CreateIntent(
+            CalculationOptionKeys.OptimizationRestart,
+            "true",
+            "opt=restart"));
+        intents.Add(CreateIntent(
+            CalculationOptionKeys.OptimizationInitialHessian,
+            "ReadFC",
+            "ReadFC"));
+
+        CalculationParameterResolutionResult result =
+            new CalculationParameterResolver().Resolve(
+                spec,
+                intents,
+                CreateContext(
+                    16,
+                    CalculationTaskType.Optimization));
+
+        Assert.Equal(
+            CalculationParameterResolutionStatus.Resolved,
+            result.Status);
+        Assert.Equal(
+            "300",
+            result.Spec.ExtraOptions[
+                CalculationOptionKeys.OptimizationMaxCycles]);
+        Assert.Equal(
+            "Tight",
+            result.Spec.ExtraOptions[
+                CalculationOptionKeys.OptimizationConvergence]);
+        Assert.Equal(
+            "true",
+            result.Spec.ExtraOptions[
+                CalculationOptionKeys.OptimizationRestart]);
+        Assert.Equal(
+            "ReadFC",
+            result.Spec.ExtraOptions[
+                CalculationOptionKeys.OptimizationInitialHessian]);
+        Assert.Contains(
+            result.AppliedParameters,
+            parameter =>
+                parameter.Key
+                    == CalculationOptionKeys.OptimizationMaxCycles
+                && parameter.Source == ParameterSource.User
+                && parameter.RawText == "opt=maxcycles=300");
+    }
+
+    /// <summary>验证单点任务拒绝优化专用参数。</summary>
+    [Fact]
+    public void RejectsOptimizationParameterForSinglePoint()
+    {
+        CalculationSpec spec =
+            CalculationDefaults.CreateDefaultSinglePoint();
+        List<CalculationParameterIntent> intents =
+            new List<CalculationParameterIntent>();
+        intents.Add(CreateIntent(
+            CalculationOptionKeys.OptimizationMaxCycles,
+            "300",
+            "opt=maxcycles=300"));
+
+        CalculationParameterResolutionResult result =
+            new CalculationParameterResolver().Resolve(
+                spec,
+                intents,
+                CreateContext(16));
+
+        Assert.Equal(
+            CalculationParameterResolutionStatus.Rejected,
+            result.Status);
+        Assert.Contains(
+            result.Diagnostics,
+            diagnostic =>
+                diagnostic.Code == "parameter.unsupported.task");
+    }
+
+    /// <summary>验证超范围优化循环次数会拒绝。</summary>
+    [Fact]
+    public void RejectsOutOfRangeOptimizationMaxCycles()
+    {
+        CalculationSpec spec =
+            CalculationDefaults.CreateDefaultOptimization();
+        List<CalculationParameterIntent> intents =
+            new List<CalculationParameterIntent>();
+        intents.Add(CreateIntent(
+            CalculationOptionKeys.OptimizationMaxCycles,
+            "1500",
+            "opt=maxcycles=1500"));
+
+        CalculationParameterResolutionResult result =
+            new CalculationParameterResolver().Resolve(
+                spec,
+                intents,
+                CreateContext(
+                    16,
+                    CalculationTaskType.Optimization));
+
+        Assert.Equal(
+            CalculationParameterResolutionStatus.Rejected,
+            result.Status);
+        Assert.Contains(
+            result.Diagnostics,
+            diagnostic =>
+                diagnostic.Code == "parameter.invalid.range");
+    }
+
+    /// <summary>验证较大优化循环次数会给出警告。</summary>
+    [Fact]
+    public void WarnsForLargeOptimizationMaxCycles()
+    {
+        CalculationSpec spec =
+            CalculationDefaults.CreateDefaultOptimization();
+        List<CalculationParameterIntent> intents =
+            new List<CalculationParameterIntent>();
+        intents.Add(CreateIntent(
+            CalculationOptionKeys.OptimizationMaxCycles,
+            "600",
+            "opt=maxcycles=600"));
+
+        CalculationParameterResolutionResult result =
+            new CalculationParameterResolver().Resolve(
+                spec,
+                intents,
+                CreateContext(
+                    16,
+                    CalculationTaskType.Optimization));
+
+        Assert.Equal(
+            CalculationParameterResolutionStatus.Resolved,
+            result.Status);
+        Assert.Contains(
+            result.Diagnostics,
+            diagnostic =>
+                diagnostic.Code == "parameter.warning.range");
+    }
+
     /// <summary>验证 KeyOnly 对称性会生成问题。</summary>
     [Fact]
     public void RequiresClarificationForKeyOnlySymmetry()
@@ -199,10 +388,19 @@ public class CalculationParameterResolverTests
     private static CalculationParameterResolutionContext CreateContext(
         int electronCount)
     {
+        return CreateContext(
+            electronCount,
+            CalculationTaskType.SinglePoint);
+    }
+
+    private static CalculationParameterResolutionContext CreateContext(
+        int electronCount,
+        CalculationTaskType taskType)
+    {
         CalculationParameterResolutionContext context =
             new CalculationParameterResolutionContext();
         context.Engine = CalculationDefaults.DefaultProgram;
-        context.TaskType = CalculationTaskType.SinglePoint;
+        context.TaskType = taskType;
         context.ElectronCount = electronCount;
         return context;
     }

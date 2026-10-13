@@ -23,6 +23,9 @@ Skill / Workflow 11 步强制模板已写入编码约定
 Route 输出信息量已建模
 默认 GD3BJ 色散已启用
 优化任务契约已冻结
+优化参数键、目录和默认值已建立
+优化参数提取与解析已实现
+优化参数已按任务类型隔离
 ```
 
 ## 当前边界
@@ -31,32 +34,37 @@ Route 输出信息量已建模
 首期只支持 Gaussian 16
 首期只支持已冻结的规范参数键
 ORCA、原始关键词扩展和审批机制暂不实现
+优化任务尚未实现程序翻译、Skill 和执行服务
 ```
 
 ## 验证结果
 
 ```text
 Release 构建：0 警告，0 错误
-测试：140/140 通过
+测试：147/147 通过
 ```
 
 ## 尚未完成
 
 ```text
-尚未实现程序翻译器
-尚未接入 AgentService
-尚未接入 AgentService
+尚未实现优化参数到 Gaussian 关键词的翻译
+尚未实现优化 Skill
+尚未实现优化工作流和优化计算服务
 ```
 
 ## 下一步精确任务
 
-下一阶段由用户指定。建议：
+下一步严格执行优化第 3 步：
 
 ```text
-实现 GaussianParameterTranslator
-把提取器和 Resolver 接入 AgentService
-把提取器接入 AgentService
+TaskType.Optimization          -> opt
+optimization-max-cycles = 100  -> opt=maxcycles=100
+optimization-convergence       -> opt=Tight / opt=VeryTight
+optimization-restart = true    -> opt=restart + geom=check guess=read
+optimization-initial-hessian   -> opt=CalcFC / opt=ReadFC
 ```
+
+翻译后必须增加确定性顺序测试，并保持通用层不拼接程序输入。
 
 ## 注意事项
 

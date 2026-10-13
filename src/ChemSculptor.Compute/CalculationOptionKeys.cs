@@ -32,4 +32,20 @@ public static class CalculationOptionKeys
 
     /// <summary>自旋多重度。</summary>
     public const string Multiplicity = "multiplicity";
+
+    /// <summary>几何优化最大循环次数。</summary>
+    public const string OptimizationMaxCycles =
+        "optimization-max-cycles";
+
+    /// <summary>几何优化收敛标准。</summary>
+    public const string OptimizationConvergence =
+        "optimization-convergence";
+
+    /// <summary>是否从已有检查点重启几何优化。</summary>
+    public const string OptimizationRestart =
+        "optimization-restart";
+
+    /// <summary>几何优化初始 Hessian 来源。</summary>
+    public const string OptimizationInitialHessian =
+        "optimization-initial-hessian";
 }

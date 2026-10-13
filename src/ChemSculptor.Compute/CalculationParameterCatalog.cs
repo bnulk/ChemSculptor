@@ -248,6 +248,80 @@ public static class CalculationParameterCatalog
                 "八重态"
             }));
 
+        definitions.Add(CreateOptimizationDefinition(
+            CalculationOptionKeys.OptimizationMaxCycles,
+            "优化最大循环次数",
+            CalculationParameterValueKind.Integer,
+            new string[0],
+            CalculationDefaults.DefaultOptimizationMaxCycles.ToString(),
+            CalculationRiskLevel.Info,
+            new string[]
+            {
+                "opt=maxcycles",
+                "maxcycles",
+                "优化最大循环",
+                "最大优化循环",
+                "最大优化步数"
+            }));
+
+        definitions.Add(CreateOptimizationDefinition(
+            CalculationOptionKeys.OptimizationConvergence,
+            "优化收敛标准",
+            CalculationParameterValueKind.Enum,
+            new string[] { "Default", "Tight", "VeryTight" },
+            CalculationDefaults.DefaultOptimizationConvergence,
+            CalculationRiskLevel.Info,
+            new string[]
+            {
+                "opt=default",
+                "默认优化收敛",
+                "opt=tight",
+                "tight",
+                "严格优化",
+                "严格收敛",
+                "opt=verytight",
+                "verytight",
+                "非常严格优化",
+                "非常严格收敛",
+                "优化收敛"
+            }));
+
+        definitions.Add(CreateOptimizationDefinition(
+            CalculationOptionKeys.OptimizationRestart,
+            "优化重启",
+            CalculationParameterValueKind.Boolean,
+            new string[] { "false", "true" },
+            "false",
+            CalculationRiskLevel.Warning,
+            new string[]
+            {
+                "opt=restart",
+                "restart",
+                "优化重启",
+                "重启优化",
+                "继续优化",
+                "从检查点继续优化"
+            }));
+
+        definitions.Add(CreateOptimizationDefinition(
+            CalculationOptionKeys.OptimizationInitialHessian,
+            "优化初始 Hessian",
+            CalculationParameterValueKind.Enum,
+            new string[] { "None", "CalcFC", "ReadFC" },
+            CalculationDefaults.DefaultOptimizationInitialHessian,
+            CalculationRiskLevel.Info,
+            new string[]
+            {
+                "opt=CalcFC",
+                "CalcFC",
+                "opt=ReadFC",
+                "ReadFC",
+                "初始 Hessian",
+                "初始Hessian",
+                "计算初始 Hessian",
+                "读取初始 Hessian"
+            }));
+
         return definitions;
     }
 
@@ -273,8 +347,33 @@ public static class CalculationParameterCatalog
         definition.Aliases = new List<string>(aliases);
         definition.TaskTypes = new List<CalculationTaskType>();
         definition.TaskTypes.Add(CalculationTaskType.SinglePoint);
+        definition.TaskTypes.Add(CalculationTaskType.Optimization);
         definition.Programs = new List<string>();
         definition.Programs.Add(CalculationDefaults.DefaultProgram);
+        return definition;
+    }
+
+    private static CalculationParameterDefinition
+        CreateOptimizationDefinition(
+            string key,
+            string displayName,
+            CalculationParameterValueKind valueKind,
+            string[] allowedValues,
+            string defaultValue,
+            CalculationRiskLevel riskLevel,
+            string[] aliases)
+    {
+        CalculationParameterDefinition definition =
+            CreateDefinition(
+                key,
+                displayName,
+                valueKind,
+                allowedValues,
+                defaultValue,
+                riskLevel,
+                aliases);
+        definition.TaskTypes.Clear();
+        definition.TaskTypes.Add(CalculationTaskType.Optimization);
         return definition;
     }
 }

@@ -5,6 +5,132 @@
 
 ---
 
+## v0.53.0（2026-10-13）：优化参数目录与默认值
+
+### 版本
+
+- 当前版本：`0.53.0`
+- 日期：`2026-10-13`
+- 版本类型：参数架构
+
+### 改动目的
+
+为几何优化冻结第一批通用参数、默认值、别名和取值范围，使对话输入
+可以先翻译为规范参数，再由具体计算程序翻译成程序关键词。
+
+### 代码改动
+
+扩展规范参数键：
+
+```text
+src/ChemSculptor.Compute/CalculationOptionKeys.cs
+
+optimization-max-cycles
+optimization-convergence
+optimization-restart
+optimization-initial-hessian
+```
+
+扩展规范参数目录：
+
+```text
+src/ChemSculptor.Compute/CalculationParameterCatalog.cs
+```
+
+首期优化参数：
+
+```text
+optimization-max-cycles      = 100
+optimization-convergence     = Default | Tight | VeryTight
+optimization-restart         = false | true
+optimization-initial-hessian = None | CalcFC | ReadFC
+```
+
+公共参数现在同时适用于 `SinglePoint` 和 `Optimization`；
+优化专用参数只适用于 `Optimization`。
+
+扩展默认方案：
+
+```text
+src/ChemSculptor.Compute/CalculationDefaults.cs
+```
+
+新增 `CreateDefaultOptimization()`，并把公共默认方案构造提取为内部方法。
+
+扩展参数提取：
+
+```text
+src/ChemSculptor.Compute/RuleBasedCalculationParameterExtractor.cs
+```
+
+新增识别：
+
+```text
+opt=maxcycles=100
+opt=(maxcycles=100)
+maxcycles=100
+opt=tight / tight
+opt=verytight / verytight
+opt=restart / restart
+CalcFC / ReadFC
+```
+
+优化参数规则只在 `CalculationTaskType.Optimization` 下启用。
+
+扩展参数解析：
+
+```text
+src/ChemSculptor.Compute/CalculationParameterResolver.cs
+```
+
+Resolver 现在会：
+
+```text
+按任务类型过滤参数
+写入优化默认值
+保留用户来源和原始文本
+校验 1..1000 的优化循环范围
+对超过 500 次循环给出警告
+拒绝单点任务中的优化专用参数
+```
+
+### 教程式说明
+
+参数链保持三段式：
+
+```text
+客户端输入
+  → 方言别名
+  → 规范参数
+  → 程序关键词
+```
+
+本阶段只完成“方言别名 → 规范参数”。
+
+示例：
+
+```text
+优化，opt=maxcycles=300，opt=tight，opt=restart，CalcFC
+```
+
+解析为：
+
+```text
+optimization-max-cycles      = 300
+optimization-convergence     = Tight
+optimization-restart         = true
+optimization-initial-hessian = CalcFC
+```
+
+### 验证
+
+```text
+Release 构建：0 警告，0 错误
+测试：147/147 通过
+```
+
+---
+
 ## v0.52.0（2026-10-12）：规范计算参数键
 
 ### 版本

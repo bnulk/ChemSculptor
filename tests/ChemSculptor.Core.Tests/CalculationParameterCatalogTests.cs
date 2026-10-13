@@ -24,10 +24,19 @@ public class CalculationParameterCatalogTests
             CalculationOptionKeys.Charge,
             CalculationOptionKeys.Multiplicity
         };
+        string[] optimizationKeys =
+        {
+            CalculationOptionKeys.OptimizationMaxCycles,
+            CalculationOptionKeys.OptimizationConvergence,
+            CalculationOptionKeys.OptimizationRestart,
+            CalculationOptionKeys.OptimizationInitialHessian
+        };
 
-        Assert.Equal(requiredKeys.Length, definitions.Count);
         Assert.Equal(
-            requiredKeys.Length,
+            requiredKeys.Length + optimizationKeys.Length,
+            definitions.Count);
+        Assert.Equal(
+            requiredKeys.Length + optimizationKeys.Length,
             definitions
                 .Select(definition => definition.Key)
                 .Distinct(StringComparer.OrdinalIgnoreCase)
@@ -40,6 +49,28 @@ public class CalculationParameterCatalogTests
 
             Assert.NotNull(definition);
             Assert.Contains(
+                CalculationTaskType.SinglePoint,
+                definition.TaskTypes);
+            Assert.Contains(
+                CalculationTaskType.Optimization,
+                definition.TaskTypes);
+            Assert.Contains(
+                CalculationDefaults.DefaultProgram,
+                definition.Programs);
+            Assert.False(definition.RequiresApproval);
+        }
+
+        for (int index = 0; index < optimizationKeys.Length; index++)
+        {
+            CalculationParameterDefinition? definition =
+                CalculationParameterCatalog.Find(
+                    optimizationKeys[index]);
+
+            Assert.NotNull(definition);
+            Assert.Contains(
+                CalculationTaskType.Optimization,
+                definition.TaskTypes);
+            Assert.DoesNotContain(
                 CalculationTaskType.SinglePoint,
                 definition.TaskTypes);
             Assert.Contains(
@@ -60,6 +91,18 @@ public class CalculationParameterCatalogTests
             GetRequired(CalculationOptionKeys.Symmetry);
         CalculationParameterDefinition solvent =
             GetRequired(CalculationOptionKeys.Solvent);
+        CalculationParameterDefinition maxCycles =
+            GetRequired(
+                CalculationOptionKeys.OptimizationMaxCycles);
+        CalculationParameterDefinition convergence =
+            GetRequired(
+                CalculationOptionKeys.OptimizationConvergence);
+        CalculationParameterDefinition restart =
+            GetRequired(
+                CalculationOptionKeys.OptimizationRestart);
+        CalculationParameterDefinition initialHessian =
+            GetRequired(
+                CalculationOptionKeys.OptimizationInitialHessian);
 
         Assert.Equal("GD3BJ", dispersion.DefaultValue);
         Assert.Equal(
@@ -78,6 +121,40 @@ public class CalculationParameterCatalogTests
             new string[] { "None", "Water" },
             solvent.AllowedValues);
         Assert.Contains("水", solvent.Aliases);
+
+        Assert.Equal(
+            CalculationDefaults.DefaultOptimizationMaxCycles
+                .ToString(),
+            maxCycles.DefaultValue);
+        Assert.Equal(
+            CalculationParameterValueKind.Integer,
+            maxCycles.ValueKind);
+        Assert.Contains("opt=maxcycles", maxCycles.Aliases);
+
+        Assert.Equal(
+            CalculationDefaults.DefaultOptimizationConvergence,
+            convergence.DefaultValue);
+        Assert.Equal(
+            new string[] { "Default", "Tight", "VeryTight" },
+            convergence.AllowedValues);
+        Assert.Contains("verytight", convergence.Aliases);
+
+        Assert.Equal("false", restart.DefaultValue);
+        Assert.Equal(
+            CalculationParameterValueKind.Boolean,
+            restart.ValueKind);
+        Assert.Equal(
+            new string[] { "false", "true" },
+            restart.AllowedValues);
+        Assert.Contains("restart", restart.Aliases);
+
+        Assert.Equal(
+            CalculationDefaults.DefaultOptimizationInitialHessian,
+            initialHessian.DefaultValue);
+        Assert.Equal(
+            new string[] { "None", "CalcFC", "ReadFC" },
+            initialHessian.AllowedValues);
+        Assert.Contains("CalcFC", initialHessian.Aliases);
     }
 
     private static CalculationParameterDefinition GetRequired(

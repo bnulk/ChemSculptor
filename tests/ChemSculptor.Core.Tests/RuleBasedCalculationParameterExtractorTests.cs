@@ -71,6 +71,58 @@ public class RuleBasedCalculationParameterExtractorTests
         Assert.Equal("GD3", intent.RawText);
     }
 
+    /// <summary>验证优化参数可以从对话和 Gaussian route 别名中提取。</summary>
+    [Fact]
+    public async Task ExtractsOptimizationParametersFromConversationText()
+    {
+        RuleBasedCalculationParameterExtractor extractor =
+            new RuleBasedCalculationParameterExtractor();
+        CalculationParameterExtractionResult result =
+            await extractor.ExtractAsync(
+                "优化，opt=(maxcycles=300)，opt=tight，" +
+                "opt=restart，CalcFC",
+                CreateOptimizationContext());
+
+        Assert.Equal(
+            "300",
+            FindSingle(
+                result,
+                CalculationOptionKeys.OptimizationMaxCycles).Value);
+        Assert.Equal(
+            "Tight",
+            FindSingle(
+                result,
+                CalculationOptionKeys.OptimizationConvergence).Value);
+        Assert.Equal(
+            "true",
+            FindSingle(
+                result,
+                CalculationOptionKeys.OptimizationRestart).Value);
+        Assert.Equal(
+            "CalcFC",
+            FindSingle(
+                result,
+                CalculationOptionKeys.OptimizationInitialHessian).Value);
+    }
+
+    /// <summary>验证单点任务不会提取优化专用参数。</summary>
+    [Fact]
+    public async Task DoesNotExtractOptimizationParameterForSinglePoint()
+    {
+        RuleBasedCalculationParameterExtractor extractor =
+            new RuleBasedCalculationParameterExtractor();
+        CalculationParameterExtractionResult result =
+            await extractor.ExtractAsync(
+                "opt=maxcycles=300",
+                CreateContext());
+
+        CalculationParameterIntent intent =
+            Assert.Single(result.Intents);
+        Assert.Equal(
+            CalculationParameterIntentState.Unsupported,
+            intent.State);
+    }
+
     /// <summary>验证同一条文本中的对称性冲突不会被自动合并。</summary>
     [Fact]
     public async Task PreservesConflictingSymmetryIntents()
@@ -100,6 +152,16 @@ public class RuleBasedCalculationParameterExtractorTests
             new CalculationParameterExtractionContext();
         context.Engine = CalculationDefaults.DefaultProgram;
         context.TaskType = CalculationTaskType.SinglePoint;
+        return context;
+    }
+
+    private static CalculationParameterExtractionContext
+        CreateOptimizationContext()
+    {
+        CalculationParameterExtractionContext context =
+            new CalculationParameterExtractionContext();
+        context.Engine = CalculationDefaults.DefaultProgram;
+        context.TaskType = CalculationTaskType.Optimization;
         return context;
     }
 

@@ -20,7 +20,11 @@ public class CalculationOptionKeysTests
             CalculationOptionKeys.ScfIterationLimit,
             CalculationOptionKeys.Solvent,
             CalculationOptionKeys.Charge,
-            CalculationOptionKeys.Multiplicity
+            CalculationOptionKeys.Multiplicity,
+            CalculationOptionKeys.OptimizationMaxCycles,
+            CalculationOptionKeys.OptimizationConvergence,
+            CalculationOptionKeys.OptimizationRestart,
+            CalculationOptionKeys.OptimizationInitialHessian
         };
 
         Assert.Equal("engine", CalculationOptionKeys.Engine);
@@ -41,6 +45,18 @@ public class CalculationOptionKeysTests
         Assert.Equal(
             "multiplicity",
             CalculationOptionKeys.Multiplicity);
+        Assert.Equal(
+            "optimization-max-cycles",
+            CalculationOptionKeys.OptimizationMaxCycles);
+        Assert.Equal(
+            "optimization-convergence",
+            CalculationOptionKeys.OptimizationConvergence);
+        Assert.Equal(
+            "optimization-restart",
+            CalculationOptionKeys.OptimizationRestart);
+        Assert.Equal(
+            "optimization-initial-hessian",
+            CalculationOptionKeys.OptimizationInitialHessian);
         Assert.Equal(
             keys.Length,
             keys.Distinct(StringComparer.OrdinalIgnoreCase).Count());

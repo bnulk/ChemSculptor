@@ -31,6 +31,7 @@ public sealed class CalculationParameterResolver
         CalculationParameterResolutionResult result =
             new CalculationParameterResolutionResult();
         result.Spec = spec;
+        result.Spec.TaskType = context.TaskType;
         result.RequiresApproval = false;
 
         Dictionary<string, ParameterIntentGroup> groups =
@@ -272,6 +273,22 @@ public sealed class CalculationParameterResolver
 
             CalculationParameterDefinition? definition =
                 CalculationParameterCatalog.Find(group.Key);
+
+            if (definition != null
+                && !DefinitionAppliesToTaskType(
+                    definition,
+                    result.Spec.TaskType))
+            {
+                AddDiagnostic(
+                    result,
+                    "parameter.unsupported.task",
+                    CalculationDiagnosticSeverity.Error,
+                    group.Key,
+                    "参数不适用于当前任务类型：" + group.Key,
+                    intent.RawText);
+                continue;
+            }
+
             List<string> options = definition == null
                 ? new List<string>()
                 : new List<string>(
@@ -329,6 +346,28 @@ public sealed class CalculationParameterResolver
                 .DefaultScfIterationLimit
                 .ToString(CultureInfo.InvariantCulture));
 
+        if (spec.TaskType == CalculationTaskType.Optimization)
+        {
+            SetDefaultExtraOption(
+                spec,
+                CalculationOptionKeys.OptimizationMaxCycles,
+                CalculationDefaults
+                    .DefaultOptimizationMaxCycles
+                    .ToString(CultureInfo.InvariantCulture));
+            SetDefaultExtraOption(
+                spec,
+                CalculationOptionKeys.OptimizationConvergence,
+                CalculationDefaults.DefaultOptimizationConvergence);
+            SetDefaultExtraOption(
+                spec,
+                CalculationOptionKeys.OptimizationRestart,
+                "false");
+            SetDefaultExtraOption(
+                spec,
+                CalculationOptionKeys.OptimizationInitialHessian,
+                CalculationDefaults.DefaultOptimizationInitialHessian);
+        }
+
         if (string.IsNullOrWhiteSpace(spec.Solvent))
         {
             spec.Solvent = "None";
@@ -345,6 +384,14 @@ public sealed class CalculationParameterResolver
         {
             CalculationParameterDefinition definition =
                 definitions[index];
+
+            if (!DefinitionAppliesToTaskType(
+                definition,
+                result.Spec.TaskType))
+            {
+                continue;
+            }
+
             string value = ReadValue(result.Spec, definition.Key);
 
             if (string.IsNullOrWhiteSpace(value)
@@ -376,6 +423,15 @@ public sealed class CalculationParameterResolver
             1,
             1000,
             500);
+        if (result.Spec.TaskType == CalculationTaskType.Optimization)
+        {
+            ValidateIntegerRange(
+                result,
+                CalculationOptionKeys.OptimizationMaxCycles,
+                1,
+                1000,
+                500);
+        }
         ValidatePositiveInteger(
             result,
             CalculationOptionKeys.Multiplicity);
@@ -483,6 +539,14 @@ public sealed class CalculationParameterResolver
         {
             CalculationParameterDefinition definition =
                 definitions[index];
+
+            if (!DefinitionAppliesToTaskType(
+                definition,
+                result.Spec.TaskType))
+            {
+                continue;
+            }
+
             string value = ReadValue(result.Spec, definition.Key);
 
             if (string.IsNullOrWhiteSpace(value))
@@ -598,6 +662,20 @@ public sealed class CalculationParameterResolver
                 CalculationDiagnosticSeverity.Error,
                 key,
                 "无法识别参数：" + key,
+                intent == null ? string.Empty : intent.RawText);
+            return;
+        }
+
+        if (!DefinitionAppliesToTaskType(
+            definition,
+            spec.TaskType))
+        {
+            AddDiagnostic(
+                result,
+                "parameter.unsupported.task",
+                CalculationDiagnosticSeverity.Error,
+                key,
+                "参数不适用于当前任务类型：" + key,
                 intent == null ? string.Empty : intent.RawText);
             return;
         }
@@ -929,6 +1007,28 @@ public sealed class CalculationParameterResolver
                 values[index],
                 value,
                 StringComparison.OrdinalIgnoreCase))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private static bool DefinitionAppliesToTaskType(
+        CalculationParameterDefinition definition,
+        CalculationTaskType taskType)
+    {
+        if (definition.TaskTypes.Count == 0)
+        {
+            return true;
+        }
+
+        for (int index = 0;
+            index < definition.TaskTypes.Count;
+            index++)
+        {
+            if (definition.TaskTypes[index] == taskType)
             {
                 return true;
             }

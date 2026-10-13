@@ -46,6 +46,12 @@ public sealed class RuleBasedCalculationParameterExtractor
             ruleIndex++)
         {
             ExtractionRule rule = _rules[ruleIndex];
+
+            if (!RuleAppliesToContext(rule, context))
+            {
+                continue;
+            }
+
             MatchCollection ruleMatches =
                 rule.Pattern.Matches(text);
 
@@ -249,8 +255,29 @@ public sealed class RuleBasedCalculationParameterExtractor
         AddSolventRules(rules);
         AddChargeRules(rules);
         AddMultiplicityRules(rules);
+        AddOptimizationRules(rules);
 
         return rules;
+    }
+
+    private static bool RuleAppliesToContext(
+        ExtractionRule rule,
+        CalculationParameterExtractionContext context)
+    {
+        if (rule.TaskTypes.Count == 0)
+        {
+            return true;
+        }
+
+        for (int index = 0; index < rule.TaskTypes.Count; index++)
+        {
+            if (rule.TaskTypes[index] == context.TaskType)
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private static void AddRoutePrintLevelRules(
@@ -504,6 +531,207 @@ public sealed class RuleBasedCalculationParameterExtractor
             "多重度", string.Empty, 0.7, 1);
     }
 
+    private static void AddOptimizationRules(
+        List<ExtractionRule> rules)
+    {
+        AddOptimizationRegexRule(
+            rules,
+            CalculationOptionKeys.OptimizationMaxCycles,
+            @"(?:opt\s*=\s*\(?\s*)?(?:maxcycles|maxcycle)\s*=\s*(?<value>\d+)",
+            NormalizeIntegerValue,
+            1.0,
+            5);
+        AddOptimizationRegexRule(
+            rules,
+            CalculationOptionKeys.OptimizationMaxCycles,
+            @"(?:优化最大循环|最大优化循环|最大优化步数)\s*(?:=|:|：|为|是)?\s*(?<value>\d+)",
+            NormalizeIntegerValue,
+            1.0,
+            5);
+        AddOptimizationAliasRule(
+            rules,
+            CalculationOptionKeys.OptimizationMaxCycles,
+            "最大优化循环",
+            string.Empty,
+            0.8,
+            1);
+        AddOptimizationAliasRule(
+            rules,
+            CalculationOptionKeys.OptimizationMaxCycles,
+            "最大优化步数",
+            string.Empty,
+            0.8,
+            1);
+
+        AddOptimizationAliasRule(
+            rules,
+            CalculationOptionKeys.OptimizationConvergence,
+            "opt=tight",
+            "Tight",
+            1.0,
+            5);
+        AddOptimizationAliasRule(
+            rules,
+            CalculationOptionKeys.OptimizationConvergence,
+            "opt=verytight",
+            "VeryTight",
+            1.0,
+            5);
+        AddOptimizationAliasRule(
+            rules,
+            CalculationOptionKeys.OptimizationConvergence,
+            "tight",
+            "Tight",
+            1.0,
+            3);
+        AddOptimizationAliasRule(
+            rules,
+            CalculationOptionKeys.OptimizationConvergence,
+            "verytight",
+            "VeryTight",
+            1.0,
+            3);
+        AddOptimizationAliasRule(
+            rules,
+            CalculationOptionKeys.OptimizationConvergence,
+            "严格优化",
+            "Tight",
+            1.0,
+            3);
+        AddOptimizationAliasRule(
+            rules,
+            CalculationOptionKeys.OptimizationConvergence,
+            "非常严格优化",
+            "VeryTight",
+            1.0,
+            3);
+        AddOptimizationAliasRule(
+            rules,
+            CalculationOptionKeys.OptimizationConvergence,
+            "优化收敛",
+            string.Empty,
+            0.8,
+            1);
+
+        AddOptimizationAliasRule(
+            rules,
+            CalculationOptionKeys.OptimizationRestart,
+            "opt=restart",
+            "true",
+            1.0,
+            5);
+        AddOptimizationAliasRule(
+            rules,
+            CalculationOptionKeys.OptimizationRestart,
+            "restart",
+            "true",
+            1.0,
+            3);
+        AddOptimizationAliasRule(
+            rules,
+            CalculationOptionKeys.OptimizationRestart,
+            "重启优化",
+            "true",
+            1.0,
+            3);
+        AddOptimizationAliasRule(
+            rules,
+            CalculationOptionKeys.OptimizationRestart,
+            "继续优化",
+            "true",
+            1.0,
+            3);
+        AddOptimizationAliasRule(
+            rules,
+            CalculationOptionKeys.OptimizationRestart,
+            "从检查点继续优化",
+            "true",
+            1.0,
+            3);
+
+        AddOptimizationAliasRule(
+            rules,
+            CalculationOptionKeys.OptimizationInitialHessian,
+            "opt=CalcFC",
+            "CalcFC",
+            1.0,
+            5);
+        AddOptimizationAliasRule(
+            rules,
+            CalculationOptionKeys.OptimizationInitialHessian,
+            "opt=ReadFC",
+            "ReadFC",
+            1.0,
+            5);
+        AddOptimizationAliasRule(
+            rules,
+            CalculationOptionKeys.OptimizationInitialHessian,
+            "CalcFC",
+            "CalcFC",
+            1.0,
+            3);
+        AddOptimizationAliasRule(
+            rules,
+            CalculationOptionKeys.OptimizationInitialHessian,
+            "ReadFC",
+            "ReadFC",
+            1.0,
+            3);
+        AddOptimizationAliasRule(
+            rules,
+            CalculationOptionKeys.OptimizationInitialHessian,
+            "计算初始 Hessian",
+            "CalcFC",
+            1.0,
+            3);
+        AddOptimizationAliasRule(
+            rules,
+            CalculationOptionKeys.OptimizationInitialHessian,
+            "读取初始 Hessian",
+            "ReadFC",
+            1.0,
+            3);
+        AddOptimizationAliasRule(
+            rules,
+            CalculationOptionKeys.OptimizationInitialHessian,
+            "初始 Hessian",
+            string.Empty,
+            0.8,
+            1);
+    }
+
+    private static void AddOptimizationAliasRule(
+        List<ExtractionRule> rules,
+        string key,
+        string alias,
+        string value,
+        double confidence,
+        int priority)
+    {
+        AddAliasRule(rules, key, alias, value, confidence, priority);
+        rules[rules.Count - 1].TaskTypes.Add(
+            CalculationTaskType.Optimization);
+    }
+
+    private static void AddOptimizationRegexRule(
+        List<ExtractionRule> rules,
+        string key,
+        string pattern,
+        Func<Match, string> valueFactory,
+        double confidence,
+        int priority)
+    {
+        AddRegexRule(
+            rules,
+            key,
+            pattern,
+            valueFactory,
+            confidence,
+            priority);
+        rules[rules.Count - 1].TaskTypes.Add(
+            CalculationTaskType.Optimization);
+    }
+
     private static void AddAliasRule(
         List<ExtractionRule> rules,
         string key,
@@ -615,6 +843,9 @@ public sealed class RuleBasedCalculationParameterExtractor
         public double Confidence { get; set; }
 
         public int Priority { get; set; }
+
+        public List<CalculationTaskType> TaskTypes { get; set; } =
+            new List<CalculationTaskType>();
     }
 
     private sealed class PendingMatch

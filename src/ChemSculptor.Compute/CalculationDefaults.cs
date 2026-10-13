@@ -4,7 +4,7 @@ namespace ChemSculptor.Compute;
 
 /// <summary>
 /// 计算默认值。
-/// 第一阶段只提供默认单点方案生成，不执行任何计算。
+/// 只生成默认计算方案，不执行任何计算。
 /// </summary>
 public static class CalculationDefaults
 {
@@ -32,14 +32,96 @@ public static class CalculationDefaults
     /// <summary>默认自洽场迭代上限。</summary>
     public const int DefaultScfIterationLimit = 200;
 
+    /// <summary>默认几何优化最大循环次数。</summary>
+    public const int DefaultOptimizationMaxCycles = 100;
+
+    /// <summary>默认几何优化收敛标准。</summary>
+    public const string DefaultOptimizationConvergence = "Default";
+
+    /// <summary>默认不重启已有几何优化。</summary>
+    public const bool DefaultOptimizationRestart = false;
+
+    /// <summary>默认不指定几何优化初始 Hessian 来源。</summary>
+    public const string DefaultOptimizationInitialHessian = "None";
+
     /// <summary>
     /// 创建默认的单点计算方案。
     /// 坐标和运行状态不在这里设置。
     /// </summary>
     public static CalculationSpec CreateDefaultSinglePoint()
     {
+        return CreateDefaultSpec(CalculationTaskType.SinglePoint);
+    }
+
+    /// <summary>
+    /// 创建默认的几何优化方案。
+    /// 坐标和运行状态不在这里设置。
+    /// </summary>
+    public static CalculationSpec CreateDefaultOptimization()
+    {
+        CalculationSpec spec =
+            CreateDefaultSpec(CalculationTaskType.Optimization);
+        spec.ExtraOptions[CalculationOptionKeys.OptimizationMaxCycles] =
+            DefaultOptimizationMaxCycles.ToString(
+                CultureInfo.InvariantCulture);
+        spec.ExtraOptions[CalculationOptionKeys.OptimizationConvergence] =
+            DefaultOptimizationConvergence;
+        spec.ExtraOptions[CalculationOptionKeys.OptimizationRestart] =
+            "false";
+        spec.ExtraOptions[
+            CalculationOptionKeys.OptimizationInitialHessian] =
+            DefaultOptimizationInitialHessian;
+
+        AddParameter(
+            spec,
+            CalculationOptionKeys.OptimizationMaxCycles,
+            "优化最大循环次数",
+            DefaultOptimizationMaxCycles.ToString(
+                CultureInfo.InvariantCulture),
+            DefaultOptimizationMaxCycles.ToString(
+                CultureInfo.InvariantCulture),
+            CalculationRiskLevel.Info,
+            false,
+            "默认最多执行 100 次几何优化循环。");
+
+        AddParameter(
+            spec,
+            CalculationOptionKeys.OptimizationConvergence,
+            "优化收敛标准",
+            DefaultOptimizationConvergence,
+            DefaultOptimizationConvergence,
+            CalculationRiskLevel.Info,
+            false,
+            "默认使用优化程序的常规收敛标准。");
+
+        AddParameter(
+            spec,
+            CalculationOptionKeys.OptimizationRestart,
+            "优化重启",
+            "false",
+            "false",
+            CalculationRiskLevel.Warning,
+            false,
+            "默认从当前几何开始新的优化。");
+
+        AddParameter(
+            spec,
+            CalculationOptionKeys.OptimizationInitialHessian,
+            "优化初始 Hessian",
+            DefaultOptimizationInitialHessian,
+            DefaultOptimizationInitialHessian,
+            CalculationRiskLevel.Info,
+            false,
+            "默认不指定初始 Hessian 来源。");
+
+        return spec;
+    }
+
+    private static CalculationSpec CreateDefaultSpec(
+        CalculationTaskType taskType)
+    {
         CalculationSpec spec = new CalculationSpec();
-        spec.TaskType = CalculationTaskType.SinglePoint;
+        spec.TaskType = taskType;
         spec.Program = DefaultProgram;
         spec.Method = DefaultMethod;
         spec.Basis = DefaultBasis;
@@ -61,11 +143,11 @@ public static class CalculationDefaults
             spec,
             "task",
             "任务类型",
-            CalculationTaskType.SinglePoint.ToString(),
-            CalculationTaskType.SinglePoint.ToString(),
+            taskType.ToString(),
+            taskType.ToString(),
             CalculationRiskLevel.Info,
             false,
-            "当前阶段默认执行单点能计算。");
+            "默认任务类型由调用方指定。");
 
         AddParameter(
             spec,
