@@ -91,10 +91,11 @@ public sealed class GaussianRouteKeywordBuilder
         CalculationTaskType taskType)
     {
         if (taskType != CalculationTaskType.SinglePoint
-            && taskType != CalculationTaskType.Optimization)
+            && taskType != CalculationTaskType.Optimization
+            && taskType != CalculationTaskType.Frequency)
         {
             throw new NotSupportedException(
-                "当前阶段只支持单点计算和几何优化输入生成。");
+                "当前阶段只支持单点计算、几何优化和频率分析输入生成。");
         }
     }
 
@@ -105,6 +106,17 @@ public sealed class GaussianRouteKeywordBuilder
         if (spec.TaskType == CalculationTaskType.SinglePoint)
         {
             result.TaskKeyword = "SP";
+            AddTranslation(
+                result,
+                "task-type",
+                spec.TaskType.ToString(),
+                result.TaskKeyword);
+            return;
+        }
+
+        if (spec.TaskType == CalculationTaskType.Frequency)
+        {
+            result.TaskKeyword = "Freq";
             AddTranslation(
                 result,
                 "task-type",

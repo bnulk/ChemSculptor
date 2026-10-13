@@ -63,6 +63,17 @@ public sealed class AgentMessageResultDto
 
     public string WavefunctionStabilitySummary { get; set; } =
         string.Empty;
+
+    public string FrequencyAnalysisStatus { get; set; } =
+        string.Empty;
+
+    public int FrequencyCount { get; set; }
+
+    public int ImaginaryFrequencyCount { get; set; }
+
+    public double? MinimumFrequency { get; set; }
+
+    public bool? IsMinimum { get; set; }
 }
 
 /// <summary>服务器返回的参数问题。</summary>

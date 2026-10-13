@@ -46,4 +46,8 @@ public static class CalculationSkillIds
     /// <summary>生成优化任务处理方案。</summary>
     public const string CalculationOptimizationProcessingPlan =
         "calculation.optimization-processing-plan";
+
+    /// <summary>对最终优化结构执行振动分析。</summary>
+    public const string CalculationFrequencyAnalysis =
+        "calculation.frequency-analysis";
 }

@@ -5,6 +5,138 @@
 
 ---
 
+## v0.64.1（2026-10-14）：任务级 Skill 说明目录
+
+### 版本
+
+- 当前版本：`0.64.1`
+- 日期：`2026-10-14`
+- 版本类型：文档组织
+
+### 改动目的
+
+为每个任务级 Skill 建立固定的 11 步说明文档，明确职责、代码落点、
+关联文件和验收证据。
+
+### 代码改动
+
+新增：
+
+```text
+docs/skill说明/README.md
+docs/skill说明/single-point-calculation.md
+docs/skill说明/geometry-optimization.md
+docs/skill说明/frequency-analysis.md
+docs/skill说明/wavefunction-stability-check.md
+```
+
+扩展：
+
+```text
+docs/Coding-Conventions.md
+```
+
+### 强制规则
+
+```text
+每个任务级 Skill 必须提供 docs/skill说明/<skill-id>.md
+说明文件必须逐项列出 11 步的目标、代码落点、关联文件和验收证据
+没有说明文件的 Task-level Skill 不得视为完成
+```
+
+### 验证
+
+```text
+文档检查通过
+Release 构建：0 警告，0 错误
+测试：179/179 通过
+```
+
+---
+
+## v0.64.0（2026-10-14）：优化后振动分析
+
+### 版本
+
+- 当前版本：`0.64.0`
+- 日期：`2026-10-14`
+- 版本类型：新增功能
+
+### 改动目的
+
+在优化并完成波函数稳定性检查后，对最终采用的优化结构执行一次 Gaussian
+`Freq` 振动分析，识别虚频并保留热化学校正。
+
+### 代码改动
+
+新增：
+
+```text
+src/ChemSculptor.Compute/FrequencyAnalysisModels.cs
+src/ChemSculptor.Compute.Gaussian/FrequencyAnalysis/
+  GaussianFrequencyInputWriter.cs
+  GaussianFrequencyOutputParser.cs
+src/ChemSculptor.Skills.Common/OptimizationRecovery/
+  OptimizationFrequencyAnalysisSkill.cs
+tests/ChemSculptor.Core.Tests/FrequencyAnalysisTests.cs
+```
+
+扩展：
+
+```text
+src/ChemSculptor.Compute.Gaussian/GaussianRouteKeywordBuilder.cs
+src/ChemSculptor.Compute.Gaussian/Gaussian16ProgramAdapter.cs
+src/ChemSculptor.Skills.Gaussian/GaussianSkillServiceRegistration.cs
+src/ChemSculptor.Skills.Common/CommonSkillServiceRegistration.cs
+src/ChemSculptor.Agent/OptimizationWorkflowDefinitionFactory.cs
+src/ChemSculptor.Agent/OptimizationCalculationService.cs
+src/ChemSculptor.Api/Contracts.cs
+src/ChemSculptor.Api/Endpoints/AgentEndpoints.cs
+src/ChemSculptor.WinForms/MainForm.cs
+src/ChemSculptor.WinForms/Models/Responses/ResponseModels.cs
+```
+
+### 工作流
+
+```text
+优化
+-> 优化验证
+-> 优化收敛异常检查
+-> 波函数稳定性检查
+-> 稳定性修正和复检（按需）
+-> 振动分析
+-> 处理方案
+-> 科学数据记录
+```
+
+Gaussian 振动分析使用：
+
+```text
+Freq guess=read geom=check
+```
+
+保留方法、基组、色散、对称性、SCF 和溶剂等参数。
+
+### 客户端显示
+
+```text
+振动分析状态
+频率数量
+虚频数量
+最低频率
+是否为稳定最小点
+零点校正和热校正
+```
+
+### 验证
+
+```text
+Release 构建：0 警告，0 错误
+测试：179/179 通过
+```
+
+---
+
 ## v0.63.0（2026-10-13）：优化波函数稳定性检查
 
 ### 版本

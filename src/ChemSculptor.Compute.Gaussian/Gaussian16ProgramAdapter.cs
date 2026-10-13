@@ -1,4 +1,5 @@
 using ChemSculptor.Compute;
+using ChemSculptor.Compute.Gaussian.FrequencyAnalysis;
 using ChemSculptor.InputProcessor.GeometryIntake;
 using System.Diagnostics;
 
@@ -9,7 +10,9 @@ namespace ChemSculptor.Compute.Gaussian;
 /// 负责把通用计算方案转换为 Gaussian 16 的输入文件、命令行参数和运行上下文。
 /// </summary>
 public sealed class Gaussian16ProgramAdapter
-    : IQuantumProgramAdapter, IOptimizationOutputParser
+    : IQuantumProgramAdapter,
+      IOptimizationOutputParser,
+      IFrequencyAnalysisProgram
 {
     /// <summary>默认程序名称。</summary>
     public const string ProgramNameValue = "Gaussian 16";
@@ -22,6 +25,10 @@ public sealed class Gaussian16ProgramAdapter
     private readonly GaussianResultTranslator _resultTranslator;
     private readonly GaussianProcessingPlanTranslator _processingPlanTranslator;
     private readonly GaussianRouteKeywordBuilder _routeKeywordBuilder;
+    private readonly GaussianFrequencyInputWriter
+        _frequencyInputWriter;
+    private readonly GaussianFrequencyOutputParser
+        _frequencyOutputParser;
     private readonly Gaussian16ProgramAdapterOptions _options;
 
     /// <summary>创建 Gaussian 16 适配器。</summary>
@@ -31,6 +38,8 @@ public sealed class Gaussian16ProgramAdapter
         GaussianResultTranslator resultTranslator,
         GaussianProcessingPlanTranslator processingPlanTranslator,
         GaussianRouteKeywordBuilder routeKeywordBuilder,
+        GaussianFrequencyInputWriter frequencyInputWriter,
+        GaussianFrequencyOutputParser frequencyOutputParser,
         Gaussian16ProgramAdapterOptions options)
     {
         if (inputWriter == null)
@@ -58,6 +67,18 @@ public sealed class Gaussian16ProgramAdapter
             throw new ArgumentNullException(nameof(routeKeywordBuilder));
         }
 
+        if (frequencyInputWriter == null)
+        {
+            throw new ArgumentNullException(
+                nameof(frequencyInputWriter));
+        }
+
+        if (frequencyOutputParser == null)
+        {
+            throw new ArgumentNullException(
+                nameof(frequencyOutputParser));
+        }
+
         if (options == null)
         {
             throw new ArgumentNullException(nameof(options));
@@ -68,6 +89,8 @@ public sealed class Gaussian16ProgramAdapter
         _resultTranslator = resultTranslator;
         _processingPlanTranslator = processingPlanTranslator;
         _routeKeywordBuilder = routeKeywordBuilder;
+        _frequencyInputWriter = frequencyInputWriter;
+        _frequencyOutputParser = frequencyOutputParser;
         _options = options;
     }
 
@@ -340,6 +363,33 @@ public sealed class Gaussian16ProgramAdapter
 
         return _resultTranslator.TranslateOptimization(
             gaussianOutput);
+    }
+
+    /// <summary>写入 Gaussian 振动分析输入。</summary>
+    public Task WriteFrequencyInputAsync(
+        CalculationSpec spec,
+        string sourceInputPath,
+        string targetInputPath,
+        string checkpointFileName,
+        CancellationToken cancellationToken = default)
+    {
+        return _frequencyInputWriter.WriteAsync(
+            spec,
+            sourceInputPath,
+            targetInputPath,
+            checkpointFileName,
+            cancellationToken);
+    }
+
+    /// <summary>解析 Gaussian 振动分析输出。</summary>
+    public Task<FrequencyAnalysisResult>
+        ParseFrequencyOutputAsync(
+            string outputPath,
+            CancellationToken cancellationToken = default)
+    {
+        return _frequencyOutputParser.ParseAsync(
+            outputPath,
+            cancellationToken);
     }
 
     /// <summary>把通用处理方案翻译为 Gaussian 专用方案。</summary>

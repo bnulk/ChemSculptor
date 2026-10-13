@@ -395,6 +395,23 @@ WinForms 的 SplitContainer 是框架界面控件，不属于技能命名。
 程序专用规则只能出现在程序适配器、Parser、Translator 和专用 Skill 中。
 ```
 
+每个任务级 Skill 必须同时提供一份说明文件：
+
+```text
+docs/skill说明/<skill-id>.md
+```
+
+说明文件必须逐项列出 11 步，并写明每一步的：
+
+```text
+目标
+代码落点
+关联文件
+验收证据
+```
+
+没有说明文件的 Task-level Skill 不得视为完成。
+
 特殊情况处理：
 
 ```text

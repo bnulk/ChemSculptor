@@ -49,6 +49,10 @@ public class OptimizationWorkflowTests
                 definition,
                 "optimization-stability-recheck"));
         Assert.NotNull(
+            FindNode(
+                definition,
+                "optimization-frequency-analysis"));
+        Assert.NotNull(
             FindNode(definition, "optimization-processing-plan"));
         Assert.NotNull(
             FindNode(definition, "optimization-science-data"));
@@ -237,6 +241,10 @@ public class OptimizationWorkflowTests
         Register(
             registry,
             AnomalySkillIds.ReportOptimizationHardFailure,
+            path);
+        Register(
+            registry,
+            CalculationSkillIds.CalculationFrequencyAnalysis,
             path);
         Register(
             registry,
@@ -435,6 +443,12 @@ public class OptimizationWorkflowTests
                     .PlanWavefunctionStabilityCorrection)
             {
                 return "{\"planCreated\":true,\"plan\":{}}";
+            }
+
+            if (Name
+                == CalculationSkillIds.CalculationFrequencyAnalysis)
+            {
+                return "{\"normalTermination\":true,\"frequencies\":[],\"imaginaryFrequencyCount\":0,\"isMinimum\":true}";
             }
 
             return "{}";

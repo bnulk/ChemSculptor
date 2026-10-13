@@ -468,6 +468,28 @@ public sealed class MainForm : Form
 
         AppendMessage(
             "hint",
+            "振动分析：" +
+            (string.IsNullOrWhiteSpace(
+                result.FrequencyAnalysisStatus)
+                ? "未提供"
+                : result.FrequencyAnalysisStatus));
+        AppendMessage(
+            "hint",
+            "频率数 / 虚频数：" +
+            result.FrequencyCount.ToString() +
+            " / " +
+            result.ImaginaryFrequencyCount.ToString());
+        AppendMessage(
+            "hint",
+            "最低频率：" +
+            FormatNumber(result.MinimumFrequency));
+        AppendMessage(
+            "hint",
+            "稳定最小点：" +
+            FormatBoolean(result.IsMinimum));
+
+        AppendMessage(
+            "hint",
             "最终结构：" +
             (string.IsNullOrWhiteSpace(result.FinalStructure)
                 ? "缺失"

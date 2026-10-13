@@ -239,6 +239,20 @@ public static class OptimizationWorkflowDefinitionFactory
             "wavefunction-instability");
         definition.Nodes.Add(stabilityHardFailure);
 
+        WorkflowNode frequencyAnalysis = new WorkflowNode();
+        frequencyAnalysis.Id = "optimization-frequency-analysis";
+        frequencyAnalysis.Skill =
+            CalculationSkillIds.CalculationFrequencyAnalysis;
+        frequencyAnalysis.DependsOn.Add(
+            stabilityHardFailure.Id);
+        frequencyAnalysis.Inputs["optimization"] =
+            optimization.Id;
+        frequencyAnalysis.Inputs["recoveryExecution"] =
+            recoveryExecution.Id;
+        frequencyAnalysis.Inputs["stabilityRecoveryExecution"] =
+            stabilityRecoveryExecution.Id;
+        definition.Nodes.Add(frequencyAnalysis);
+
         WorkflowNode hardFailure = new WorkflowNode();
         hardFailure.Id = "optimization-hard-failure";
         hardFailure.Skill =
@@ -260,6 +274,8 @@ public static class OptimizationWorkflowDefinitionFactory
         processingPlan.DependsOn.Add(hardFailure.Id);
         processingPlan.DependsOn.Add(
             stabilityHardFailure.Id);
+        processingPlan.DependsOn.Add(
+            frequencyAnalysis.Id);
         processingPlan.Inputs["optimization"] = optimization.Id;
         processingPlan.Inputs["recoveryExecution"] =
             recoveryExecution.Id;

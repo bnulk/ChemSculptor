@@ -232,6 +232,8 @@ public sealed class OptimizationCalculationService
                     stability.Summary;
             }
 
+            result.FrequencyResult =
+                ResolveFrequencyResult(workflowRun);
             result.Message = result.Succeeded
                 ? "几何优化已完成。"
                 : "几何优化工作流未通过验证。";
@@ -508,6 +510,25 @@ public sealed class OptimizationCalculationService
         }
 
         return status.ToString();
+    }
+
+    private static FrequencyAnalysisResult?
+        ResolveFrequencyResult(WorkflowRun run)
+    {
+        TaskResult? task;
+
+        if (!run.Results.TryGetValue(
+                "optimization-frequency-analysis",
+                out task)
+            || string.IsNullOrWhiteSpace(task.Output))
+        {
+            return null;
+        }
+
+        return JsonSerializer.Deserialize<
+            FrequencyAnalysisResult>(
+                task.Output,
+                CreateJsonOptions());
     }
 
     private async Task SaveParameterAuditAsync(

@@ -447,6 +447,23 @@ public sealed class AgentService : IAgentService
         result.WavefunctionStabilitySummary =
             submission.WavefunctionStabilitySummary;
 
+        if (submission.FrequencyResult != null)
+        {
+            FrequencyAnalysisResult frequency =
+                submission.FrequencyResult;
+            result.FrequencyAnalysisStatus =
+                frequency.NormalTermination
+                    ? "Completed"
+                    : "Failed";
+            result.FrequencyCount =
+                frequency.Frequencies.Count;
+            result.ImaginaryFrequencyCount =
+                frequency.ImaginaryFrequencyCount;
+            result.MinimumFrequency =
+                frequency.MinimumFrequency;
+            result.IsMinimum = frequency.IsMinimum;
+        }
+
         if (submission.Result != null)
         {
             OptimizationResult optimization = submission.Result;

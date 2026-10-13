@@ -3,7 +3,7 @@
 ## 当前版本
 
 ```text
-0.63.0
+0.64.1
 ```
 
 ## 文档维护原则
@@ -35,7 +35,7 @@ HANDOFF.md
 
 ```text
 Release 构建：0 警告，0 错误
-测试：177/177 通过
+测试：179/179 通过
 ```
 
 ## 总体架构
@@ -141,6 +141,11 @@ Gaussian 优化恢复输入重建
 波函数稳定性显式跳过规则
 优化稳定性修正和复检
 客户端波函数稳定性摘要
+优化后振动分析 Skill
+Gaussian Freq 输入翻译
+Gaussian 频率输出解析
+客户端振动分析摘要
+任务级 Skill 说明文档
 优化对话路由
 OptimizationCalculationService
 优化 API 显示字段
@@ -200,7 +205,8 @@ WinForms 领取和显示摘要
 优化工作流已接入 Agent、Api 和 WinForms
 优化正常、异常、恢复和归档链已有自动化测试
 优化最终几何已接入波函数稳定性检查
-频率、TD-DFT 等任务尚未实现
+优化工作流在稳定性处理之后执行振动分析
+TD-DFT、SOC 和 MECP 等任务尚未实现
 科学点文件清单已进入 CalculationPoint
 WinForms 已按清单保存完整成果包
 关系、物理量和科学叙述已可追溯
@@ -342,6 +348,11 @@ docs/CHANGES.md
 docs/HANDOFF.md
 
 docs/Tutorials/ChemSculptor-Tutorial.md
+docs/skill说明/README.md
+docs/skill说明/single-point-calculation.md
+docs/skill说明/geometry-optimization.md
+docs/skill说明/frequency-analysis.md
+docs/skill说明/wavefunction-stability-check.md
 docs/Tutorials/Codex-Skill-Authoring-Tutorial.md
 docs/Tutorials/ChemSculptor-Skill-Collection-Tutorial.md
 docs/Parameter-Interaction-Design.md

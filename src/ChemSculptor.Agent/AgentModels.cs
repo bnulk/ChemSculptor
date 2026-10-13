@@ -104,4 +104,20 @@ public sealed class AgentResult
     /// <summary>波函数稳定性检查摘要。</summary>
     public string WavefunctionStabilitySummary { get; set; } =
         string.Empty;
+
+    /// <summary>振动分析状态。</summary>
+    public string FrequencyAnalysisStatus { get; set; } =
+        string.Empty;
+
+    /// <summary>频率数量。</summary>
+    public int FrequencyCount { get; set; }
+
+    /// <summary>虚频数量。</summary>
+    public int ImaginaryFrequencyCount { get; set; }
+
+    /// <summary>最低频率。</summary>
+    public double? MinimumFrequency { get; set; }
+
+    /// <summary>是否为稳定最小点。</summary>
+    public bool? IsMinimum { get; set; }
 }

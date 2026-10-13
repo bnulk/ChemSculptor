@@ -287,6 +287,9 @@ public sealed class OptimizationSubmissionResult
     public string WavefunctionStabilitySummary { get; set; } =
         string.Empty;
 
+    /// <summary>振动分析结果。</summary>
+    public FrequencyAnalysisResult? FrequencyResult { get; set; }
+
     /// <summary>诊断信息。</summary>
     public List<string> Diagnostics { get; set; } =
         new List<string>();

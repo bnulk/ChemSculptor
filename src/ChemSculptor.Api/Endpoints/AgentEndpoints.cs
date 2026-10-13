@@ -79,6 +79,14 @@ public static class AgentEndpoints
             result.WavefunctionStabilityStatus;
         response.WavefunctionStabilitySummary =
             result.WavefunctionStabilitySummary;
+        response.FrequencyAnalysisStatus =
+            result.FrequencyAnalysisStatus;
+        response.FrequencyCount = result.FrequencyCount;
+        response.ImaginaryFrequencyCount =
+            result.ImaginaryFrequencyCount;
+        response.MinimumFrequency =
+            result.MinimumFrequency;
+        response.IsMinimum = result.IsMinimum;
 
         return Results.Ok(response);
     }

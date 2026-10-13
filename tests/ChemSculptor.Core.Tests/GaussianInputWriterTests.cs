@@ -122,7 +122,7 @@ public class GaussianInputWriterTests
             Guid.NewGuid().ToString("N"));
 
         Directory.CreateDirectory(root);
-        string outputPath = Path.Combine(root, "job-frequency.gjf");
+        string outputPath = Path.Combine(root, "job-tddft.gjf");
 
         try
         {
@@ -131,7 +131,7 @@ public class GaussianInputWriterTests
             CalculationDefaults.ApplyDefaultMultiplicityFromElectronCount(
                 spec,
                 10);
-            spec.TaskType = CalculationTaskType.Frequency;
+            spec.TaskType = CalculationTaskType.TdDft;
 
             GaussianInputOptions options = new GaussianInputOptions();
             options.Memory = "4GB";
