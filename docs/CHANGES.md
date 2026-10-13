@@ -5,6 +5,98 @@
 
 ---
 
+## v0.59.0（2026-10-13）：优化恢复链
+
+### 版本
+
+- 当前版本：`0.59.0`
+- 日期：`2026-10-13`
+- 版本类型：新增功能
+
+### 改动目的
+
+根据优化异常生成修正方案，创建派生优化作业，重新执行完整优化并复检结果。
+
+### 代码改动
+
+新增：
+
+```text
+src/ChemSculptor.Skills.Common/OptimizationRecovery/
+  OptimizationFailureDiagnosisSkill.cs
+  OptimizationCorrectionPlanningSkill.cs
+  OptimizationRecoveryJobCreationSkill.cs
+  OptimizationRecoveryJobExecutionSkill.cs
+  OptimizationRecoveryValidationSkill.cs
+
+src/ChemSculptor.Anomaly/Models/OptimizationRecoveryModels.cs
+```
+
+扩展：
+
+```text
+src/ChemSculptor.Anomaly/Models/CorrectionIntentCodes.cs
+src/ChemSculptor.Anomaly/Models/AnomalySkillIds.cs
+src/ChemSculptor.Compute.Gaussian/Anomaly/Recovery/
+  GaussianRecoveryInputWriter.cs
+src/ChemSculptor.Skills.Gaussian/Anomaly/Recovery/
+  GaussianRecoveryJobProvider.cs
+src/ChemSculptor.Skills.Common/CommonSkillServiceRegistration.cs
+```
+
+首期恢复策略：
+
+```text
+增加 optimization-max-cycles
+使用 Restart
+使用 CalcFC
+使用 ReadFC
+复用 SCF 修复方案
+```
+
+### 教程式说明
+
+恢复链：
+
+```text
+优化异常
+  -> 诊断
+  -> 修正规划
+  -> 创建派生作业
+  -> 执行恢复作业
+  -> 验证恢复结果
+```
+
+派生优化作业：
+
+```text
+不覆盖原作业
+记录 ParentJobId
+记录 RootWorkflowId
+记录 AttemptNumber
+记录 CorrectionPlanId
+重新执行完整几何优化
+```
+
+Gaussian 恢复输入通过规范参数和 route builder 重建，不直接拼接用户原文。
+
+### 验证
+
+```text
+Release 构建：0 警告，0 错误
+测试：162/162 通过
+
+端到端验证：
+优化未收敛
+  -> 增加 maxcycles
+  -> 新 route 包含 opt=MaxCycles=200
+  -> 派生作业继承 ParentJobId
+  -> 恢复优化完成
+  -> 异常记录状态为 Resolved
+```
+
+---
+
 ## v0.58.0（2026-10-13）：优化异常检查
 
 ### 版本

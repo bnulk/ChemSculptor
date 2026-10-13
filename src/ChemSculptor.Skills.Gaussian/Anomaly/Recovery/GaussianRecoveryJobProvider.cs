@@ -76,6 +76,14 @@ public sealed class GaussianRecoveryJobProvider
 
         CorrectionOption option = request.Plan.Option;
 
+        if (request.SourceJob.Spec.TaskType
+            == CalculationTaskType.Optimization)
+        {
+            return option.CanUseForRestart
+                && IsOptimizationCorrectionIntent(
+                    option.IntentCode);
+        }
+
         if (!option.CanUseForRestart
             || !string.Equals(
                 option.IntentCode,
@@ -103,6 +111,14 @@ public sealed class GaussianRecoveryJobProvider
             result.Succeeded = false;
             result.Error = "当前修正计划不能创建派生 Gaussian 作业。";
             return result;
+        }
+
+        if (request.SourceJob.Spec.TaskType
+            == CalculationTaskType.Optimization)
+        {
+            return await PrepareOptimizationAsync(
+                request,
+                cancellationToken);
         }
 
         int targetMultiplicity;
@@ -211,6 +227,224 @@ public sealed class GaussianRecoveryJobProvider
         result.RecoveryJob = recoveryJob;
         result.Attempt = attempt;
         return result;
+    }
+
+    private async Task<RecoveryJobPreparationResult>
+        PrepareOptimizationAsync(
+            RecoveryJobPreparationRequest request,
+            CancellationToken cancellationToken)
+    {
+        RecoveryJobPreparationResult result =
+            new RecoveryJobPreparationResult();
+        CalculationJob sourceJob = request.SourceJob;
+        string sourceInputPath = ResolveSourceInputPath(sourceJob);
+
+        if (sourceInputPath.Length == 0)
+        {
+            result.Succeeded = false;
+            result.Error = "原始 Gaussian 输入文件不存在。";
+            return result;
+        }
+
+        string recoveryJobId = "job-" + Guid.NewGuid().ToString("N");
+        await _workspace.EnsureJobWorkspaceAsync(
+            recoveryJobId,
+            cancellationToken);
+
+        CalculationSpec recoverySpec = CloneSpec(sourceJob.Spec);
+        ApplyOptimizationChanges(
+            recoverySpec,
+            request.Plan.Option!);
+
+        IQuantumProgramAdapter? adapter =
+            _adapterRegistry.Resolve(recoverySpec);
+
+        if (adapter == null)
+        {
+            result.Succeeded = false;
+            result.Error = "没有可处理当前优化方案的适配器。";
+            return result;
+        }
+
+        string inputFileName = adapter.GetInputFileName(recoveryJobId);
+        string inputPath = Path.Combine(
+            _workspace.GetInputDirectory(recoveryJobId),
+            inputFileName);
+        string runInputPath = Path.Combine(
+            _workspace.GetRunDirectory(recoveryJobId),
+            inputFileName);
+        string outputPath =
+            _workspace.GetJobOutputPath(recoveryJobId);
+
+        GaussianRecoveryInputWriteResult writeResult =
+            await _inputWriter.ApplyOptimizationCorrectionsAsync(
+                sourceInputPath,
+                inputPath,
+                recoverySpec,
+                cancellationToken);
+
+        if (!writeResult.Succeeded)
+        {
+            result.Succeeded = false;
+            result.Error = writeResult.Error;
+            return result;
+        }
+
+        File.Copy(inputPath, runInputPath, true);
+
+        string rootWorkflowId = ResolveRootWorkflowId(sourceJob);
+        int attemptNumber = sourceJob.AttemptNumber + 1;
+
+        CalculationJob recoveryJob = new CalculationJob();
+        recoveryJob.JobId = recoveryJobId;
+        recoveryJob.TaskId = sourceJob.TaskId;
+        recoveryJob.SessionId = sourceJob.SessionId;
+        recoveryJob.WorkflowId = sourceJob.WorkflowId;
+        recoveryJob.ParentJobId = sourceJob.JobId;
+        recoveryJob.RootWorkflowId = rootWorkflowId;
+        recoveryJob.AttemptNumber = attemptNumber;
+        recoveryJob.CorrectionPlanId = request.Plan.Id;
+        recoveryJob.GeometryId = sourceJob.GeometryId;
+        recoveryJob.Goal = sourceJob.Goal;
+        recoveryJob.Spec = recoverySpec;
+        recoveryJob.State = CalculationJobState.InputGenerated;
+        recoveryJob.WorkspaceDirectory =
+            _workspace.GetJobDirectory(recoveryJobId);
+        recoveryJob.RunDirectory =
+            _workspace.GetRunDirectory(recoveryJobId);
+        recoveryJob.SourceInputFilePath = inputPath;
+        recoveryJob.InputFilePath = runInputPath;
+        recoveryJob.OutputFilePath = outputPath;
+
+        await _repository.SaveJobAsync(
+            recoveryJob,
+            cancellationToken);
+
+        RecoveryAttempt attempt = new RecoveryAttempt();
+        attempt.Id = "attempt-" + Guid.NewGuid().ToString("N");
+        attempt.RootWorkflowId = rootWorkflowId;
+        attempt.ParentJobId = sourceJob.JobId;
+        attempt.RecoveryJobId = recoveryJobId;
+        attempt.AttemptNumber = attemptNumber;
+        attempt.CorrectionPlanId = request.Plan.Id;
+
+        result.Succeeded = true;
+        result.RecoveryJob = recoveryJob;
+        result.Attempt = attempt;
+        return result;
+    }
+
+    private static bool IsOptimizationCorrectionIntent(
+        string intentCode)
+    {
+        return string.Equals(
+                intentCode,
+                CorrectionIntentCodes.IncreaseOptimizationMaxCycles,
+                StringComparison.OrdinalIgnoreCase)
+            || string.Equals(
+                intentCode,
+                CorrectionIntentCodes.RestartOptimization,
+                StringComparison.OrdinalIgnoreCase)
+            || string.Equals(
+                intentCode,
+                CorrectionIntentCodes.UseOptimizationCalcFc,
+                StringComparison.OrdinalIgnoreCase)
+            || string.Equals(
+                intentCode,
+                CorrectionIntentCodes.UseOptimizationReadFc,
+                StringComparison.OrdinalIgnoreCase)
+            || string.Equals(
+                intentCode,
+                CorrectionIntentCodes.ReuseScfRecovery,
+                StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static void ApplyOptimizationChanges(
+        CalculationSpec spec,
+        CorrectionOption option)
+    {
+        for (int index = 0;
+            index < option.Changes.Count;
+            index++)
+        {
+            CorrectionChange change = option.Changes[index];
+
+            if (string.Equals(
+                change.Name,
+                CalculationOptionKeys.OptimizationMaxCycles,
+                StringComparison.OrdinalIgnoreCase))
+            {
+                int maxCycles;
+
+                if (int.TryParse(
+                        change.NewValue,
+                        out maxCycles)
+                    && maxCycles > 0)
+                {
+                    SetExtraOption(
+                        spec,
+                        change.Name,
+                        maxCycles.ToString(
+                            System.Globalization.CultureInfo
+                                .InvariantCulture));
+                }
+            }
+            else if (string.Equals(
+                change.Name,
+                CalculationOptionKeys.OptimizationRestart,
+                StringComparison.OrdinalIgnoreCase))
+            {
+                SetExtraOption(
+                    spec,
+                    change.Name,
+                    change.NewValue);
+            }
+            else if (string.Equals(
+                change.Name,
+                CalculationOptionKeys.OptimizationInitialHessian,
+                StringComparison.OrdinalIgnoreCase))
+            {
+                SetExtraOption(
+                    spec,
+                    change.Name,
+                    change.NewValue);
+            }
+            else if (string.Equals(
+                change.Name,
+                CalculationOptionKeys.ScfIterationLimit,
+                StringComparison.OrdinalIgnoreCase))
+            {
+                SetExtraOption(
+                    spec,
+                    change.Name,
+                    change.NewValue);
+            }
+        }
+    }
+
+    private static void SetExtraOption(
+        CalculationSpec spec,
+        string key,
+        string value)
+    {
+        spec.ExtraOptions[key] = value;
+
+        for (int index = 0;
+            index < spec.Parameters.Count;
+            index++)
+        {
+            CalculationParameter parameter = spec.Parameters[index];
+
+            if (string.Equals(
+                parameter.Name,
+                key,
+                StringComparison.OrdinalIgnoreCase))
+            {
+                parameter.CurrentValue = value;
+                parameter.Source = ParameterSource.Agent;
+                return;
+            }
+        }
     }
 
     private static bool TryGetTargetMultiplicity(

@@ -8,6 +8,7 @@ using ChemSculptor.Skills.Common.AnomalyWorkflow;
 using ChemSculptor.Skills.Common.CalculationWorkflow;
 using ChemSculptor.Skills.Common.CalculationResultValidation;
 using ChemSculptor.Skills.Common.OptimizationCalculation;
+using ChemSculptor.Skills.Common.OptimizationRecovery;
 using ChemSculptor.Skills.Common.SinglePointCalculation;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -36,8 +37,9 @@ public static class CommonSkillServiceRegistration
         ServiceCollectionServiceExtensions.AddSingleton<
             WavefunctionStabilityCorrectionPlanner>(services);
         ServiceCollectionServiceExtensions.AddSingleton<
-            IAnomalyCheck,
             OptimizationConvergenceCheck>(services);
+        ServiceCollectionServiceExtensions.AddSingleton<
+            IAnomalyCheck>(services);
         ServiceCollectionServiceExtensions.AddSingleton<
             IQuantumProgramAdapterRegistry,
             QuantumProgramAdapterRegistry>(services);
@@ -65,6 +67,21 @@ public static class CommonSkillServiceRegistration
         ServiceCollectionServiceExtensions.AddSingleton<
             ISkill,
             OptimizationCalculationValidationSkill>(services);
+        ServiceCollectionServiceExtensions.AddSingleton<
+            ISkill,
+            OptimizationFailureDiagnosisSkill>(services);
+        ServiceCollectionServiceExtensions.AddSingleton<
+            ISkill,
+            OptimizationCorrectionPlanningSkill>(services);
+        ServiceCollectionServiceExtensions.AddSingleton<
+            ISkill,
+            OptimizationRecoveryJobCreationSkill>(services);
+        ServiceCollectionServiceExtensions.AddSingleton<
+            ISkill,
+            OptimizationRecoveryJobExecutionSkill>(services);
+        ServiceCollectionServiceExtensions.AddSingleton<
+            ISkill,
+            OptimizationRecoveryValidationSkill>(services);
         ServiceCollectionServiceExtensions.AddSingleton<
             ISkill,
             CalculationWorkflowProcessingPlanSkill>(services);

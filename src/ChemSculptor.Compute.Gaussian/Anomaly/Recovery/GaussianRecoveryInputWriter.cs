@@ -1,3 +1,6 @@
+using ChemSculptor.Anomaly.Models;
+using ChemSculptor.Compute;
+
 namespace ChemSculptor.Compute.Gaussian.Anomaly.Recovery;
 
 /// <summary>Gaussian 派生恢复输入写入结果。</summary>
@@ -13,6 +16,27 @@ public sealed class GaussianRecoveryInputWriteResult
 /// <summary>Gaussian 派生恢复输入写入器。</summary>
 public sealed class GaussianRecoveryInputWriter
 {
+    private readonly GaussianRouteKeywordBuilder _routeKeywordBuilder;
+
+    /// <summary>创建恢复输入写入器。</summary>
+    public GaussianRecoveryInputWriter()
+        : this(new GaussianRouteKeywordBuilder())
+    {
+    }
+
+    /// <summary>创建恢复输入写入器。</summary>
+    public GaussianRecoveryInputWriter(
+        GaussianRouteKeywordBuilder routeKeywordBuilder)
+    {
+        if (routeKeywordBuilder == null)
+        {
+            throw new ArgumentNullException(
+                nameof(routeKeywordBuilder));
+        }
+
+        _routeKeywordBuilder = routeKeywordBuilder;
+    }
+
     /// <summary>修改 Gaussian 输入中的自旋多重度。</summary>
     public async Task<GaussianRecoveryInputWriteResult> ChangeMultiplicityAsync(
         string sourceInputPath,
@@ -84,6 +108,95 @@ public sealed class GaussianRecoveryInputWriter
         {
             result.Succeeded = false;
             result.Error = "没有找到 Gaussian 电荷和自旋多重度行。";
+            return result;
+        }
+
+        string? directory = Path.GetDirectoryName(targetInputPath);
+        if (!string.IsNullOrWhiteSpace(directory))
+        {
+            Directory.CreateDirectory(directory);
+        }
+
+        string outputText =
+            string.Join(Environment.NewLine, lines) +
+            Environment.NewLine;
+        await File.WriteAllTextAsync(
+            targetInputPath,
+            outputText,
+            cancellationToken);
+
+        result.Succeeded = true;
+        return result;
+    }
+
+    /// <summary>
+    /// 根据修正后的优化方案重建 Gaussian route，并保留分子坐标和标题。
+    /// </summary>
+    public async Task<GaussianRecoveryInputWriteResult>
+        ApplyOptimizationCorrectionsAsync(
+            string sourceInputPath,
+            string targetInputPath,
+            CalculationSpec recoverySpec,
+            CancellationToken cancellationToken = default)
+    {
+        GaussianRecoveryInputWriteResult result =
+            new GaussianRecoveryInputWriteResult();
+
+        if (string.IsNullOrWhiteSpace(sourceInputPath)
+            || !File.Exists(sourceInputPath))
+        {
+            result.Succeeded = false;
+            result.Error = "原始 Gaussian 输入文件不存在。";
+            return result;
+        }
+
+        if (recoverySpec == null
+            || recoverySpec.TaskType
+                != CalculationTaskType.Optimization)
+        {
+            result.Succeeded = false;
+            result.Error = "恢复方案不是几何优化任务。";
+            return result;
+        }
+
+        string inputText = await File.ReadAllTextAsync(
+            sourceInputPath,
+            cancellationToken);
+        string[] lines = inputText.Split(
+            new string[] { "\r\n", "\n", "\r" },
+            StringSplitOptions.None);
+        string checkpointName =
+            Path.GetFileNameWithoutExtension(targetInputPath) + ".chk";
+        string routeLine = _routeKeywordBuilder.Build(
+            recoverySpec).RouteLine;
+        bool routeUpdated = false;
+
+        for (int index = 0; index < lines.Length; index++)
+        {
+            string trimmed = lines[index].Trim();
+
+            if (trimmed.StartsWith(
+                "%chk=",
+                StringComparison.OrdinalIgnoreCase))
+            {
+                lines[index] = "%chk=" + checkpointName;
+                continue;
+            }
+
+            if (!routeUpdated
+                && trimmed.StartsWith(
+                    "#",
+                    StringComparison.Ordinal))
+            {
+                lines[index] = routeLine;
+                routeUpdated = true;
+            }
+        }
+
+        if (!routeUpdated)
+        {
+            result.Succeeded = false;
+            result.Error = "原始 Gaussian 输入中没有找到 route line。";
             return result;
         }
 
