@@ -43,6 +43,21 @@ SCF 迭代上限
 优化水分子使用 opt，maxcycles=200
 ```
 
+也支持通过约束表达只优化氢原子：
+
+```text
+冻结非氢原子
+固定非氢原子
+只优化氢原子
+freeze heavy atoms
+```
+
+该输入会生成规范参数：
+
+```text
+optimization-constraint-mode = HydrogensOnly
+```
+
 也支持受控的 Gaussian route 行：
 
 ```text
@@ -51,6 +66,22 @@ SCF 迭代上限
 
 `#p/#n/#t/#` 只控制输出级别。`opt` 表示几何优化；没有显式任务关键词时
 默认是单点计算。
+
+当约束模式为 `HydrogensOnly` 时，Gaussian 使用：
+
+```text
+opt=(ModRedundant, ...) nosymm
+```
+
+并在分子说明中把非氢原子标记为冻结原子：
+
+```text
+O -1 ...
+H    ...
+```
+
+`nosymm` 由约束模式自动加入，不需要用户再次输入。它用于禁止程序在
+约束优化过程中调整坐标体系。
 
 ## 执行
 
@@ -88,6 +119,14 @@ diagnosis
 修正次数
 最终采用的作业
 波函数稳定性状态
+优化约束模式
+```
+
+如果使用 `HydrogensOnly`，还必须检查：
+
+```text
+体系中至少存在一个氢原子
+所有非氢原子在初始轨迹和最终几何之间保持不动
 ```
 
 ## 波函数稳定性

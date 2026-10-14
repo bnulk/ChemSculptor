@@ -44,6 +44,9 @@ public static class CalculationDefaults
     /// <summary>默认不指定几何优化初始 Hessian 来源。</summary>
     public const string DefaultOptimizationInitialHessian = "None";
 
+    /// <summary>默认 TDDFT 激发态数量。</summary>
+    public const int DefaultTddftStateCount = 50;
+
     /// <summary>
     /// 创建默认的单点计算方案。
     /// 坐标和运行状态不在这里设置。
@@ -71,6 +74,9 @@ public static class CalculationDefaults
         spec.ExtraOptions[
             CalculationOptionKeys.OptimizationInitialHessian] =
             DefaultOptimizationInitialHessian;
+        spec.ExtraOptions[
+            CalculationOptionKeys.OptimizationConstraintMode] =
+            "None";
 
         AddParameter(
             spec,
@@ -113,6 +119,46 @@ public static class CalculationDefaults
             CalculationRiskLevel.Info,
             false,
             "默认不指定初始 Hessian 来源。");
+
+        AddParameter(
+            spec,
+            CalculationOptionKeys.OptimizationConstraintMode,
+            "优化约束模式",
+            "None",
+            "None",
+            CalculationRiskLevel.Info,
+            false,
+            "默认不冻结任何原子。");
+
+        return spec;
+    }
+
+    /// <summary>
+    /// 创建默认的 TDDFT 单点计算方案。
+    /// 默认计算 50 个激发态，并关闭对称性。
+    /// </summary>
+    public static CalculationSpec CreateDefaultTddftSinglePoint()
+    {
+        CalculationSpec spec =
+            CreateDefaultSpec(CalculationTaskType.TdDft);
+        spec.ExtraOptions[
+            CalculationOptionKeys.Symmetry] = "Ignore";
+        spec.ExtraOptions[
+            CalculationOptionKeys.TddftStateCount] =
+            DefaultTddftStateCount.ToString(
+                CultureInfo.InvariantCulture);
+
+        AddParameter(
+            spec,
+            CalculationOptionKeys.TddftStateCount,
+            "TDDFT 激发态数量",
+            DefaultTddftStateCount.ToString(
+                CultureInfo.InvariantCulture),
+            DefaultTddftStateCount.ToString(
+                CultureInfo.InvariantCulture),
+            CalculationRiskLevel.Info,
+            false,
+            "默认计算 50 个激发态。");
 
         return spec;
     }

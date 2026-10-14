@@ -25,7 +25,9 @@ public class CalculationOptionKeysTests
             CalculationOptionKeys.OptimizationMaxCycles,
             CalculationOptionKeys.OptimizationConvergence,
             CalculationOptionKeys.OptimizationRestart,
-            CalculationOptionKeys.OptimizationInitialHessian
+            CalculationOptionKeys.OptimizationInitialHessian,
+            CalculationOptionKeys.OptimizationConstraintMode,
+            CalculationOptionKeys.TddftStateCount
         };
 
         Assert.Equal("engine", CalculationOptionKeys.Engine);
@@ -61,6 +63,12 @@ public class CalculationOptionKeysTests
         Assert.Equal(
             "wavefunction-stability-check",
             CalculationOptionKeys.WavefunctionStabilityCheck);
+        Assert.Equal(
+            "tddft-state-count",
+            CalculationOptionKeys.TddftStateCount);
+        Assert.Equal(
+            "optimization-constraint-mode",
+            CalculationOptionKeys.OptimizationConstraintMode);
         Assert.Equal(
             keys.Length,
             keys.Distinct(StringComparer.OrdinalIgnoreCase).Count());

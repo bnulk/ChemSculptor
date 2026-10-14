@@ -249,6 +249,7 @@ public sealed class RuleBasedCalculationParameterExtractor
             "6-31G*");
 
         AddWavefunctionStabilityCheckRules(rules);
+        AddTddftRules(rules);
         AddRoutePrintLevelRules(rules);
         AddDispersionRules(rules);
         AddSymmetryRules(rules);
@@ -278,6 +279,25 @@ public sealed class RuleBasedCalculationParameterExtractor
             match => "Check",
             0.8,
             2);
+    }
+
+    private static void AddTddftRules(
+        List<ExtractionRule> rules)
+    {
+        AddRegexRule(
+            rules,
+            CalculationOptionKeys.TddftStateCount,
+            @"td\s*\(\s*nstates\s*=\s*(?<value>\d+)\s*\)",
+            NormalizeIntegerValue,
+            1.0,
+            5);
+        AddRegexRule(
+            rules,
+            CalculationOptionKeys.TddftStateCount,
+            @"(?:nstates|TDDFT\s*态数|激发态数量|激发态数|态数)\s*(?:=|:|：|为|是)?\s*(?<value>\d+)",
+            NormalizeIntegerValue,
+            0.9,
+            4);
     }
 
     private static bool RuleAppliesToContext(
@@ -718,6 +738,70 @@ public sealed class RuleBasedCalculationParameterExtractor
             string.Empty,
             0.8,
             1);
+
+        AddOptimizationAliasRule(
+            rules,
+            CalculationOptionKeys.OptimizationConstraintMode,
+            "冻结非氢原子",
+            "HydrogensOnly",
+            1.0,
+            5);
+        AddOptimizationAliasRule(
+            rules,
+            CalculationOptionKeys.OptimizationConstraintMode,
+            "固定非氢原子",
+            "HydrogensOnly",
+            1.0,
+            5);
+        AddOptimizationAliasRule(
+            rules,
+            CalculationOptionKeys.OptimizationConstraintMode,
+            "非氢原子冻结",
+            "HydrogensOnly",
+            1.0,
+            5);
+        AddOptimizationAliasRule(
+            rules,
+            CalculationOptionKeys.OptimizationConstraintMode,
+            "只优化氢原子",
+            "HydrogensOnly",
+            1.0,
+            5);
+        AddOptimizationAliasRule(
+            rules,
+            CalculationOptionKeys.OptimizationConstraintMode,
+            "仅优化氢原子",
+            "HydrogensOnly",
+            1.0,
+            5);
+        AddOptimizationAliasRule(
+            rules,
+            CalculationOptionKeys.OptimizationConstraintMode,
+            "只让氢原子移动",
+            "HydrogensOnly",
+            1.0,
+            5);
+        AddOptimizationAliasRule(
+            rules,
+            CalculationOptionKeys.OptimizationConstraintMode,
+            "freeze non-hydrogen",
+            "HydrogensOnly",
+            1.0,
+            5);
+        AddOptimizationAliasRule(
+            rules,
+            CalculationOptionKeys.OptimizationConstraintMode,
+            "freeze heavy atoms",
+            "HydrogensOnly",
+            1.0,
+            5);
+        AddOptimizationAliasRule(
+            rules,
+            CalculationOptionKeys.OptimizationConstraintMode,
+            "hydrogens only",
+            "HydrogensOnly",
+            1.0,
+            5);
     }
 
     private static void AddOptimizationAliasRule(

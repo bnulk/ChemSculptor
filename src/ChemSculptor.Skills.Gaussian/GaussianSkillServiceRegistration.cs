@@ -4,6 +4,7 @@ using ChemSculptor.Compute.Gaussian;
 using ChemSculptor.Compute.Gaussian.Anomaly.WavefunctionStability;
 using ChemSculptor.Compute.Gaussian.Anomaly.Recovery;
 using ChemSculptor.Compute.Gaussian.FrequencyAnalysis;
+using ChemSculptor.Compute.Gaussian.Tddft;
 using ChemSculptor.Domain;
 using ChemSculptor.Skills.Gaussian.Anomaly.Recovery;
 using ChemSculptor.Skills.Gaussian.Anomaly.WavefunctionStability;
@@ -40,6 +41,8 @@ public static class GaussianSkillServiceRegistration
             GaussianFrequencyInputWriter>(services);
         ServiceCollectionServiceExtensions.AddSingleton<
             GaussianFrequencyOutputParser>(services);
+        ServiceCollectionServiceExtensions.AddSingleton<
+            GaussianTddftOutputParser>(services);
 
         Gaussian16ProgramAdapterOptions options =
             Gaussian16ProgramAdapterOptions.CreateDefault();

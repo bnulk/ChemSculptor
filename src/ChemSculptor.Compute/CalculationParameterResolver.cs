@@ -350,6 +350,15 @@ public sealed class CalculationParameterResolver
             CalculationOptionKeys.WavefunctionStabilityCheck,
             "Check");
 
+        if (spec.TaskType == CalculationTaskType.TdDft)
+        {
+            SetDefaultExtraOption(
+                spec,
+                CalculationOptionKeys.TddftStateCount,
+                CalculationDefaults.DefaultTddftStateCount
+                    .ToString(CultureInfo.InvariantCulture));
+        }
+
         if (spec.TaskType == CalculationTaskType.Optimization)
         {
             SetDefaultExtraOption(
@@ -370,6 +379,10 @@ public sealed class CalculationParameterResolver
                 spec,
                 CalculationOptionKeys.OptimizationInitialHessian,
                 CalculationDefaults.DefaultOptimizationInitialHessian);
+            SetDefaultExtraOption(
+                spec,
+                CalculationOptionKeys.OptimizationConstraintMode,
+                "None");
         }
 
         if (string.IsNullOrWhiteSpace(spec.Solvent))
@@ -436,6 +449,17 @@ public sealed class CalculationParameterResolver
                 1000,
                 500);
         }
+
+        if (result.Spec.TaskType == CalculationTaskType.TdDft)
+        {
+            ValidateIntegerRange(
+                result,
+                CalculationOptionKeys.TddftStateCount,
+                1,
+                500,
+                100);
+        }
+
         ValidatePositiveInteger(
             result,
             CalculationOptionKeys.Multiplicity);

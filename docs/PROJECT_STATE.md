@@ -3,7 +3,7 @@
 ## 当前版本
 
 ```text
-0.64.1
+0.66.0
 ```
 
 ## 文档维护原则
@@ -35,7 +35,7 @@ HANDOFF.md
 
 ```text
 Release 构建：0 警告，0 错误
-测试：179/179 通过
+测试：190/190 通过
 ```
 
 ## 总体架构
@@ -142,10 +142,17 @@ Gaussian 优化恢复输入重建
 优化稳定性修正和复检
 客户端波函数稳定性摘要
 优化后振动分析 Skill
+冻结非氢原子的优化约束
+冻结原子输入标记和约束验证
+约束优化自动加入 nosymm
 Gaussian Freq 输入翻译
 Gaussian 频率输出解析
 客户端振动分析摘要
 任务级 Skill 说明文档
+TDDFT 单点计算 Skill
+TDDFT 激发态解析
+TDDFT 跃迁速度四极矩解析
+TDDFT Codex Skill
 优化对话路由
 OptimizationCalculationService
 优化 API 显示字段
@@ -206,7 +213,8 @@ WinForms 领取和显示摘要
 优化正常、异常、恢复和归档链已有自动化测试
 优化最终几何已接入波函数稳定性检查
 优化工作流在稳定性处理之后执行振动分析
-TD-DFT、SOC 和 MECP 等任务尚未实现
+SOC 和 MECP 等任务尚未实现
+TDDFT 完整 Workflow 尚未实现
 科学点文件清单已进入 CalculationPoint
 WinForms 已按清单保存完整成果包
 关系、物理量和科学叙述已可追溯
@@ -353,6 +361,7 @@ docs/skill说明/single-point-calculation.md
 docs/skill说明/geometry-optimization.md
 docs/skill说明/frequency-analysis.md
 docs/skill说明/wavefunction-stability-check.md
+docs/skill说明/tddft-single-point.md
 docs/Tutorials/Codex-Skill-Authoring-Tutorial.md
 docs/Tutorials/ChemSculptor-Skill-Collection-Tutorial.md
 docs/Parameter-Interaction-Design.md

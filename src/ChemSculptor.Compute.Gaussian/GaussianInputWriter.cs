@@ -1,5 +1,6 @@
 using System.Globalization;
 using ChemSculptor.Compute;
+using ChemSculptor.FundamentalConstants.Chemistry.Elements;
 using ChemSculptor.InputProcessor.GeometryIntake;
 
 namespace ChemSculptor.Compute.Gaussian;
@@ -79,7 +80,8 @@ public sealed class GaussianInputWriter
             for (int index = 0; index < geometry.Atoms.Count; index++)
             {
                 CanonicalAtom atom = geometry.Atoms[index];
-                await writer.WriteLineAsync(FormatAtomLine(atom));
+                await writer.WriteLineAsync(
+                    FormatAtomLine(spec, atom));
             }
 
             await writer.WriteLineAsync();
@@ -143,14 +145,62 @@ public sealed class GaussianInputWriter
         }
     }
 
-    private static string FormatAtomLine(CanonicalAtom atom)
+    private static string FormatAtomLine(
+        CalculationSpec spec,
+        CanonicalAtom atom)
     {
+        string frozenMarker = ShouldFreezeAtom(spec, atom)
+            ? " -1"
+            : string.Empty;
+
         return atom.Element +
+            frozenMarker +
             " " +
             atom.X.ToString("F6", CultureInfo.InvariantCulture) +
             " " +
             atom.Y.ToString("F6", CultureInfo.InvariantCulture) +
             " " +
             atom.Z.ToString("F6", CultureInfo.InvariantCulture);
+    }
+
+    private static bool ShouldFreezeAtom(
+        CalculationSpec spec,
+        CanonicalAtom atom)
+    {
+        string? mode;
+
+        if (!spec.ExtraOptions.TryGetValue(
+                CalculationOptionKeys.OptimizationConstraintMode,
+                out mode)
+            || !string.Equals(
+                mode,
+                "HydrogensOnly",
+                StringComparison.OrdinalIgnoreCase))
+        {
+            return false;
+        }
+
+        if (string.Equals(
+                atom.Element,
+                "H",
+                StringComparison.OrdinalIgnoreCase)
+            || string.Equals(
+                atom.Element,
+                "D",
+                StringComparison.OrdinalIgnoreCase))
+        {
+            return false;
+        }
+
+        ChemicalElement element;
+
+        if (!ElementCatalog.TryGetBySymbol(
+            atom.Element,
+            out element))
+        {
+            return true;
+        }
+
+        return element.AtomicNumber != 1;
     }
 }

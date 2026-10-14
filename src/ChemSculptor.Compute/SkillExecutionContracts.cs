@@ -73,6 +73,9 @@ public class CalculationResultExtractionResult
     /// <summary>几何优化结果；非优化作业时为空。</summary>
     public OptimizationResult? OptimizationResult { get; set; }
 
+    /// <summary>TDDFT 结果；非 TDDFT 作业时为空。</summary>
+    public TddftCalculationResult? TddftResult { get; set; }
+
     /// <summary>诊断信息。</summary>
     public List<string> Diagnostics { get; set; } = new List<string>();
 }
@@ -277,6 +280,58 @@ public class OptimizationValidationSkillResult
     /// <summary>验证报告。</summary>
     public CalculationValidationReport Report { get; set; } =
         new CalculationValidationReport();
+}
+
+/// <summary>TDDFT 单点计算步骤结果。</summary>
+public class TddftCalculationStepResult
+{
+    /// <summary>步骤名称。</summary>
+    public string Name { get; set; } = string.Empty;
+
+    /// <summary>调用的原子 Skill 标识。</summary>
+    public string SkillId { get; set; } = string.Empty;
+
+    /// <summary>步骤是否成功。</summary>
+    public bool Succeeded { get; set; }
+
+    /// <summary>步骤诊断。</summary>
+    public string Diagnostics { get; set; } = string.Empty;
+
+    /// <summary>步骤开始时间。</summary>
+    public DateTimeOffset StartedAt { get; set; } =
+        DateTimeOffset.UtcNow;
+
+    /// <summary>步骤结束时间。</summary>
+    public DateTimeOffset CompletedAt { get; set; } =
+        DateTimeOffset.UtcNow;
+}
+
+/// <summary>TDDFT 单点计算结果契约。</summary>
+public class TddftSinglePointCalculationSkillResult
+{
+    /// <summary>计算和结果提取是否成功。</summary>
+    public bool Succeeded { get; set; }
+
+    /// <summary>失败说明。</summary>
+    public string Error { get; set; } = string.Empty;
+
+    /// <summary>基本验证是否通过。</summary>
+    public bool Passed { get; set; }
+
+    /// <summary>计算作业。</summary>
+    public CalculationJob Job { get; set; } = new CalculationJob();
+
+    /// <summary>TDDFT 计算结果。</summary>
+    public TddftCalculationResult Result { get; set; } =
+        new TddftCalculationResult();
+
+    /// <summary>等待结果。</summary>
+    public CalculationWaitSkillResult Wait { get; set; } =
+        new CalculationWaitSkillResult();
+
+    /// <summary>原子步骤执行轨迹。</summary>
+    public List<TddftCalculationStepResult> Steps { get; set; } =
+        new List<TddftCalculationStepResult>();
 }
 
 /// <summary>工作流处理方案技能结果。</summary>

@@ -68,6 +68,21 @@ public sealed class RuleBasedTaskInterpreter : ITaskInterpreter
     private const string OptimizationEnglishKeyword =
         "optimization";
 
+    /// <summary>表示只允许氢原子移动的优化约束关键词。</summary>
+    private static readonly string[] OptimizationConstraintKeywords =
+        new string[]
+        {
+            "冻结非氢原子",
+            "固定非氢原子",
+            "非氢原子冻结",
+            "只优化氢原子",
+            "仅优化氢原子",
+            "只让氢原子移动",
+            "freeze non-hydrogen",
+            "freeze heavy atoms",
+            "hydrogens only"
+        };
+
     /// <summary>Gaussian route 前缀。</summary>
     private const string GaussianRoutePrefix = "#p";
 
@@ -92,7 +107,7 @@ public sealed class RuleBasedTaskInterpreter : ITaskInterpreter
         if (IsGaussianRouteLine(normalizedText))
         {
             // #、#p、#n、#t 只控制输出信息量。
-            // 存在 opt 时按几何优化处理，否则按单点任务处理。
+            // 存在 td 时按 TDDFT 处理，opt 时按优化处理，否则按单点任务处理。
             if (ContainsUnsupportedRouteTask(normalizedText))
             {
                 interpretedTask.IsSupported = false;
@@ -102,7 +117,16 @@ public sealed class RuleBasedTaskInterpreter : ITaskInterpreter
                 return Task.FromResult(interpretedTask);
             }
 
-            if (ContainsKeyword(normalizedText, "opt"))
+            if (ContainsKeyword(normalizedText, "td"))
+            {
+                interpretedTask.TaskType =
+                    CalculationTaskType.TdDft;
+                interpretedTask.WorkflowId =
+                    "tddft-single-point";
+                interpretedTask.ElectronicStateObjective =
+                    ElectronicStateObjective.TargetExcitedState;
+            }
+            else if (ContainsKeyword(normalizedText, "opt"))
             {
                 interpretedTask.TaskType =
                     CalculationTaskType.Optimization;
@@ -124,13 +148,30 @@ public sealed class RuleBasedTaskInterpreter : ITaskInterpreter
             return Task.FromResult(interpretedTask);
         }
 
+        if (ContainsKeyword(normalizedText, "tddft")
+            || ContainsKeyword(normalizedText, "td-dft"))
+        {
+            interpretedTask.TaskType =
+                CalculationTaskType.TdDft;
+            interpretedTask.WorkflowId =
+                "tddft-single-point";
+            interpretedTask.IsSupported = true;
+            interpretedTask.Confidence = 1.0;
+            interpretedTask.ElectronicStateObjective =
+                ElectronicStateObjective.TargetExcitedState;
+            return Task.FromResult(interpretedTask);
+        }
+
         if (ContainsKeyword(
                 normalizedText,
                 OptimizationKeyword)
             || ContainsKeyword(
                 normalizedText,
                 OptimizationEnglishKeyword)
-            || ContainsKeyword(normalizedText, "opt"))
+            || ContainsKeyword(normalizedText, "opt")
+            || ContainsAnyKeyword(
+                normalizedText,
+                OptimizationConstraintKeywords))
         {
             interpretedTask.TaskType =
                 CalculationTaskType.Optimization;
@@ -181,7 +222,6 @@ public sealed class RuleBasedTaskInterpreter : ITaskInterpreter
     {
         return ContainsKeyword(text, "freq")
             || ContainsKeyword(text, "frequency")
-            || ContainsKeyword(text, "td")
             || ContainsKeyword(text, "cis")
             || ContainsKeyword(text, "soc")
             || ContainsKeyword(text, "mecp");
@@ -191,6 +231,21 @@ public sealed class RuleBasedTaskInterpreter : ITaskInterpreter
     {
         int index = text.IndexOf(keyword, StringComparison.OrdinalIgnoreCase);
         return index >= 0;
+    }
+
+    private static bool ContainsAnyKeyword(
+        string text,
+        string[] keywords)
+    {
+        for (int index = 0; index < keywords.Length; index++)
+        {
+            if (ContainsKeyword(text, keywords[index]))
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private static void InterpretElectronicState(

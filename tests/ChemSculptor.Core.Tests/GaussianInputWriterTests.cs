@@ -112,6 +112,62 @@ public class GaussianInputWriterTests
         }
     }
 
+    /// <summary>验证只优化氢原子时非氢原子会写入冻结标记。</summary>
+    [Fact]
+    public async Task WritesHydrogensOnlyConstraintMarkers()
+    {
+        string root = Path.Combine(
+            Path.GetTempPath(),
+            "ChemSculptorTests",
+            Guid.NewGuid().ToString("N"));
+
+        Directory.CreateDirectory(root);
+        string outputPath = Path.Combine(
+            root,
+            "job-hydrogens-only.gjf");
+
+        try
+        {
+            CalculationSpec spec =
+                CalculationDefaults.CreateDefaultOptimization();
+            CalculationDefaults.ApplyDefaultMultiplicityFromElectronCount(
+                spec,
+                10);
+            spec.ExtraOptions[
+                CalculationOptionKeys.OptimizationConstraintMode] =
+                "HydrogensOnly";
+
+            GaussianInputOptions options = new GaussianInputOptions();
+            options.Memory = "4GB";
+            options.ProcessorCount = 4;
+
+            GaussianInputWriter writer = new GaussianInputWriter();
+            await writer.WriteAsync(
+                spec,
+                CreateWaterGeometry(),
+                options,
+                outputPath);
+            string text = await File.ReadAllTextAsync(outputPath);
+
+            Assert.Contains("ModRedundant", text);
+            Assert.Contains("nosymm", text);
+            Assert.Contains(
+                "O -1 0.000000 0.000000 0.117300",
+                text);
+            Assert.Contains(
+                "H 0.000000 0.757200 -0.469200",
+                text);
+            Assert.DoesNotContain("H -1", text);
+        }
+        finally
+        {
+            if (Directory.Exists(root))
+            {
+                Directory.Delete(root, true);
+            }
+        }
+    }
+
     /// <summary>验证当前阶段拒绝频率计算等未实现任务。</summary>
     [Fact]
     public async Task RejectsUnsupportedTaskType()
@@ -122,7 +178,7 @@ public class GaussianInputWriterTests
             Guid.NewGuid().ToString("N"));
 
         Directory.CreateDirectory(root);
-        string outputPath = Path.Combine(root, "job-tddft.gjf");
+        string outputPath = Path.Combine(root, "job-soc.gjf");
 
         try
         {
@@ -131,7 +187,7 @@ public class GaussianInputWriterTests
             CalculationDefaults.ApplyDefaultMultiplicityFromElectronCount(
                 spec,
                 10);
-            spec.TaskType = CalculationTaskType.TdDft;
+            spec.TaskType = CalculationTaskType.Soc;
 
             GaussianInputOptions options = new GaussianInputOptions();
             options.Memory = "4GB";

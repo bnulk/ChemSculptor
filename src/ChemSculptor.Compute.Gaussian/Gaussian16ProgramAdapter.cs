@@ -1,5 +1,6 @@
 using ChemSculptor.Compute;
 using ChemSculptor.Compute.Gaussian.FrequencyAnalysis;
+using ChemSculptor.Compute.Gaussian.Tddft;
 using ChemSculptor.InputProcessor.GeometryIntake;
 using System.Diagnostics;
 
@@ -12,7 +13,8 @@ namespace ChemSculptor.Compute.Gaussian;
 public sealed class Gaussian16ProgramAdapter
     : IQuantumProgramAdapter,
       IOptimizationOutputParser,
-      IFrequencyAnalysisProgram
+      IFrequencyAnalysisProgram,
+      ITddftOutputParser
 {
     /// <summary>默认程序名称。</summary>
     public const string ProgramNameValue = "Gaussian 16";
@@ -29,6 +31,7 @@ public sealed class Gaussian16ProgramAdapter
         _frequencyInputWriter;
     private readonly GaussianFrequencyOutputParser
         _frequencyOutputParser;
+    private readonly GaussianTddftOutputParser _tddftOutputParser;
     private readonly Gaussian16ProgramAdapterOptions _options;
 
     /// <summary>创建 Gaussian 16 适配器。</summary>
@@ -40,6 +43,7 @@ public sealed class Gaussian16ProgramAdapter
         GaussianRouteKeywordBuilder routeKeywordBuilder,
         GaussianFrequencyInputWriter frequencyInputWriter,
         GaussianFrequencyOutputParser frequencyOutputParser,
+        GaussianTddftOutputParser tddftOutputParser,
         Gaussian16ProgramAdapterOptions options)
     {
         if (inputWriter == null)
@@ -79,6 +83,12 @@ public sealed class Gaussian16ProgramAdapter
                 nameof(frequencyOutputParser));
         }
 
+        if (tddftOutputParser == null)
+        {
+            throw new ArgumentNullException(
+                nameof(tddftOutputParser));
+        }
+
         if (options == null)
         {
             throw new ArgumentNullException(nameof(options));
@@ -91,6 +101,7 @@ public sealed class Gaussian16ProgramAdapter
         _routeKeywordBuilder = routeKeywordBuilder;
         _frequencyInputWriter = frequencyInputWriter;
         _frequencyOutputParser = frequencyOutputParser;
+        _tddftOutputParser = tddftOutputParser;
         _options = options;
     }
 
@@ -388,6 +399,16 @@ public sealed class Gaussian16ProgramAdapter
             CancellationToken cancellationToken = default)
     {
         return _frequencyOutputParser.ParseAsync(
+            outputPath,
+            cancellationToken);
+    }
+
+    /// <summary>解析 Gaussian TDDFT 输出。</summary>
+    public Task<TddftCalculationResult> ParseTddftOutputAsync(
+        string outputPath,
+        CancellationToken cancellationToken = default)
+    {
+        return _tddftOutputParser.ParseTddftOutputAsync(
             outputPath,
             cancellationToken);
     }

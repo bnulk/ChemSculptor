@@ -43,8 +43,18 @@ optimization-max-cycles
 optimization-convergence
 optimization-restart
 optimization-initial-hessian
+optimization-constraint-mode
 wavefunction-stability-check
 ```
+
+其中 `optimization-constraint-mode` 的允许值为：
+
+```text
+None
+HydrogensOnly
+```
+
+`HydrogensOnly` 表示冻结所有非氢原子，只让氢原子参与优化。
 
 ## 3. 翻译
 
@@ -59,6 +69,9 @@ src/ChemSculptor.Compute.Gaussian/GaussianInputWriter.cs
 
 ```text
 包含 opt，不包含 SP；多个优化选项合并为一个 opt=(...)。
+HydrogensOnly 时包含 ModRedundant。
+HydrogensOnly 时自动加入 nosymm，禁止程序调整坐标体系。
+非氢原子的 Gaussian 原子行带 -1 冻结标记。
 ```
 
 ## 4. 结果
@@ -104,6 +117,7 @@ src/ChemSculptor.Skills.Common/OptimizationCalculation/
 
 ```text
 分别验证优化步骤、总体结果和最终收敛指标。
+HydrogensOnly 时验证至少存在一个氢原子，并验证非氢原子位移不超过容差。
 ```
 
 ## 7. 异常
@@ -168,6 +182,16 @@ src/ChemSculptor.WinForms/
 .agents/skills/geometry-optimization/
 ```
 
+支持输入：
+
+```text
+优化水分子使用 opt，maxcycles=200
+冻结非氢原子
+固定非氢原子
+只优化氢原子
+#p cam-b3lyp/6-31G* opt em=GD3BJ nosymm
+```
+
 ## 11. 测试
 
 代码落点：
@@ -175,16 +199,20 @@ src/ChemSculptor.WinForms/
 ```text
 tests/ChemSculptor.Core.Tests/OptimizationParserTests.cs
 tests/ChemSculptor.Core.Tests/OptimizationValidatorTests.cs
+tests/ChemSculptor.Core.Tests/GaussianRouteKeywordBuilderTests.cs
+tests/ChemSculptor.Core.Tests/GaussianInputWriterTests.cs
 tests/ChemSculptor.Core.Tests/OptimizationAnomalyTests.cs
 tests/ChemSculptor.Core.Tests/OptimizationRouteKeywordBuilderTests.cs
 tests/ChemSculptor.Core.Tests/OptimizationCalculationSkillTests.cs
 tests/ChemSculptor.Core.Tests/OptimizationWorkflowTests.cs
 tests/ChemSculptor.Core.Tests/OptimizationAgentIntegrationTests.cs
 tests/ChemSculptor.Core.Tests/OptimizationEndToEndTests.cs
+tests/ChemSculptor.Core.Tests/OptimizationRecoveryWorkflowTests.cs
 ```
 
 ## 未完成项
 
 ```text
 真实 Gaussian 优化与稳定性恢复端到端验收。
+真实含氢体系只优化氢原子的端到端验收。
 ```

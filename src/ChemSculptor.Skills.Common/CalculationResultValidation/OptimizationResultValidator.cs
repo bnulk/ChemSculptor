@@ -1,4 +1,6 @@
 using ChemSculptor.Compute;
+using ChemSculptor.FundamentalConstants.Chemistry.Elements;
+using ChemSculptor.InputProcessor.GeometryIntake;
 
 namespace ChemSculptor.Skills.Common.CalculationResultValidation;
 
@@ -140,6 +142,11 @@ public sealed class OptimizationResultValidator
                 && result.FinalGeometry.Atoms.Count > 0,
             "优化结果中没有最终几何结构。");
 
+        ValidateOptimizationConstraint(
+            report,
+            job.Spec,
+            result);
+
         NumericalCalculationValidationChecks.AddRequiredCheck(
             report,
             "optimization.output_file",
@@ -154,5 +161,135 @@ public sealed class OptimizationResultValidator
         NumericalCalculationValidationChecks.SetReportStatus(
             report);
         return report;
+    }
+
+    private static void ValidateOptimizationConstraint(
+        CalculationValidationReport report,
+        CalculationSpec spec,
+        OptimizationResult result)
+    {
+        string? mode;
+
+        if (!spec.ExtraOptions.TryGetValue(
+                CalculationOptionKeys.OptimizationConstraintMode,
+                out mode)
+            || !string.Equals(
+                mode,
+                "HydrogensOnly",
+                StringComparison.OrdinalIgnoreCase))
+        {
+            return;
+        }
+
+        if (result.Trajectory.Count == 0
+            || result.FinalGeometry == null
+            || result.FinalGeometry.Atoms.Count == 0)
+        {
+            NumericalCalculationValidationChecks.AddRequiredCheck(
+                report,
+                "optimization.constraint.frozen_atoms",
+                "非氢原子坐标保持不变",
+                CalculationValidationScope.Structure,
+                "可比较初始和最终几何",
+                "缺失",
+                false,
+                "缺少轨迹或最终几何，无法验证冻结约束。");
+            return;
+        }
+
+        CanonicalGeometry initial =
+            result.Trajectory[0].Geometry;
+        CanonicalGeometry finalGeometry =
+            result.FinalGeometry;
+        bool hydrogenFound = false;
+        double maximumDisplacement = 0.0;
+
+        for (int index = 0; index < initial.Atoms.Count; index++)
+        {
+            CanonicalAtom initialAtom = initial.Atoms[index];
+
+            if (IsHydrogen(initialAtom.Element))
+            {
+                hydrogenFound = true;
+                continue;
+            }
+
+            CanonicalAtom? finalAtom =
+                FindAtom(finalGeometry, initialAtom.Index);
+
+            if (finalAtom == null)
+            {
+                NumericalCalculationValidationChecks.AddRequiredCheck(
+                    report,
+                    "optimization.constraint.frozen_atoms",
+                    "非氢原子坐标保持不变",
+                    CalculationValidationScope.Structure,
+                    "原子完整",
+                    "缺原子 " + initialAtom.Index.ToString(),
+                    false,
+                    "最终几何缺少冻结原子。");
+                return;
+            }
+
+            double dx = finalAtom.X - initialAtom.X;
+            double dy = finalAtom.Y - initialAtom.Y;
+            double dz = finalAtom.Z - initialAtom.Z;
+            double displacement = Math.Sqrt(
+                dx * dx + dy * dy + dz * dz);
+
+            if (displacement > maximumDisplacement)
+            {
+                maximumDisplacement = displacement;
+            }
+        }
+
+        NumericalCalculationValidationChecks.AddRequiredCheck(
+            report,
+            "optimization.constraint.hydrogens_present",
+            "体系中存在氢原子",
+            CalculationValidationScope.Structure,
+            "至少一个氢原子",
+            hydrogenFound ? "存在" : "缺失",
+            hydrogenFound,
+            "冻结非氢原子的优化任务中没有找到氢原子。");
+
+        NumericalCalculationValidationChecks.AddRequiredCheck(
+            report,
+            "optimization.constraint.frozen_atoms",
+            "非氢原子坐标保持不变",
+            CalculationValidationScope.Structure,
+            "最大位移 <= 0.001 Angstrom",
+            maximumDisplacement.ToString(
+                "G6",
+                System.Globalization.CultureInfo.InvariantCulture),
+            maximumDisplacement <= 0.001,
+            "冻结非氢原子的最大位移超过容差。");
+    }
+
+    private static CanonicalAtom? FindAtom(
+        CanonicalGeometry geometry,
+        int atomIndex)
+    {
+        for (int index = 0; index < geometry.Atoms.Count; index++)
+        {
+            if (geometry.Atoms[index].Index == atomIndex)
+            {
+                return geometry.Atoms[index];
+            }
+        }
+
+        return null;
+    }
+
+    private static bool IsHydrogen(string element)
+    {
+        return string.Equals(
+            element,
+            "H",
+            StringComparison.OrdinalIgnoreCase)
+            || string.Equals(
+                element,
+                "D",
+                StringComparison.OrdinalIgnoreCase);
     }
 }

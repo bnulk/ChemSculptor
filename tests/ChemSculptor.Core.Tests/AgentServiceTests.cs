@@ -114,6 +114,49 @@ public class AgentServiceTests
         }
     }
 
+    /// <summary>验证“冻结非氢原子”会路由到优化并写入约束参数。</summary>
+    [Fact]
+    public async Task HydrogensOnlyMessageRoutesToOptimizationService()
+    {
+        string root = CreateTemporaryRoot();
+
+        try
+        {
+            RecordingWorkflowEngine workflowEngine;
+            RecordingOptimizationService optimizationService;
+            AgentService service = CreateAgentService(
+                root,
+                out workflowEngine,
+                out optimizationService);
+
+            AgentRequest request = new AgentRequest();
+            request.SessionId = "session-hydrogens-only-agent";
+            request.Text = "冻结非氢原子";
+            request.CoordinateText =
+                "O 0.000000 0.000000 0.117300\n" +
+                "H 0.000000 0.757200 -0.469200\n" +
+                "H 0.000000 -0.757200 -0.469200";
+
+            AgentResult result =
+                await service.HandleMessageAsync(request);
+
+            Assert.True(result.IsSupported);
+            Assert.Equal(
+                CalculationTaskType.Optimization,
+                result.TaskType);
+            Assert.Equal(
+                "HydrogensOnly",
+                optimizationService.LastRequest.ResolvedSpec!
+                    .ExtraOptions[
+                        CalculationOptionKeys
+                            .OptimizationConstraintMode]);
+        }
+        finally
+        {
+            DeleteTemporaryRoot(root);
+        }
+    }
+
     /// <summary>验证激发态目标在当前阶段被明确拒绝。</summary>
     [Fact]
     public async Task ExcitedStateMessageIsNotImplemented()

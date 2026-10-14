@@ -1,0 +1,3 @@
+interface:
+  display_name: "TDDFT Single Point"
+  short_description: "Run TDDFT single-point calculations"

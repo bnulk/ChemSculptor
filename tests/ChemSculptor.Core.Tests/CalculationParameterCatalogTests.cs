@@ -30,14 +30,23 @@ public class CalculationParameterCatalogTests
             CalculationOptionKeys.OptimizationMaxCycles,
             CalculationOptionKeys.OptimizationConvergence,
             CalculationOptionKeys.OptimizationRestart,
-            CalculationOptionKeys.OptimizationInitialHessian
+            CalculationOptionKeys.OptimizationInitialHessian,
+            CalculationOptionKeys.OptimizationConstraintMode
+        };
+        string[] tddftKeys =
+        {
+            CalculationOptionKeys.TddftStateCount
         };
 
         Assert.Equal(
-            requiredKeys.Length + optimizationKeys.Length,
+            requiredKeys.Length +
+            optimizationKeys.Length +
+            tddftKeys.Length,
             definitions.Count);
         Assert.Equal(
-            requiredKeys.Length + optimizationKeys.Length,
+            requiredKeys.Length +
+            optimizationKeys.Length +
+            tddftKeys.Length,
             definitions
                 .Select(definition => definition.Key)
                 .Distinct(StringComparer.OrdinalIgnoreCase)
@@ -58,6 +67,22 @@ public class CalculationParameterCatalogTests
             Assert.Contains(
                 CalculationDefaults.DefaultProgram,
                 definition.Programs);
+            Assert.False(definition.RequiresApproval);
+        }
+
+        for (int index = 0; index < tddftKeys.Length; index++)
+        {
+            CalculationParameterDefinition? definition =
+                CalculationParameterCatalog.Find(
+                    tddftKeys[index]);
+
+            Assert.NotNull(definition);
+            Assert.Contains(
+                CalculationTaskType.TdDft,
+                definition.TaskTypes);
+            Assert.DoesNotContain(
+                CalculationTaskType.SinglePoint,
+                definition.TaskTypes);
             Assert.False(definition.RequiresApproval);
         }
 
@@ -107,6 +132,12 @@ public class CalculationParameterCatalogTests
         CalculationParameterDefinition stabilityCheck =
             GetRequired(
                 CalculationOptionKeys.WavefunctionStabilityCheck);
+        CalculationParameterDefinition tddftStateCount =
+            GetRequired(
+                CalculationOptionKeys.TddftStateCount);
+        CalculationParameterDefinition constraintMode =
+            GetRequired(
+                CalculationOptionKeys.OptimizationConstraintMode);
 
         Assert.Equal("GD3BJ", dispersion.DefaultValue);
         Assert.Equal(
@@ -167,6 +198,19 @@ public class CalculationParameterCatalogTests
         Assert.Contains(
             "跳过波函数稳定性检查",
             stabilityCheck.Aliases);
+
+        Assert.Equal("50", tddftStateCount.DefaultValue);
+        Assert.Contains(
+            CalculationTaskType.TdDft,
+            tddftStateCount.TaskTypes);
+
+        Assert.Equal("None", constraintMode.DefaultValue);
+        Assert.Equal(
+            new string[] { "None", "HydrogensOnly" },
+            constraintMode.AllowedValues);
+        Assert.Contains(
+            "冻结非氢原子",
+            constraintMode.Aliases);
     }
 
     private static CalculationParameterDefinition GetRequired(

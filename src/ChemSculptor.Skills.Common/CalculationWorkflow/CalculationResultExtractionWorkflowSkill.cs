@@ -94,6 +94,16 @@ public sealed class CalculationResultExtractionWorkflowSkill : ISkill
                 cancellationToken);
         }
 
+        if (submission.Job.Spec.TaskType
+            == CalculationTaskType.TdDft)
+        {
+            return await ExtractTddftAsync(
+                request,
+                submission,
+                adapter,
+                cancellationToken);
+        }
+
         CalculationJob job = submission.Job;
         CalculationResult result =
             await adapter.ParseOutputAsync(
@@ -186,6 +196,61 @@ public sealed class CalculationResultExtractionWorkflowSkill : ISkill
             new CalculationResultExtractionResult();
         extractionResult.Succeeded = true;
         extractionResult.OptimizationResult = result;
+
+        TaskResult taskResult = new TaskResult();
+        taskResult.WorkflowId = request.WorkflowId;
+        taskResult.NodeId = request.NodeId;
+        taskResult.Succeeded = true;
+        taskResult.Output = SkillJson.Serialize(extractionResult);
+        return taskResult;
+    }
+
+    private static async Task<TaskResult>
+        ExtractTddftAsync(
+            TaskRequest request,
+            CalculationSubmissionSkillResult submission,
+            IQuantumProgramAdapter adapter,
+            CancellationToken cancellationToken)
+    {
+        if (!(adapter is ITddftOutputParser tddftParser))
+        {
+            throw new NotSupportedException(
+                "当前程序适配器不支持 TDDFT 结果解析。");
+        }
+
+        CalculationJob job = submission.Job;
+        TddftCalculationResult result =
+            await tddftParser.ParseTddftOutputAsync(
+                job.OutputFilePath,
+                cancellationToken);
+        result.JobId = job.JobId;
+        result.Program = job.Spec.Program;
+        result.Method = job.Spec.Method;
+        result.Basis = job.Spec.Basis;
+        result.OutputFilePath = job.OutputFilePath;
+
+        CalculationResult artifactResult =
+            new CalculationResult();
+        artifactResult.JobId = job.JobId;
+        artifactResult.Program = job.Spec.Program;
+        artifactResult.Method = job.Spec.Method;
+        artifactResult.Basis = job.Spec.Basis;
+        artifactResult.OutputFilePath = job.OutputFilePath;
+        artifactResult.NormalTermination =
+            result.NormalTermination;
+
+        CalculationArtifactDiscoveryContext artifactContext =
+            new CalculationArtifactDiscoveryContext();
+        artifactContext.Job = job;
+        artifactContext.Result = artifactResult;
+        result.Artifacts = CalculationArtifactCollector.Collect(
+            job.RunDirectory,
+            adapter.GetArtifactPatterns(artifactContext));
+
+        CalculationResultExtractionResult extractionResult =
+            new CalculationResultExtractionResult();
+        extractionResult.Succeeded = true;
+        extractionResult.TddftResult = result;
 
         TaskResult taskResult = new TaskResult();
         taskResult.WorkflowId = request.WorkflowId;

@@ -16,6 +16,56 @@ namespace ChemSculptor.Core.Tests;
 /// <summary>优化恢复链测试。</summary>
 public class OptimizationRecoveryWorkflowTests
 {
+    /// <summary>验证优化恢复输入会保留只优化氢原子的冻结标记。</summary>
+    [Fact]
+    public async Task RecoveryInputPreservesHydrogensOnlyConstraint()
+    {
+        string root = CreateTemporaryRoot();
+
+        try
+        {
+            string sourcePath = Path.Combine(
+                root,
+                "source.gjf");
+            string targetPath = Path.Combine(
+                root,
+                "recovery.gjf");
+            await File.WriteAllTextAsync(
+                sourcePath,
+                CreateHydrogensOnlySourceInputText());
+
+            CalculationSpec recoverySpec =
+                CalculationDefaults.CreateDefaultOptimization();
+            recoverySpec.ExtraOptions[
+                CalculationOptionKeys.OptimizationMaxCycles] = "200";
+            recoverySpec.ExtraOptions[
+                CalculationOptionKeys.OptimizationConstraintMode] =
+                "HydrogensOnly";
+
+            GaussianRecoveryInputWriter writer =
+                new GaussianRecoveryInputWriter(
+                    new GaussianRouteKeywordBuilder());
+            GaussianRecoveryInputWriteResult result =
+                await writer.ApplyOptimizationCorrectionsAsync(
+                    sourcePath,
+                    targetPath,
+                    recoverySpec,
+                    false);
+
+            Assert.True(result.Succeeded);
+            string text = await File.ReadAllTextAsync(targetPath);
+            Assert.Contains("ModRedundant", text);
+            Assert.Contains("nosymm", text);
+            Assert.Contains("MaxCycles=200", text);
+            Assert.Contains("O -1 0.000000 0.000000 0.000000", text);
+            Assert.Contains("H 0.000000 0.700000 -0.400000", text);
+        }
+        finally
+        {
+            DeleteTemporaryRoot(root);
+        }
+    }
+
     /// <summary>
     /// 从未收敛异常生成增加 maxcycles 的修正方案，
     /// 创建新 opt 输入并执行派生优化作业。
@@ -289,6 +339,19 @@ public class OptimizationRecoveryWorkflowTests
             "optimization recovery test\n\n" +
             "0 1\n" +
             "O 0.000000 0.000000 0.000000\n" +
+            "H 0.000000 0.700000 -0.400000\n\n";
+    }
+
+    private static string CreateHydrogensOnlySourceInputText()
+    {
+        return
+            "%chk=source.chk\n" +
+            "%mem=4GB\n" +
+            "%nprocshared=4\n\n" +
+            "#p CAM-B3LYP/6-31G* opt=(ModRedundant, MaxCycles=100) em=GD3BJ\n\n" +
+            "hydrogens only recovery test\n\n" +
+            "0 1\n" +
+            "O -1 0.000000 0.000000 0.000000\n" +
             "H 0.000000 0.700000 -0.400000\n\n";
     }
 

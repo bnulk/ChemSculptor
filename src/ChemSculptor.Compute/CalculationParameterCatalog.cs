@@ -341,6 +341,43 @@ public static class CalculationParameterCatalog
                 "读取初始 Hessian"
             }));
 
+        definitions.Add(CreateOptimizationDefinition(
+            CalculationOptionKeys.OptimizationConstraintMode,
+            "优化约束模式",
+            CalculationParameterValueKind.Enum,
+            new string[] { "None", "HydrogensOnly" },
+            "None",
+            CalculationRiskLevel.Info,
+            new string[]
+            {
+                "冻结非氢原子",
+                "固定非氢原子",
+                "非氢原子冻结",
+                "只优化氢原子",
+                "仅优化氢原子",
+                "只让氢原子移动",
+                "freeze non-hydrogen",
+                "freeze heavy atoms",
+                "hydrogens only"
+            }));
+
+        definitions.Add(CreateTddftDefinition(
+            CalculationOptionKeys.TddftStateCount,
+            "TDDFT 激发态数量",
+            CalculationParameterValueKind.Integer,
+            new string[0],
+            "50",
+            CalculationRiskLevel.Info,
+            new string[]
+            {
+                "td(nstates",
+                "nstates",
+                "态数",
+                "激发态数量",
+                "激发态数",
+                "TDDFT 态数"
+            }));
+
         return definitions;
     }
 
@@ -367,6 +404,8 @@ public static class CalculationParameterCatalog
         definition.TaskTypes = new List<CalculationTaskType>();
         definition.TaskTypes.Add(CalculationTaskType.SinglePoint);
         definition.TaskTypes.Add(CalculationTaskType.Optimization);
+        definition.TaskTypes.Add(CalculationTaskType.Frequency);
+        definition.TaskTypes.Add(CalculationTaskType.TdDft);
         definition.Programs = new List<string>();
         definition.Programs.Add(CalculationDefaults.DefaultProgram);
         return definition;
@@ -393,6 +432,30 @@ public static class CalculationParameterCatalog
                 aliases);
         definition.TaskTypes.Clear();
         definition.TaskTypes.Add(CalculationTaskType.Optimization);
+        return definition;
+    }
+
+    private static CalculationParameterDefinition
+        CreateTddftDefinition(
+            string key,
+            string displayName,
+            CalculationParameterValueKind valueKind,
+            string[] allowedValues,
+            string defaultValue,
+            CalculationRiskLevel riskLevel,
+            string[] aliases)
+    {
+        CalculationParameterDefinition definition =
+            CreateDefinition(
+                key,
+                displayName,
+                valueKind,
+                allowedValues,
+                defaultValue,
+                riskLevel,
+                aliases);
+        definition.TaskTypes.Clear();
+        definition.TaskTypes.Add(CalculationTaskType.TdDft);
         return definition;
     }
 }

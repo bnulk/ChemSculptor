@@ -5,6 +5,167 @@
 
 ---
 
+## v0.66.0（2026-10-14）：冻结非氢原子的优化约束
+
+### 版本
+
+- 当前版本：`0.66.0`
+- 日期：`2026-10-14`
+- 版本类型：新增功能
+
+### 改动目的
+
+支持通过客户端自然语言输入“冻结非氢原子”等表达，复用现有
+`optimization-complete` Workflow，只优化体系中的氢原子。
+
+### 代码改动
+
+扩展：
+
+```text
+src/ChemSculptor.Compute/CalculationOptionKeys.cs
+src/ChemSculptor.Compute/CalculationParameterCatalog.cs
+src/ChemSculptor.Compute/CalculationDefaults.cs
+src/ChemSculptor.Compute/CalculationParameterResolver.cs
+src/ChemSculptor.Compute/RuleBasedCalculationParameterExtractor.cs
+src/ChemSculptor.Compute/TaskInterpretation.cs
+src/ChemSculptor.Compute.Gaussian/GaussianRouteKeywordBuilder.cs
+src/ChemSculptor.Compute.Gaussian/GaussianInputWriter.cs
+src/ChemSculptor.Skills.Common/CalculationResultValidation/OptimizationResultValidator.cs
+tests/ChemSculptor.Core.Tests/GaussianRouteKeywordBuilderTests.cs
+tests/ChemSculptor.Core.Tests/GaussianInputWriterTests.cs
+tests/ChemSculptor.Core.Tests/RuleBasedCalculationParameterExtractorTests.cs
+tests/ChemSculptor.Core.Tests/OptimizationValidatorTests.cs
+tests/ChemSculptor.Core.Tests/AgentServiceTests.cs
+tests/ChemSculptor.Core.Tests/OptimizationRecoveryWorkflowTests.cs
+.agents/skills/geometry-optimization/SKILL.md
+docs/skill说明/geometry-optimization.md
+```
+
+### 规范参数与输入
+
+```text
+optimization-constraint-mode = HydrogensOnly
+```
+
+支持的自然语言别名包括：
+
+```text
+冻结非氢原子
+固定非氢原子
+非氢原子冻结
+只优化氢原子
+仅优化氢原子
+只让氢原子移动
+freeze non-hydrogen
+freeze heavy atoms
+hydrogens only
+```
+
+### Gaussian 翻译和验证
+
+```text
+opt=(ModRedundant, ...) nosymm
+非氢原子原子行：O -1 ...
+氢原子原子行：H ...
+```
+
+只要存在优化约束，Gaussian route section 会自动加入 `nosymm`，禁止程序
+在约束优化过程中调整坐标体系；如果用户已经显式要求 `nosymm`，翻译器
+不会重复输出该关键词。
+
+结果验证会检查体系中至少存在一个氢原子，并检查所有非氢原子在初始
+轨迹几何和最终几何之间的最大位移不超过 `0.001 Angstrom`。
+
+优化恢复输入会保留 `ModRedundant`、`MaxCycles` 和原子行中的 `-1`
+冻结标记，避免派生作业放开非氢原子。
+
+### 验证
+
+```text
+Release 构建：0 警告，0 错误
+测试：190/190 通过
+```
+
+---
+
+## v0.65.0（2026-10-14）：TDDFT 单点计算 Skill
+
+### 版本
+
+- 当前版本：`0.65.0`
+- 日期：`2026-10-14`
+- 版本类型：新增功能
+
+### 改动目的
+
+建立 TDDFT 单点计算 Skill，支持默认 50 个激发态、Gaussian route
+输入转换、激发态解析和跃迁速度四极矩解析。暂不实现 TDDFT 完整工作流。
+
+### 代码改动
+
+新增：
+
+```text
+src/ChemSculptor.Compute/TddftModels.cs
+src/ChemSculptor.Compute.Gaussian/Tddft/
+  GaussianTddftOutputParser.cs
+src/ChemSculptor.Skills.Common/TddftCalculation/
+  TddftSinglePointCalculationSkill.cs
+tests/ChemSculptor.Core.Tests/TddftCalculationTests.cs
+tests/ChemSculptor.Core.Tests/TddftCalculationSkillTests.cs
+.agents/skills/tddft-single-point/
+docs/skill说明/tddft-single-point.md
+```
+
+扩展：
+
+```text
+src/ChemSculptor.Compute/CalculationOptionKeys.cs
+src/ChemSculptor.Compute/CalculationDefaults.cs
+src/ChemSculptor.Compute/CalculationParameterCatalog.cs
+src/ChemSculptor.Compute/CalculationParameterResolver.cs
+src/ChemSculptor.Compute/RuleBasedCalculationParameterExtractor.cs
+src/ChemSculptor.Compute/TaskInterpretation.cs
+src/ChemSculptor.Compute.Gaussian/GaussianRouteKeywordBuilder.cs
+src/ChemSculptor.Compute.Gaussian/Gaussian16ProgramAdapter.cs
+src/ChemSculptor.Skills.Common/CalculationWorkflow/
+  CalculationResultExtractionWorkflowSkill.cs
+src/ChemSculptor.Skills.Common/CommonSkillServiceRegistration.cs
+```
+
+### 默认输入
+
+```text
+#p cam-b3lyp/6-31G* em=GD3BJ scfcyc=200 td(nstates=50) nosymm
+```
+
+### 解析结果
+
+```text
+Excited State
+激发能、波长、振子强度、<S**2>
+轨道跃迁贡献
+Ground to excited state transition velocity quadrupole moments
+```
+
+### 边界
+
+```text
+Task-level Skill
+不包含 TDDFT 异常恢复
+不包含 TDDFT 完整 Workflow
+```
+
+### 验证
+
+```text
+Release 构建：0 警告，0 错误
+测试：182/182 通过
+```
+
+---
+
 ## v0.64.1（2026-10-14）：任务级 Skill 说明目录
 
 ### 版本

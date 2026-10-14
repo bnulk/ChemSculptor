@@ -203,6 +203,62 @@ public class GaussianRouteKeywordBuilderTests
                 && translation.RawKeyword == "geom=check");
     }
 
+    /// <summary>验证只优化氢原子的约束会生成 ModRedundant 选项。</summary>
+    [Fact]
+    public void BuildsHydrogensOnlyConstraint()
+    {
+        CalculationSpec spec =
+            CalculationDefaults.CreateDefaultOptimization();
+        spec.ExtraOptions[
+            CalculationOptionKeys.OptimizationConstraintMode] =
+            "HydrogensOnly";
+
+        GaussianRouteKeywordBuildResult result =
+            new GaussianRouteKeywordBuilder().Build(spec);
+
+        Assert.Contains("ModRedundant", result.TaskKeyword);
+        Assert.Contains("ModRedundant", result.RouteLine);
+        Assert.Contains("nosymm", result.Keywords);
+        Assert.Contains("nosymm", result.RouteLine);
+        Assert.Contains(
+            result.Translations,
+            translation =>
+                translation.Key
+                    == CalculationOptionKeys.OptimizationConstraintMode
+                && translation.RawKeyword == "ModRedundant");
+    }
+
+    /// <summary>验证约束自动加入的 nosymm 不会和显式设置重复。</summary>
+    [Fact]
+    public void HydrogensOnlyConstraintDoesNotDuplicateExplicitNosymm()
+    {
+        CalculationSpec spec =
+            CalculationDefaults.CreateDefaultOptimization();
+        spec.ExtraOptions[
+            CalculationOptionKeys.OptimizationConstraintMode] =
+            "HydrogensOnly";
+        spec.ExtraOptions[
+            CalculationOptionKeys.Symmetry] = "Ignore";
+
+        GaussianRouteKeywordBuildResult result =
+            new GaussianRouteKeywordBuilder().Build(spec);
+
+        Assert.Equal(
+            1,
+            CountOccurrences(result.RouteLine, "nosymm"));
+        Assert.Contains(
+            result.Translations,
+            translation =>
+                translation.Key
+                    == CalculationOptionKeys.OptimizationConstraintMode
+                && translation.RawKeyword == "nosymm");
+        Assert.Contains(
+            result.Translations,
+            translation =>
+                translation.Key == CalculationOptionKeys.Symmetry
+                && translation.RawKeyword == "nosymm");
+    }
+
     /// <summary>验证只有任务类型时会输出裸 opt。</summary>
     [Fact]
     public void BuildsBareOptimizationKeyword()

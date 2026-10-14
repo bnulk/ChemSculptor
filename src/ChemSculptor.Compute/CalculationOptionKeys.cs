@@ -49,7 +49,15 @@ public static class CalculationOptionKeys
     public const string OptimizationInitialHessian =
         "optimization-initial-hessian";
 
+    /// <summary>几何优化约束模式。</summary>
+    public const string OptimizationConstraintMode =
+        "optimization-constraint-mode";
+
     /// <summary>波函数稳定性检查策略。</summary>
     public const string WavefunctionStabilityCheck =
         "wavefunction-stability-check";
+
+    /// <summary>TDDFT 激发态数量。</summary>
+    public const string TddftStateCount =
+        "tddft-state-count";
 }

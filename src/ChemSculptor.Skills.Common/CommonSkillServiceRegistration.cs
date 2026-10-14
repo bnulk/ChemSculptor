@@ -10,6 +10,7 @@ using ChemSculptor.Skills.Common.CalculationResultValidation;
 using ChemSculptor.Skills.Common.OptimizationCalculation;
 using ChemSculptor.Skills.Common.OptimizationRecovery;
 using ChemSculptor.Skills.Common.SinglePointCalculation;
+using ChemSculptor.Skills.Common.TddftCalculation;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace ChemSculptor.Skills.Common;
@@ -52,6 +53,9 @@ public static class CommonSkillServiceRegistration
         ServiceCollectionServiceExtensions.AddSingleton<
             ISkill,
             SinglePointCalculationSkill>(services);
+        ServiceCollectionServiceExtensions.AddSingleton<
+            ISkill,
+            TddftSinglePointCalculationSkill>(services);
         ServiceCollectionServiceExtensions.AddSingleton<
             ISkill,
             OptimizationCalculationSkill>(services);

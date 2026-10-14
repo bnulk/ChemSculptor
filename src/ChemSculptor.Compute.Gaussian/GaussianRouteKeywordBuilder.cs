@@ -92,7 +92,8 @@ public sealed class GaussianRouteKeywordBuilder
     {
         if (taskType != CalculationTaskType.SinglePoint
             && taskType != CalculationTaskType.Optimization
-            && taskType != CalculationTaskType.Frequency)
+            && taskType != CalculationTaskType.Frequency
+            && taskType != CalculationTaskType.TdDft)
         {
             throw new NotSupportedException(
                 "当前阶段只支持单点计算、几何优化和频率分析输入生成。");
@@ -125,8 +126,30 @@ public sealed class GaussianRouteKeywordBuilder
             return;
         }
 
+        if (spec.TaskType == CalculationTaskType.TdDft)
+        {
+            int stateCount = ReadTddftStateCount(spec);
+            string keyword =
+                "td(nstates=" +
+                stateCount.ToString(
+                    System.Globalization.CultureInfo.InvariantCulture) +
+                ")";
+            result.TaskKeyword = keyword;
+            AddTranslation(
+                result,
+                CalculationOptionKeys.TddftStateCount,
+                stateCount.ToString(
+                    System.Globalization.CultureInfo.InvariantCulture),
+                keyword);
+            return;
+        }
+
         List<string> optimizationOptions =
             new List<string>();
+        AddOptimizationConstraintMode(
+            spec,
+            optimizationOptions,
+            result);
         AddOptimizationInitialHessian(
             spec,
             optimizationOptions,
@@ -150,6 +173,69 @@ public sealed class GaussianRouteKeywordBuilder
             "task-type",
             spec.TaskType.ToString(),
             result.TaskKeyword);
+    }
+
+    private static int ReadTddftStateCount(
+        CalculationSpec spec)
+    {
+        string? value;
+
+        if (spec.ExtraOptions.TryGetValue(
+                CalculationOptionKeys.TddftStateCount,
+                out value)
+            && int.TryParse(
+                value,
+                System.Globalization.NumberStyles.Integer,
+                System.Globalization.CultureInfo.InvariantCulture,
+                out int stateCount)
+            && stateCount > 0)
+        {
+            return stateCount;
+        }
+
+        return CalculationDefaults.DefaultTddftStateCount;
+    }
+
+    private static void AddOptimizationConstraintMode(
+        CalculationSpec spec,
+        List<string> optimizationOptions,
+        GaussianRouteKeywordBuildResult result)
+    {
+        string value = ReadExtraOption(
+            spec,
+            CalculationOptionKeys.OptimizationConstraintMode);
+
+        if (string.IsNullOrWhiteSpace(value)
+            || string.Equals(
+                value,
+                "None",
+                StringComparison.OrdinalIgnoreCase))
+        {
+            return;
+        }
+
+        if (!string.Equals(
+            value,
+            "HydrogensOnly",
+            StringComparison.OrdinalIgnoreCase))
+        {
+            throw new NotSupportedException(
+                "不支持的优化约束模式：" + value);
+        }
+
+        AddOptimizationOption(
+            optimizationOptions,
+            "ModRedundant");
+        AddTranslation(
+            result,
+            CalculationOptionKeys.OptimizationConstraintMode,
+            value,
+            "ModRedundant");
+        AddKeyword(
+            result,
+            CalculationOptionKeys.OptimizationConstraintMode,
+            value,
+            "nosymm");
     }
 
     private static void AddOptimizationInitialHessian(
@@ -620,7 +706,27 @@ public sealed class GaussianRouteKeywordBuilder
         string value,
         string keyword)
     {
-        result.Keywords.Add(keyword);
+        bool keywordExists = false;
+
+        for (int index = 0;
+            index < result.Keywords.Count;
+            index++)
+        {
+            if (string.Equals(
+                result.Keywords[index],
+                keyword,
+                StringComparison.OrdinalIgnoreCase))
+            {
+                keywordExists = true;
+                break;
+            }
+        }
+
+        if (!keywordExists)
+        {
+            result.Keywords.Add(keyword);
+        }
+
         AddTranslation(result, key, value, keyword);
     }
 

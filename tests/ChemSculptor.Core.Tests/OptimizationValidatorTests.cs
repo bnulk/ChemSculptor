@@ -108,6 +108,78 @@ public class OptimizationValidatorTests
         }
     }
 
+    /// <summary>验证只优化氢原子时冻结的非氢原子没有移动。</summary>
+    [Fact]
+    public void HydrogensOnlyConstraintPassesWhenHeavyAtomsStayFixed()
+    {
+        string root = CreateTemporaryRoot();
+        string outputPath = Path.Combine(root, "optimization.log");
+
+        try
+        {
+            File.WriteAllText(outputPath, "Normal termination");
+            CalculationResultValidationRequest request =
+                CreateRequest(outputPath, true);
+            request.Job.Spec.ExtraOptions[
+                CalculationOptionKeys.OptimizationConstraintMode] =
+                "HydrogensOnly";
+            request.OptimizationResult!.Trajectory[0].Geometry =
+                CreateWaterGeometry(0.000000);
+            request.OptimizationResult.FinalGeometry =
+                CreateWaterGeometry(0.000000);
+
+            CalculationResultValidationResult result =
+                CreateService().Validate(request);
+
+            Assert.True(result.Passed);
+            Assert.Null(
+                FindIssue(
+                    result.Report,
+                    "optimization.constraint.frozen_atoms"));
+        }
+        finally
+        {
+            DeleteTemporaryRoot(root);
+        }
+    }
+
+    /// <summary>验证冻结的非氢原子发生位移时会报告约束失败。</summary>
+    [Fact]
+    public void HydrogensOnlyConstraintRejectsFrozenAtomDisplacement()
+    {
+        string root = CreateTemporaryRoot();
+        string outputPath = Path.Combine(root, "optimization.log");
+
+        try
+        {
+            File.WriteAllText(outputPath, "Normal termination");
+            CalculationResultValidationRequest request =
+                CreateRequest(outputPath, true);
+            request.Job.Spec.ExtraOptions[
+                CalculationOptionKeys.OptimizationConstraintMode] =
+                "HydrogensOnly";
+            request.OptimizationResult!.Trajectory[0].Geometry =
+                CreateWaterGeometry(0.000000);
+            request.OptimizationResult.FinalGeometry =
+                CreateWaterGeometry(0.010000);
+
+            CalculationResultValidationResult result =
+                CreateService().Validate(request);
+
+            Assert.False(result.Passed);
+            CalculationValidationIssue? issue =
+                FindIssue(
+                    result.Report,
+                    "optimization.constraint.frozen_atoms");
+            Assert.NotNull(issue);
+            Assert.Contains("最大位移", issue!.Message);
+        }
+        finally
+        {
+            DeleteTemporaryRoot(root);
+        }
+    }
+
     private static CalculationValidationService CreateService()
     {
         List<ICalculationResultValidator> validators =
@@ -182,6 +254,38 @@ public class OptimizationValidatorTests
         request.Job = job;
         request.OptimizationResult = result;
         return request;
+    }
+
+    private static CanonicalGeometry CreateWaterGeometry(
+        double oxygenX)
+    {
+        CanonicalGeometry geometry = new CanonicalGeometry();
+
+        CanonicalAtom oxygen = new CanonicalAtom();
+        oxygen.Index = 1;
+        oxygen.Element = "O";
+        oxygen.X = oxygenX;
+        oxygen.Y = 0.000000;
+        oxygen.Z = 0.117300;
+        geometry.Atoms.Add(oxygen);
+
+        CanonicalAtom hydrogenOne = new CanonicalAtom();
+        hydrogenOne.Index = 2;
+        hydrogenOne.Element = "H";
+        hydrogenOne.X = 0.000000;
+        hydrogenOne.Y = 0.757200;
+        hydrogenOne.Z = -0.469200;
+        geometry.Atoms.Add(hydrogenOne);
+
+        CanonicalAtom hydrogenTwo = new CanonicalAtom();
+        hydrogenTwo.Index = 3;
+        hydrogenTwo.Element = "H";
+        hydrogenTwo.X = 0.000000;
+        hydrogenTwo.Y = -0.757200;
+        hydrogenTwo.Z = -0.469200;
+        geometry.Atoms.Add(hydrogenTwo);
+
+        return geometry;
     }
 
     private static CalculationValidationIssue? FindIssue(

@@ -141,6 +141,26 @@ public class RuleBasedCalculationParameterExtractorTests
         Assert.Equal("Skip", intent.Value);
     }
 
+    /// <summary>验证冻结非氢原子模式可以从客户端文本提取。</summary>
+    [Fact]
+    public async Task ExtractsHydrogensOnlyConstraint()
+    {
+        RuleBasedCalculationParameterExtractor extractor =
+            new RuleBasedCalculationParameterExtractor();
+        CalculationParameterExtractionContext context =
+            CreateOptimizationContext();
+        CalculationParameterExtractionResult result =
+            await extractor.ExtractAsync(
+                "优化水分子，冻结非氢原子",
+                context);
+        CalculationParameterIntent intent =
+            FindSingle(
+                result,
+                CalculationOptionKeys.OptimizationConstraintMode);
+
+        Assert.Equal("HydrogensOnly", intent.Value);
+    }
+
     /// <summary>验证同一条文本中的对称性冲突不会被自动合并。</summary>
     [Fact]
     public async Task PreservesConflictingSymmetryIntents()

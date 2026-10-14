@@ -50,4 +50,8 @@ public static class CalculationSkillIds
     /// <summary>对最终优化结构执行振动分析。</summary>
     public const string CalculationFrequencyAnalysis =
         "calculation.frequency-analysis";
+
+    /// <summary>完成一次 TDDFT 单点计算。</summary>
+    public const string CalculationTddftSinglePoint =
+        "calculation.tddft-single-point";
 }
