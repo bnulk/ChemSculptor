@@ -15,6 +15,8 @@ public sealed class AgentService : IAgentService
     private readonly ISinglePointCalculationService _singlePointService;
     private readonly IOptimizationCalculationService
         _optimizationService;
+    private readonly IAbsorptionSpectrumWorkflowService?
+        _absorptionSpectrumService;
     private readonly CalculationParameterConversationService
         _parameterConversationService;
     private readonly IGeometryTextParser _geometryParser;
@@ -26,6 +28,25 @@ public sealed class AgentService : IAgentService
         IOptimizationCalculationService optimizationService,
         CalculationParameterConversationService parameterConversationService,
         IGeometryTextParser geometryParser)
+        : this(
+            conversationService,
+            singlePointService,
+            optimizationService,
+            parameterConversationService,
+            geometryParser,
+            null)
+    {
+    }
+
+    /// <summary>创建带吸收光谱工作流的智能体服务。</summary>
+    public AgentService(
+        IConversationService conversationService,
+        ISinglePointCalculationService singlePointService,
+        IOptimizationCalculationService optimizationService,
+        CalculationParameterConversationService parameterConversationService,
+        IGeometryTextParser geometryParser,
+        IAbsorptionSpectrumWorkflowService?
+            absorptionSpectrumService)
     {
         if (conversationService == null)
         {
@@ -60,6 +81,7 @@ public sealed class AgentService : IAgentService
         _conversationService = conversationService;
         _singlePointService = singlePointService;
         _optimizationService = optimizationService;
+        _absorptionSpectrumService = absorptionSpectrumService;
         _parameterConversationService = parameterConversationService;
         _geometryParser = geometryParser;
     }
@@ -81,6 +103,16 @@ public sealed class AgentService : IAgentService
 
         if (pending != null)
         {
+            if (pending.TaskType
+                == CalculationTaskType.TdDft)
+            {
+                return await HandleAbsorptionSpectrumConversationAsync(
+                    request,
+                    null,
+                    pending,
+                    cancellationToken);
+            }
+
             if (pending.TaskType
                 == CalculationTaskType.Optimization)
             {
@@ -122,6 +154,16 @@ public sealed class AgentService : IAgentService
             == CalculationTaskType.Optimization)
         {
             return await HandleOptimizationConversationAsync(
+                request,
+                conversationReply,
+                null,
+                cancellationToken);
+        }
+
+        if (conversationReply.Intent.TaskType
+            == CalculationTaskType.TdDft)
+        {
+            return await HandleAbsorptionSpectrumConversationAsync(
                 request,
                 conversationReply,
                 null,
@@ -292,6 +334,313 @@ public sealed class AgentService : IAgentService
     }
 
     private async Task<AgentResult>
+        HandleAbsorptionSpectrumConversationAsync(
+            AgentRequest request,
+            ConversationReply? conversationReply,
+            PendingCalculationParameterRequest? pending,
+            CancellationToken cancellationToken)
+    {
+        if (_absorptionSpectrumService == null)
+        {
+            AgentResult unavailable = new AgentResult();
+            unavailable.IsSupported = false;
+            unavailable.TaskType = CalculationTaskType.TdDft;
+            unavailable.Error =
+                "吸收光谱工作流服务尚未注册。";
+            return unavailable;
+        }
+
+        string coordinateText = string.IsNullOrWhiteSpace(
+            request.CoordinateText)
+            ? pending == null
+                ? string.Empty
+                : pending.CoordinateText
+            : request.CoordinateText;
+
+        int? neutralElectronCount =
+            await TryGetNeutralElectronCountAsync(
+                coordinateText,
+                cancellationToken);
+
+        string workflowId = conversationReply == null
+            ? pending == null
+                ? "absorption-spectrum"
+                : pending.WorkflowId
+            : conversationReply.Intent.WorkflowId;
+
+        if (string.IsNullOrWhiteSpace(workflowId))
+        {
+            workflowId = "absorption-spectrum";
+        }
+
+        AbsorptionSpectrumMode mode = ResolveAbsorptionSpectrumMode(
+            workflowId,
+            conversationReply,
+            pending);
+
+        CalculationParameterResolutionContext resolutionContext =
+            new CalculationParameterResolutionContext();
+        resolutionContext.Engine =
+            CalculationDefaults.DefaultProgram;
+        resolutionContext.TaskType =
+            CalculationTaskType.TdDft;
+        resolutionContext.ElectronCount = neutralElectronCount;
+
+        ParameterConversationTurn turn =
+            await _parameterConversationService.HandleAsync(
+                request.SessionId,
+                request.Text,
+                coordinateText,
+                CalculationDefaults.CreateDefaultTddftSinglePoint(),
+                resolutionContext,
+                cancellationToken,
+                workflowId,
+                mode);
+
+        if (turn.Status
+            == ParameterConversationTurnStatus.ReadyToSubmit)
+        {
+            AbsorptionSpectrumRequest absorptionRequest =
+                new AbsorptionSpectrumRequest();
+            absorptionRequest.SessionId = request.SessionId;
+            absorptionRequest.Goal =
+                string.IsNullOrWhiteSpace(turn.OriginalText)
+                    ? request.Text
+                    : turn.OriginalText;
+            absorptionRequest.CoordinateText =
+                turn.CoordinateText;
+            absorptionRequest.Mode = mode;
+            absorptionRequest.TddftSpec =
+                turn.Resolution == null
+                    ? CalculationDefaults
+                        .CreateDefaultTddftSinglePoint()
+                    : turn.Resolution.Spec;
+            absorptionRequest.ResolvedParameters =
+                turn.Resolution == null
+                    ? new List<ResolvedCalculationParameter>()
+                    : new List<ResolvedCalculationParameter>(
+                        turn.Resolution.AppliedParameters);
+
+            AbsorptionSpectrumSubmissionResult submission =
+                await _absorptionSpectrumService.SubmitAsync(
+                    absorptionRequest,
+                    cancellationToken);
+            AgentResult submitted = BuildAbsorptionSpectrumResult(
+                workflowId,
+                mode,
+                submission);
+            submitted.RequiresUserAction = false;
+            submitted.AppliedParameters =
+                turn.Resolution == null
+                    ? new List<ResolvedCalculationParameter>()
+                    : new List<ResolvedCalculationParameter>(
+                        turn.Resolution.AppliedParameters);
+            return submitted;
+        }
+
+        if (turn.Status
+            == ParameterConversationTurnStatus.NeedsClarification)
+        {
+            AgentResult clarification =
+                BuildClarificationResult(turn);
+            clarification.TaskType =
+                CalculationTaskType.TdDft;
+            clarification.WorkflowId = workflowId;
+            clarification.AbsorptionSpectrumMode = mode;
+            return clarification;
+        }
+
+        if (turn.Status
+            == ParameterConversationTurnStatus.Rejected)
+        {
+            AgentResult rejected =
+                BuildRejectedResult(turn);
+            rejected.TaskType =
+                CalculationTaskType.TdDft;
+            rejected.WorkflowId = workflowId;
+            rejected.AbsorptionSpectrumMode = mode;
+            return rejected;
+        }
+
+        AgentResult stateResult = new AgentResult();
+        stateResult.IsSupported = true;
+        stateResult.TaskType = CalculationTaskType.TdDft;
+        stateResult.WorkflowId = workflowId;
+        stateResult.AbsorptionSpectrumMode = mode;
+        stateResult.Status = turn.Status.ToString();
+        stateResult.Message = turn.Message;
+        return stateResult;
+    }
+
+    private static AbsorptionSpectrumMode
+        ResolveAbsorptionSpectrumMode(
+            string workflowId,
+            ConversationReply? conversationReply,
+            PendingCalculationParameterRequest? pending)
+    {
+        if (string.Equals(
+            workflowId,
+            "tddft-single-point",
+            StringComparison.OrdinalIgnoreCase))
+        {
+            return AbsorptionSpectrumMode.TddftOnly;
+        }
+
+        if (conversationReply != null)
+        {
+            return conversationReply.Intent
+                .AbsorptionSpectrumMode;
+        }
+
+        if (pending != null)
+        {
+            return pending.AbsorptionSpectrumMode;
+        }
+
+        return AbsorptionSpectrumMode.OptimizeThenTddft;
+    }
+
+    private static AgentResult BuildAbsorptionSpectrumResult(
+        string workflowId,
+        AbsorptionSpectrumMode mode,
+        AbsorptionSpectrumSubmissionResult submission)
+    {
+        AgentResult result = new AgentResult();
+        result.TaskType = CalculationTaskType.TdDft;
+        result.WorkflowId = workflowId;
+        result.AbsorptionSpectrumMode = mode;
+
+        if (!submission.Succeeded
+            || submission.Tddft == null
+            || submission.Tddft.Job == null
+            || submission.Tddft.Result == null)
+        {
+            result.IsSupported = false;
+            result.Error = string.IsNullOrWhiteSpace(
+                    submission.Error)
+                ? "吸收光谱工作流没有完成。"
+                : submission.Error;
+            return result;
+        }
+
+        CalculationJob tddftJob = submission.Tddft.Job;
+        result.IsSupported = true;
+        result.JobId = tddftJob.JobId;
+        result.TddftJobId = tddftJob.JobId;
+        result.Status = tddftJob.State.ToString();
+        result.InputFilePath =
+            tddftJob.SourceInputFilePath;
+        result.OutputFilePath = tddftJob.OutputFilePath;
+        result.Message = submission.Message;
+        result.ScientificResultId =
+            submission.ScientificResultId;
+
+        if (submission.Optimization != null)
+        {
+            OptimizationSubmissionResult optimization =
+                submission.Optimization;
+            result.OptimizationJobId =
+                string.IsNullOrWhiteSpace(
+                    optimization.FinalJobId)
+                    ? optimization.Job == null
+                        ? string.Empty
+                        : optimization.Job.JobId
+                    : optimization.FinalJobId;
+            result.FinalJobId = result.OptimizationJobId;
+            result.CorrectionCount =
+                optimization.CorrectionCount;
+            result.WavefunctionStabilityStatus =
+                optimization.WavefunctionStabilityStatus;
+            result.WavefunctionStabilitySummary =
+                optimization.WavefunctionStabilitySummary;
+            result.OptimizationConverged =
+                optimization.Result == null
+                    ? null
+                    : optimization.Result
+                        .OptimizationConverged;
+
+            if (optimization.Result != null)
+            {
+                result.OptimizationStepCount =
+                    optimization.Result.StepCount;
+                result.FinalEnergy =
+                    optimization.Result.FinalEnergy;
+                result.FinalStructure =
+                    FormatOptimizationGeometry(
+                        optimization.Result.FinalGeometry);
+
+                if (optimization.Result
+                    .FinalConvergence != null)
+                {
+                    result.MaximumForce =
+                        optimization.Result
+                            .FinalConvergence.MaximumForce;
+                    result.RmsForce =
+                        optimization.Result
+                            .FinalConvergence.RmsForce;
+                    result.MaximumDisplacement =
+                        optimization.Result
+                            .FinalConvergence
+                            .MaximumDisplacement;
+                    result.RmsDisplacement =
+                        optimization.Result
+                            .FinalConvergence
+                            .RmsDisplacement;
+                }
+            }
+        }
+        else
+        {
+            result.FinalJobId = tddftJob.JobId;
+        }
+
+        TddftCalculationResult tddftResult =
+            submission.Tddft.Result;
+        result.ExcitedStateCount =
+            tddftResult.ExcitedStates.Count;
+        TddftExcitedState? strongest =
+            FindStrongestTddftState(tddftResult);
+
+        if (strongest != null)
+        {
+            result.StrongestExcitedStateIndex =
+                strongest.StateIndex;
+            result.MaximumWavelengthNm =
+                strongest.WavelengthNm;
+            result.MaximumOscillatorStrength =
+                strongest.OscillatorStrength;
+        }
+
+        return result;
+    }
+
+    private static TddftExcitedState? FindStrongestTddftState(
+        TddftCalculationResult result)
+    {
+        if (result.ExcitedStates.Count == 0)
+        {
+            return null;
+        }
+
+        TddftExcitedState strongest =
+            result.ExcitedStates[0];
+
+        for (int index = 1;
+            index < result.ExcitedStates.Count;
+            index++)
+        {
+            if (result.ExcitedStates[index]
+                    .OscillatorStrength
+                > strongest.OscillatorStrength)
+            {
+                strongest = result.ExcitedStates[index];
+            }
+        }
+
+        return strongest;
+    }
+
+    private async Task<AgentResult>
         HandleOptimizationConversationAsync(
             AgentRequest request,
             ConversationReply? conversationReply,
@@ -421,6 +770,7 @@ public sealed class AgentService : IAgentService
     {
         AgentResult result = new AgentResult();
         result.TaskType = CalculationTaskType.Optimization;
+        result.WorkflowId = "optimization-complete";
 
         if (!submission.Succeeded || submission.Job == null)
         {
@@ -578,6 +928,9 @@ public sealed class AgentService : IAgentService
     {
         AgentResult result = new AgentResult();
         result.TaskType = CalculationTaskType.SinglePoint;
+        result.WorkflowId = conversationReply == null
+            ? "single_point"
+            : conversationReply.Intent.WorkflowId;
 
         if (!submission.Succeeded || submission.Job == null)
         {

@@ -32,6 +32,13 @@ public sealed class InterpretedTask
 
     /// <summary>解释诊断信息。</summary>
     public List<string> Diagnostics { get; set; } = new List<string>();
+
+    /// <summary>吸收光谱任务的前置处理模式。</summary>
+    public AbsorptionSpectrumMode AbsorptionSpectrumMode
+    {
+        get;
+        set;
+    } = AbsorptionSpectrumMode.OptimizeThenTddft;
 }
 
 /// <summary>
@@ -83,6 +90,35 @@ public sealed class RuleBasedTaskInterpreter : ITaskInterpreter
             "hydrogens only"
         };
 
+    /// <summary>吸收光谱任务关键词。</summary>
+    private static readonly string[] AbsorptionSpectrumKeywords =
+        new string[]
+        {
+            "吸收光谱",
+            "吸收谱",
+            "紫外可见",
+            "紫外",
+            "uv-vis",
+            "uv vis",
+            "ultraviolet",
+            "absorption spectrum"
+        };
+
+    /// <summary>表示跳过几何优化的关键词。</summary>
+    private static readonly string[] SkipOptimizationKeywords =
+        new string[]
+        {
+            "不优化",
+            "无需优化",
+            "不需要优化",
+            "不做优化",
+            "跳过优化",
+            "直接tddft",
+            "直接td-dft",
+            "no optimization",
+            "skip optimization"
+        };
+
     /// <summary>Gaussian route 前缀。</summary>
     private const string GaussianRoutePrefix = "#p";
 
@@ -103,6 +139,56 @@ public sealed class RuleBasedTaskInterpreter : ITaskInterpreter
         }
 
         string normalizedText = text.Trim();
+
+        if (ContainsAnyKeyword(
+            normalizedText,
+            AbsorptionSpectrumKeywords))
+        {
+            bool skipOptimization = ContainsAnyKeyword(
+                normalizedText,
+                SkipOptimizationKeywords);
+            bool constrainedOptimization =
+                ContainsAnyKeyword(
+                    normalizedText,
+                    OptimizationConstraintKeywords);
+
+            if (skipOptimization && constrainedOptimization)
+            {
+                interpretedTask.IsSupported = false;
+                interpretedTask.Confidence = 0.0;
+                interpretedTask.Diagnostics.Add(
+                    "“不优化”和“冻结非氢原子”不能同时使用。");
+                return Task.FromResult(interpretedTask);
+            }
+
+            interpretedTask.TaskType =
+                CalculationTaskType.TdDft;
+            interpretedTask.WorkflowId =
+                "absorption-spectrum";
+            interpretedTask.IsSupported = true;
+            interpretedTask.Confidence = 1.0;
+            interpretedTask.ElectronicStateObjective =
+                ElectronicStateObjective.TargetExcitedState;
+
+            if (skipOptimization)
+            {
+                interpretedTask.AbsorptionSpectrumMode =
+                    AbsorptionSpectrumMode.TddftOnly;
+            }
+            else if (constrainedOptimization)
+            {
+                interpretedTask.AbsorptionSpectrumMode =
+                    AbsorptionSpectrumMode
+                        .ConstrainedOptimizationThenTddft;
+            }
+            else
+            {
+                interpretedTask.AbsorptionSpectrumMode =
+                    AbsorptionSpectrumMode.OptimizeThenTddft;
+            }
+
+            return Task.FromResult(interpretedTask);
+        }
 
         if (IsGaussianRouteLine(normalizedText))
         {

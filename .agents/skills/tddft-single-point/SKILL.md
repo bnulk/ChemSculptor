@@ -46,6 +46,6 @@ Ground to excited state transition velocity quadrupole moments
 
 ## 边界
 
-当前只提供任务级 Skill，不提供 TDDFT 完整 Workflow。
+当前提供任务级 Skill 和单点计算 Workflow。
 
-异常恢复、重算和归档由后续 TDDFT Workflow 负责。
+异常恢复、重算和吸收光谱归档由后续工作负责。

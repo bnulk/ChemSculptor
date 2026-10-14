@@ -52,6 +52,11 @@ public static class AgentEndpoints
 
         AgentMessageResponse response = new AgentMessageResponse();
         response.TaskType = GetTaskTypeText(result);
+        response.WorkflowId = result.WorkflowId;
+        response.AbsorptionSpectrumMode =
+            result.TaskType == CalculationTaskType.TdDft
+                ? result.AbsorptionSpectrumMode.ToString()
+                : string.Empty;
         response.JobId = result.JobId;
         response.Status = result.Status;
         response.InputFilePath = result.InputFilePath;
@@ -75,6 +80,19 @@ public static class AgentEndpoints
         response.RmsDisplacement = result.RmsDisplacement;
         response.CorrectionCount = result.CorrectionCount;
         response.FinalJobId = result.FinalJobId;
+        response.OptimizationJobId =
+            result.OptimizationJobId;
+        response.TddftJobId = result.TddftJobId;
+        response.ScientificResultId =
+            result.ScientificResultId;
+        response.ExcitedStateCount =
+            result.ExcitedStateCount;
+        response.StrongestExcitedStateIndex =
+            result.StrongestExcitedStateIndex;
+        response.MaximumWavelengthNm =
+            result.MaximumWavelengthNm;
+        response.MaximumOscillatorStrength =
+            result.MaximumOscillatorStrength;
         response.WavefunctionStabilityStatus =
             result.WavefunctionStabilityStatus;
         response.WavefunctionStabilitySummary =

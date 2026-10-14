@@ -6,6 +6,13 @@ public sealed class AgentMessageResultDto
     /// <summary>服务器解释出的任务类型。</summary>
     public string TaskType { get; set; } = string.Empty;
 
+    /// <summary>服务器选择的工作流标识。</summary>
+    public string WorkflowId { get; set; } = string.Empty;
+
+    /// <summary>吸收光谱任务的前置处理模式。</summary>
+    public string AbsorptionSpectrumMode { get; set; } =
+        string.Empty;
+
     /// <summary>计算作业标识。</summary>
     public string JobId { get; set; } = string.Empty;
 
@@ -57,6 +64,20 @@ public sealed class AgentMessageResultDto
     public int CorrectionCount { get; set; }
 
     public string FinalJobId { get; set; } = string.Empty;
+
+    public string OptimizationJobId { get; set; } = string.Empty;
+
+    public string TddftJobId { get; set; } = string.Empty;
+
+    public string ScientificResultId { get; set; } = string.Empty;
+
+    public int ExcitedStateCount { get; set; }
+
+    public int StrongestExcitedStateIndex { get; set; }
+
+    public double? MaximumWavelengthNm { get; set; }
+
+    public double? MaximumOscillatorStrength { get; set; }
 
     public string WavefunctionStabilityStatus { get; set; } =
         string.Empty;

@@ -10,4 +10,8 @@ public static class ScientificDataSkillIds
     /// <summary>从优化结果提取并保存科学数据。</summary>
     public const string RecordOptimizationResult =
         "science.record-optimization-result";
+
+    /// <summary>从吸收光谱结果提取并保存科学数据。</summary>
+    public const string RecordAbsorptionSpectrum =
+        "science.record-absorption-spectrum";
 }

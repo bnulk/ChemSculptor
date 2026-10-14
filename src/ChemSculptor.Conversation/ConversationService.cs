@@ -65,6 +65,8 @@ public sealed class ConversationService : IConversationService
             interpretedTask.TargetMultiplicity;
         intent.TargetStateLabel =
             interpretedTask.TargetStateLabel;
+        intent.AbsorptionSpectrumMode =
+            interpretedTask.AbsorptionSpectrumMode;
         intent.Diagnostics = new List<string>(interpretedTask.Diagnostics);
 
         ConversationReply reply = new ConversationReply();
@@ -98,7 +100,9 @@ public sealed class ConversationService : IConversationService
         }
         else
         {
-            reply.ReplyMessage = "当前阶段只支持单点计算。";
+            reply.ReplyMessage = intent.Diagnostics.Count > 0
+                ? intent.Diagnostics[0]
+                : "当前阶段只支持单点计算。";
             reply.ReplyType = ConversationReplyType.Error;
             reply.Diagnostics = new List<string>(intent.Diagnostics);
         }

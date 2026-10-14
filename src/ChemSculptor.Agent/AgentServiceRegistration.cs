@@ -46,6 +46,15 @@ public static class AgentServiceRegistration
         ServiceCollectionServiceExtensions.AddSingleton<
             IOptimizationCalculationService,
             OptimizationCalculationService>(services);
+        ServiceCollectionServiceExtensions.AddSingleton<
+            ITddftCalculationService,
+            TddftCalculationService>(services);
+        ServiceCollectionServiceExtensions.AddSingleton<
+            IAbsorptionSpectrumRecoveryFramework,
+            NoOpAbsorptionSpectrumRecoveryFramework>(services);
+        ServiceCollectionServiceExtensions.AddSingleton<
+            IAbsorptionSpectrumWorkflowService,
+            AbsorptionSpectrumWorkflowService>(services);
         ServiceCollectionServiceExtensions.AddSingleton<ICalculationQueryService, CalculationQueryService>(
             services);
         ServiceCollectionServiceExtensions.AddSingleton<IAgentService, AgentService>(

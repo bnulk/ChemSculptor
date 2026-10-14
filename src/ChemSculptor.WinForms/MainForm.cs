@@ -496,6 +496,71 @@ public sealed class MainForm : Form
                 : result.FinalStructure));
     }
 
+    /// <summary>显示吸收光谱和 TDDFT 单点结果摘要。</summary>
+    private void AppendAbsorptionSpectrumFeedback(
+        AgentMessageResultDto result)
+    {
+        if (!string.Equals(
+            result.TaskType,
+            "TdDft",
+            StringComparison.OrdinalIgnoreCase))
+        {
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(result.JobId))
+        {
+            return;
+        }
+
+        AppendMessage("system", "吸收光谱结果：");
+        AppendMessage(
+            "hint",
+            "模式：" +
+            (string.IsNullOrWhiteSpace(
+                result.AbsorptionSpectrumMode)
+                ? "未知"
+                : result.AbsorptionSpectrumMode));
+        AppendMessage(
+            "hint",
+            "TDDFT 作业：" +
+            (string.IsNullOrWhiteSpace(result.TddftJobId)
+                ? result.JobId
+                : result.TddftJobId));
+
+        if (!string.IsNullOrWhiteSpace(
+            result.ScientificResultId))
+        {
+            AppendMessage(
+                "hint",
+                "科学成果：" +
+                result.ScientificResultId);
+        }
+
+        if (!string.IsNullOrWhiteSpace(
+            result.OptimizationJobId))
+        {
+            AppendMessage(
+                "hint",
+                "优化作业：" +
+                result.OptimizationJobId);
+        }
+
+        AppendMessage(
+            "hint",
+            "激发态数量：" +
+            result.ExcitedStateCount.ToString());
+        AppendMessage(
+            "hint",
+            "最强吸收态：" +
+            result.StrongestExcitedStateIndex.ToString() +
+            "，波长 " +
+            FormatNumber(result.MaximumWavelengthNm) +
+            " nm，振子强度 " +
+            FormatNumber(
+                result.MaximumOscillatorStrength));
+    }
+
     private static string FormatBoolean(bool? value)
     {
         if (!value.HasValue)
@@ -692,6 +757,7 @@ public sealed class MainForm : Form
 
             AppendParameterFeedback(result);
             AppendOptimizationFeedback(result);
+            AppendAbsorptionSpectrumFeedback(result);
 
             if (result.RequiresUserAction
                 && string.IsNullOrWhiteSpace(result.JobId))

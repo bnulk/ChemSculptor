@@ -3,7 +3,7 @@
 ## 当前版本
 
 ```text
-0.66.0
+0.67.0
 ```
 
 ## 文档维护原则
@@ -35,7 +35,8 @@ HANDOFF.md
 
 ```text
 Release 构建：0 警告，0 错误
-测试：190/190 通过
+测试：205/205 通过
+真实 Gaussian 16：3/3 通过
 ```
 
 ## 总体架构
@@ -153,6 +154,13 @@ TDDFT 单点计算 Skill
 TDDFT 激发态解析
 TDDFT 跃迁速度四极矩解析
 TDDFT Codex Skill
+TDDFT 单点计算 Workflow
+吸收光谱 Workflow
+吸收光谱三种前置模式
+吸收光谱 Agent 路由和客户端反馈
+吸收光谱科学数据归档
+吸收光谱恢复扩展框架
+真实 Gaussian 吸收光谱验证
 优化对话路由
 OptimizationCalculationService
 优化 API 显示字段
@@ -214,7 +222,9 @@ WinForms 领取和显示摘要
 优化最终几何已接入波函数稳定性检查
 优化工作流在稳定性处理之后执行振动分析
 SOC 和 MECP 等任务尚未实现
-TDDFT 完整 Workflow 尚未实现
+TDDFT 单点计算 Workflow 已实现
+吸收光谱 Workflow 和科学数据归档已实现
+吸收光谱专用恢复策略尚未实现，仅保留扩展框架
 科学点文件清单已进入 CalculationPoint
 WinForms 已按清单保存完整成果包
 关系、物理量和科学叙述已可追溯

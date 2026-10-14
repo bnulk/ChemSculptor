@@ -105,6 +105,16 @@ public sealed class PendingCalculationParameterRequest
     public CalculationTaskType TaskType { get; set; } =
         CalculationTaskType.SinglePoint;
 
+    /// <summary>当前参数收集对应的工作流标识。</summary>
+    public string WorkflowId { get; set; } = string.Empty;
+
+    /// <summary>当前参数收集对应的吸收光谱模式。</summary>
+    public AbsorptionSpectrumMode AbsorptionSpectrumMode
+    {
+        get;
+        set;
+    } = AbsorptionSpectrumMode.OptimizeThenTddft;
+
     /// <summary>已经提取的全部参数意图。</summary>
     public List<CalculationParameterIntent> ParameterIntents
     {
@@ -250,6 +260,13 @@ public sealed class ConversationIntent
 
     /// <summary>解释诊断信息。</summary>
     public List<string> Diagnostics { get; set; } = new List<string>();
+
+    /// <summary>吸收光谱任务的前置处理模式。</summary>
+    public AbsorptionSpectrumMode AbsorptionSpectrumMode
+    {
+        get;
+        set;
+    } = AbsorptionSpectrumMode.OptimizeThenTddft;
 }
 
 /// <summary>需要用户回答的问题。</summary>

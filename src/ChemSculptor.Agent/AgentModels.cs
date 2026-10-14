@@ -35,6 +35,16 @@ public sealed class AgentResult
     /// <summary>解释出的任务类型。</summary>
     public CalculationTaskType? TaskType { get; set; }
 
+    /// <summary>建议使用的工作流标识。</summary>
+    public string WorkflowId { get; set; } = string.Empty;
+
+    /// <summary>吸收光谱任务的前置处理模式。</summary>
+    public AbsorptionSpectrumMode AbsorptionSpectrumMode
+    {
+        get;
+        set;
+    } = AbsorptionSpectrumMode.OptimizeThenTddft;
+
     /// <summary>计算作业标识。</summary>
     public string JobId { get; set; } = string.Empty;
 
@@ -96,6 +106,27 @@ public sealed class AgentResult
 
     /// <summary>最终采用的作业标识。</summary>
     public string FinalJobId { get; set; } = string.Empty;
+
+    /// <summary>优化阶段最终采用的作业标识。</summary>
+    public string OptimizationJobId { get; set; } = string.Empty;
+
+    /// <summary>TDDFT 阶段作业标识。</summary>
+    public string TddftJobId { get; set; } = string.Empty;
+
+    /// <summary>吸收光谱科学成果标识。</summary>
+    public string ScientificResultId { get; set; } = string.Empty;
+
+    /// <summary>解析出的激发态数量。</summary>
+    public int ExcitedStateCount { get; set; }
+
+    /// <summary>最强吸收对应激发态的序号。</summary>
+    public int StrongestExcitedStateIndex { get; set; }
+
+    /// <summary>最强吸收对应波长，单位 nm。</summary>
+    public double? MaximumWavelengthNm { get; set; }
+
+    /// <summary>最强吸收对应振子强度。</summary>
+    public double? MaximumOscillatorStrength { get; set; }
 
     /// <summary>波函数稳定性检查状态。</summary>
     public string WavefunctionStabilityStatus { get; set; } =

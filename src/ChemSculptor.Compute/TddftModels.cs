@@ -44,6 +44,51 @@ public sealed class TddftCalculationResult
         new List<CalculationArtifactDescriptor>();
 }
 
+/// <summary>TDDFT 单点计算请求。</summary>
+public sealed class TddftCalculationRequest
+{
+    /// <summary>客户端会话标识。</summary>
+    public string SessionId { get; set; } = string.Empty;
+
+    /// <summary>几何资产标识。</summary>
+    public string GeometryId { get; set; } = string.Empty;
+
+    /// <summary>用户自然语言目标。</summary>
+    public string Goal { get; set; } = string.Empty;
+
+    /// <summary>TDDFT 计算使用的坐标文本。</summary>
+    public string CoordinateText { get; set; } = string.Empty;
+
+    /// <summary>已经解析完成的 TDDFT 计算方案。</summary>
+    public CalculationSpec? ResolvedSpec { get; set; }
+
+    /// <summary>已经解析完成的规范参数。</summary>
+    public List<ResolvedCalculationParameter> ResolvedParameters
+    {
+        get;
+        set;
+    } = new List<ResolvedCalculationParameter>();
+}
+
+/// <summary>TDDFT 单点计算提交结果。</summary>
+public sealed class TddftSubmissionResult
+{
+    /// <summary>是否成功完成。</summary>
+    public bool Succeeded { get; set; }
+
+    /// <summary>失败说明。</summary>
+    public string Error { get; set; } = string.Empty;
+
+    /// <summary>面向用户的说明。</summary>
+    public string Message { get; set; } = string.Empty;
+
+    /// <summary>已创建的作业。</summary>
+    public CalculationJob? Job { get; set; }
+
+    /// <summary>TDDFT 计算结果。</summary>
+    public TddftCalculationResult? Result { get; set; }
+}
+
 /// <summary>TDDFT 激发态。</summary>
 public sealed class TddftExcitedState
 {

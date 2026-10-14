@@ -45,7 +45,10 @@ public sealed class CalculationParameterConversationService
         string coordinateText,
         CalculationSpec baseSpec,
         CalculationParameterResolutionContext resolutionContext,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default,
+        string workflowId = "",
+        AbsorptionSpectrumMode absorptionSpectrumMode =
+            AbsorptionSpectrumMode.OptimizeThenTddft)
     {
         if (string.IsNullOrWhiteSpace(sessionId))
         {
@@ -178,7 +181,9 @@ public sealed class CalculationParameterConversationService
                 text,
                 coordinateText,
                 resolution,
-                intents);
+                intents,
+                workflowId,
+                absorptionSpectrumMode);
         session.PendingParameterRequest = nextPending;
         await _repository.SaveSessionAsync(
             session,
@@ -280,7 +285,9 @@ public sealed class CalculationParameterConversationService
         string text,
         string coordinateText,
         CalculationParameterResolutionResult resolution,
-        List<CalculationParameterIntent> intents)
+        List<CalculationParameterIntent> intents,
+        string workflowId,
+        AbsorptionSpectrumMode absorptionSpectrumMode)
     {
         PendingCalculationParameterRequest pending =
             new PendingCalculationParameterRequest();
@@ -296,6 +303,8 @@ public sealed class CalculationParameterConversationService
             : coordinateText;
         pending.CurrentSpec = resolution.Spec;
         pending.TaskType = resolution.Spec.TaskType;
+        pending.WorkflowId = workflowId;
+        pending.AbsorptionSpectrumMode = absorptionSpectrumMode;
         pending.ParameterIntents =
             new List<CalculationParameterIntent>(intents);
         pending.Questions =

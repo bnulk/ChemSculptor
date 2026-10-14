@@ -157,6 +157,54 @@ public class AgentServiceTests
         }
     }
 
+    /// <summary>验证“吸收光谱”会路由到吸收光谱工作流。</summary>
+    [Fact]
+    public async Task AbsorptionSpectrumMessageRoutesToWorkflow()
+    {
+        string root = CreateTemporaryRoot();
+
+        try
+        {
+            RecordingWorkflowEngine workflowEngine;
+            RecordingOptimizationService optimizationService;
+            RecordingAbsorptionSpectrumWorkflowService
+                absorptionService;
+            AgentService service = CreateAgentService(
+                root,
+                out workflowEngine,
+                out optimizationService,
+                out absorptionService);
+
+            AgentRequest request = new AgentRequest();
+            request.SessionId = "session-absorption-agent";
+            request.Text = "吸收光谱，不优化";
+            request.CoordinateText =
+                "O 0.000000 0.000000 0.117300\n" +
+                "H 0.000000 0.757200 -0.469200\n" +
+                "H 0.000000 -0.757200 -0.469200";
+
+            AgentResult result =
+                await service.HandleMessageAsync(request);
+
+            Assert.True(result.IsSupported);
+            Assert.Equal(CalculationTaskType.TdDft, result.TaskType);
+            Assert.Equal(
+                "absorption-spectrum",
+                result.WorkflowId);
+            Assert.Equal(
+                AbsorptionSpectrumMode.TddftOnly,
+                absorptionService.LastRequest!.Mode);
+            Assert.Equal(
+                "job-tddft-absorption-agent",
+                result.JobId);
+            Assert.Equal(1, result.ExcitedStateCount);
+        }
+        finally
+        {
+            DeleteTemporaryRoot(root);
+        }
+    }
+
     /// <summary>验证激发态目标在当前阶段被明确拒绝。</summary>
     [Fact]
     public async Task ExcitedStateMessageIsNotImplemented()
@@ -394,6 +442,22 @@ public class AgentServiceTests
         out RecordingWorkflowEngine workflowEngine,
         out RecordingOptimizationService optimizationService)
     {
+        RecordingAbsorptionSpectrumWorkflowService
+            absorptionService;
+        return CreateAgentService(
+            root,
+            out workflowEngine,
+            out optimizationService,
+            out absorptionService);
+    }
+
+    private static AgentService CreateAgentService(
+        string root,
+        out RecordingWorkflowEngine workflowEngine,
+        out RecordingOptimizationService optimizationService,
+        out RecordingAbsorptionSpectrumWorkflowService
+            absorptionService)
+    {
         CalculationWorkspaceOptions options = new CalculationWorkspaceOptions();
         options.RootDirectory = root;
 
@@ -422,12 +486,15 @@ public class AgentServiceTests
                 new CalculationParameterResolver());
 
         optimizationService = new RecordingOptimizationService();
+        absorptionService =
+            new RecordingAbsorptionSpectrumWorkflowService();
         return new AgentService(
             conversationService,
             singlePointService,
             optimizationService,
             parameterService,
-            new GeometryTextParser());
+            new GeometryTextParser(),
+            absorptionService);
     }
 
     private static string CreateTemporaryRoot()
@@ -582,6 +649,56 @@ public class AgentServiceTests
             CancellationToken cancellationToken = default)
         {
             return Task.FromResult(false);
+        }
+    }
+
+    private sealed class RecordingAbsorptionSpectrumWorkflowService
+        : IAbsorptionSpectrumWorkflowService
+    {
+        public AbsorptionSpectrumRequest? LastRequest
+        {
+            get;
+            private set;
+        }
+
+        public Task<AbsorptionSpectrumSubmissionResult> SubmitAsync(
+            AbsorptionSpectrumRequest request,
+            CancellationToken cancellationToken = default)
+        {
+            LastRequest = request;
+            AbsorptionSpectrumSubmissionResult result =
+                new AbsorptionSpectrumSubmissionResult();
+            CalculationJob job = new CalculationJob();
+            job.JobId = "job-tddft-absorption-agent";
+            job.State = CalculationJobState.Validated;
+            job.SourceInputFilePath = Path.Combine(
+                Path.GetTempPath(),
+                "absorption.gjf");
+            job.OutputFilePath = Path.Combine(
+                Path.GetTempPath(),
+                "absorption.log");
+
+            TddftCalculationResult tddft =
+                new TddftCalculationResult();
+            tddft.JobId = job.JobId;
+            tddft.NormalTermination = true;
+            TddftExcitedState state = new TddftExcitedState();
+            state.StateIndex = 1;
+            state.WavelengthNm = 300.0;
+            state.OscillatorStrength = 0.5;
+            tddft.ExcitedStates.Add(state);
+
+            TddftSubmissionResult tddftSubmission =
+                new TddftSubmissionResult();
+            tddftSubmission.Succeeded = true;
+            tddftSubmission.Job = job;
+            tddftSubmission.Result = tddft;
+
+            result.Succeeded = true;
+            result.Mode = request.Mode;
+            result.Tddft = tddftSubmission;
+            result.Message = "吸收光谱测试完成。";
+            return Task.FromResult(result);
         }
     }
 }

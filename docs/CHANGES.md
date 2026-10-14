@@ -5,6 +5,140 @@
 
 ---
 
+## v0.67.0（2026-10-14）：吸收光谱 Workflow、科学归档和恢复框架
+
+### 版本
+
+- 当前版本：`0.67.0`
+- 日期：`2026-10-14`
+- 版本类型：新增功能
+
+### 改动目的
+
+建立“吸收光谱”顶层工作流。客户端输入“吸收光谱”或“紫外”时，
+通过 TDDFT 完成吸收光谱计算，并按输入决定是否先执行几何优化。
+补齐科学数据归档、恢复扩展框架和真实 Gaussian 16 验证。
+
+### 代码改动
+
+新增：
+
+```text
+src/ChemSculptor.Compute/AbsorptionSpectrumModels.cs
+src/ChemSculptor.Agent/AbsorptionSpectrumWorkflowService.cs
+src/ChemSculptor.Agent/TddftWorkflowDefinitionFactory.cs
+src/ChemSculptor.Agent/TddftCalculationService.cs
+src/ChemSculptor.Agent/NoOpAbsorptionSpectrumRecoveryFramework.cs
+src/ChemSculptor.ScientificData.Extraction/AbsorptionScientificDataRecordSkill.cs
+tests/ChemSculptor.Core.Tests/AbsorptionSpectrumInterpretationTests.cs
+tests/ChemSculptor.Core.Tests/AbsorptionSpectrumWorkflowServiceTests.cs
+tests/ChemSculptor.Core.Tests/AbsorptionScientificDataRecordSkillTests.cs
+tests/ChemSculptor.Core.Tests/AbsorptionSpectrumRealGaussianTests.cs
+tests/ChemSculptor.Core.Tests/TddftWorkflowDefinitionFactoryTests.cs
+tests/ChemSculptor.Core.Tests/TddftCalculationServiceTests.cs
+.agents/skills/absorption-spectrum/
+docs/skill说明/absorption-spectrum.md
+```
+
+扩展：
+
+```text
+src/ChemSculptor.Compute/TddftModels.cs
+src/ChemSculptor.Compute/CalculationInterfaces.cs
+src/ChemSculptor.Compute/TaskInterpretation.cs
+src/ChemSculptor.Conversation/ConversationModels.cs
+src/ChemSculptor.Conversation/CalculationParameterConversationService.cs
+src/ChemSculptor.Agent/AgentModels.cs
+src/ChemSculptor.Agent/AgentService.cs
+src/ChemSculptor.Agent/AgentServiceRegistration.cs
+src/ChemSculptor.Api/Contracts.cs
+src/ChemSculptor.Api/Endpoints/AgentEndpoints.cs
+src/ChemSculptor.WinForms/MainForm.cs
+src/ChemSculptor.WinForms/Models/Responses/ResponseModels.cs
+src/ChemSculptor.ScientificData/Models/ScientificDataSkillIds.cs
+```
+
+### 三类模式
+
+```text
+默认：完整优化 Workflow -> TDDFT 单点 Workflow -> 客户端反馈
+不优化：直接 TDDFT 单点 Workflow -> 客户端反馈
+冻结非氢原子：约束优化 Workflow -> TDDFT 单点 Workflow -> 客户端反馈
+```
+
+客户端输入示例：
+
+```text
+吸收光谱
+紫外，不优化
+吸收光谱，冻结非氢原子
+```
+
+“不优化”和“冻结非氢原子”同时出现时拒绝执行，避免静默忽略用户约束。
+
+### 阶段衔接
+
+```text
+优化阶段复用 optimization-complete
+TDDFT 阶段复用 tddft-single-point
+优化完成后，TDDFT 使用优化得到的最终几何结构
+```
+
+### 客户端反馈
+
+```text
+吸收光谱模式
+优化作业标识
+TDDFT 作业标识
+激发态数量
+最强吸收态
+最强吸收波长
+最强吸收振子强度
+吸收光谱科学成果标识
+```
+
+### 科学数据归档
+
+```text
+吸收光谱科学成果
+TDDFT 计算点
+激发态数量
+最强吸收波长和振子强度
+频率、跃迁和程序专门数据
+输入、输出和检查点产物引用
+```
+
+### 恢复框架
+
+```text
+IAbsorptionSpectrumRecoveryFramework
+NoOpAbsorptionSpectrumRecoveryFramework
+```
+
+当前只保留稳定扩展点和失败上下文，不自动执行吸收光谱专用恢复。
+后续遇到真实异常时，再注册具体恢复策略。
+
+### 真实 Gaussian 16 验证
+
+```text
+直接 TDDFT
+优化后 TDDFT
+冻结非氢原子后 TDDFT
+科学数据归档
+```
+
+真实 Gaussian 16 冒烟测试 3/3 通过。
+
+### 验证
+
+```text
+Release 构建：0 警告，0 错误
+测试：205/205 通过
+真实 Gaussian 16：3/3 通过
+```
+
+---
+
 ## v0.66.0（2026-10-14）：冻结非氢原子的优化约束
 
 ### 版本

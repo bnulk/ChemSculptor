@@ -358,3 +358,55 @@ public interface IOptimizationCalculationService
         string jobId,
         CancellationToken cancellationToken = default);
 }
+
+/// <summary>
+/// TDDFT 单点计算服务。
+/// 负责创建 TDDFT 作业、执行 TDDFT 单点工作流并查询结果。
+/// </summary>
+public interface ITddftCalculationService
+{
+    /// <summary>提交 TDDFT 单点计算。</summary>
+    Task<TddftSubmissionResult> SubmitAsync(
+        TddftCalculationRequest request,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>查询计算作业。</summary>
+    Task<CalculationJob?> GetJobAsync(
+        string jobId,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>查询 TDDFT 计算结果。</summary>
+    Task<TddftCalculationResult?> GetResultAsync(
+        string jobId,
+        CancellationToken cancellationToken = default);
+}
+
+/// <summary>
+/// 吸收光谱工作流服务。
+/// 负责按模式编排几何优化、冻结约束优化和 TDDFT 单点计算。
+/// </summary>
+public interface IAbsorptionSpectrumWorkflowService
+{
+    /// <summary>执行吸收光谱工作流。</summary>
+    Task<AbsorptionSpectrumSubmissionResult> SubmitAsync(
+        AbsorptionSpectrumRequest request,
+        CancellationToken cancellationToken = default);
+}
+
+/// <summary>吸收光谱科学数据归档接口。</summary>
+public interface IAbsorptionSpectrumResultRecorder
+{
+    /// <summary>保存吸收光谱科学成果。</summary>
+    Task<AbsorptionSpectrumArchiveResult> RecordAsync(
+        AbsorptionSpectrumArchiveRequest request,
+        CancellationToken cancellationToken = default);
+}
+
+/// <summary>吸收光谱异常恢复扩展框架。</summary>
+public interface IAbsorptionSpectrumRecoveryFramework
+{
+    /// <summary>根据失败上下文生成恢复计划或返回未实现。</summary>
+    Task<AbsorptionSpectrumRecoveryPlan> PlanAsync(
+        AbsorptionSpectrumRecoveryContext context,
+        CancellationToken cancellationToken = default);
+}

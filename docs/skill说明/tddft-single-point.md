@@ -8,7 +8,8 @@ calculation.tddft-single-point
 
 ## 职责边界
 
-完成一次 TDDFT 单点计算。暂时不实现 TDDFT 完整 Workflow。
+完成一次 TDDFT 单点计算。对应单点计算 Workflow 由
+`TddftWorkflowDefinitionFactory` 建立。
 
 ## 1. 契约
 
@@ -84,6 +85,8 @@ transition velocity quadrupole moments
 
 ```text
 src/ChemSculptor.Skills.Common/TddftCalculation/TddftSinglePointCalculationSkill.cs
+src/ChemSculptor.Agent/TddftCalculationService.cs
+src/ChemSculptor.Agent/TddftWorkflowDefinitionFactory.cs
 ```
 
 执行链：
@@ -121,7 +124,20 @@ TDDFT 专用异常码和恢复策略留待 TDDFT Workflow。
 
 ## 9. 工作流
 
-当前不实现 TDDFT Workflow。
+代码落点：
+
+```text
+src/ChemSculptor.Agent/TddftWorkflowDefinitionFactory.cs
+src/ChemSculptor.Agent/TddftCalculationService.cs
+```
+
+当前工作流：
+
+```text
+tddft-single-point
+```
+
+吸收光谱顶层 Workflow 再负责决定是否先执行几何优化。
 
 ## 10. 接入
 
@@ -131,6 +147,8 @@ TDDFT 专用异常码和恢复策略留待 TDDFT Workflow。
 src/ChemSculptor.Compute/TaskInterpretation.cs
 src/ChemSculptor.Skills.Common/TddftCalculation/
 src/ChemSculptor.Skills.Common/CommonSkillServiceRegistration.cs
+src/ChemSculptor.Agent/TddftCalculationService.cs
+src/ChemSculptor.Agent/TddftWorkflowDefinitionFactory.cs
 .agents/skills/tddft-single-point/
 ```
 
@@ -141,4 +159,6 @@ src/ChemSculptor.Skills.Common/CommonSkillServiceRegistration.cs
 ```text
 tests/ChemSculptor.Core.Tests/TddftCalculationTests.cs
 tests/ChemSculptor.Core.Tests/TddftCalculationSkillTests.cs
+tests/ChemSculptor.Core.Tests/TddftCalculationServiceTests.cs
+tests/ChemSculptor.Core.Tests/TddftWorkflowDefinitionFactoryTests.cs
 ```

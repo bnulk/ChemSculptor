@@ -1,3 +1,4 @@
+using ChemSculptor.Compute;
 using ChemSculptor.ScientificData.Extraction.Abstractions;
 using ChemSculptor.ScientificData.Extraction.ArtifactResolution;
 using ChemSculptor.ScientificData.Storage;
@@ -41,6 +42,24 @@ public static class ScientificDataExtractionServiceRegistration
         ServiceCollectionServiceExtensions.AddSingleton<
             ISkill,
             OptimizationScientificDataRecordSkill>(services);
+        ServiceCollectionServiceExtensions.AddSingleton<
+            AbsorptionScientificDataRecordSkill>(services);
+        ServiceCollectionServiceExtensions.AddSingleton<
+            ISkill>(
+                services,
+                provider =>
+                    ServiceProviderServiceExtensions
+                        .GetRequiredService<
+                            AbsorptionScientificDataRecordSkill>(
+                                provider));
+        ServiceCollectionServiceExtensions.AddSingleton<
+            IAbsorptionSpectrumResultRecorder>(
+                services,
+                provider =>
+                    ServiceProviderServiceExtensions
+                        .GetRequiredService<
+                            AbsorptionScientificDataRecordSkill>(
+                                provider));
         return services;
     }
 }
