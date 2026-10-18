@@ -15,6 +15,8 @@ public sealed class AgentService : IAgentService
     private readonly ISinglePointCalculationService _singlePointService;
     private readonly IOptimizationCalculationService
         _optimizationService;
+    private readonly IOptimizationFrequencyCalculationService?
+        _optimizationFrequencyService;
     private readonly IAbsorptionSpectrumWorkflowService?
         _absorptionSpectrumService;
     private readonly CalculationParameterConversationService
@@ -34,6 +36,7 @@ public sealed class AgentService : IAgentService
             optimizationService,
             parameterConversationService,
             geometryParser,
+            null,
             null)
     {
     }
@@ -47,6 +50,28 @@ public sealed class AgentService : IAgentService
         IGeometryTextParser geometryParser,
         IAbsorptionSpectrumWorkflowService?
             absorptionSpectrumService)
+        : this(
+            conversationService,
+            singlePointService,
+            optimizationService,
+            parameterConversationService,
+            geometryParser,
+            absorptionSpectrumService,
+            null)
+    {
+    }
+
+    /// <summary>创建带联合优化频率服务的智能体服务。</summary>
+    public AgentService(
+        IConversationService conversationService,
+        ISinglePointCalculationService singlePointService,
+        IOptimizationCalculationService optimizationService,
+        CalculationParameterConversationService parameterConversationService,
+        IGeometryTextParser geometryParser,
+        IAbsorptionSpectrumWorkflowService?
+            absorptionSpectrumService,
+        IOptimizationFrequencyCalculationService?
+            optimizationFrequencyService)
     {
         if (conversationService == null)
         {
@@ -81,6 +106,8 @@ public sealed class AgentService : IAgentService
         _conversationService = conversationService;
         _singlePointService = singlePointService;
         _optimizationService = optimizationService;
+        _optimizationFrequencyService =
+            optimizationFrequencyService;
         _absorptionSpectrumService = absorptionSpectrumService;
         _parameterConversationService = parameterConversationService;
         _geometryParser = geometryParser;
@@ -103,6 +130,17 @@ public sealed class AgentService : IAgentService
 
         if (pending != null)
         {
+            if (pending.TaskType
+                == CalculationTaskType.OptimizationFrequency)
+            {
+                return await
+                    HandleOptimizationFrequencyConversationAsync(
+                        request,
+                        null,
+                        pending,
+                        cancellationToken);
+            }
+
             if (pending.TaskType
                 == CalculationTaskType.TdDft)
             {
@@ -158,6 +196,17 @@ public sealed class AgentService : IAgentService
                 conversationReply,
                 null,
                 cancellationToken);
+        }
+
+        if (conversationReply.Intent.TaskType
+            == CalculationTaskType.OptimizationFrequency)
+        {
+            return await
+                HandleOptimizationFrequencyConversationAsync(
+                    request,
+                    conversationReply,
+                    null,
+                    cancellationToken);
         }
 
         if (conversationReply.Intent.TaskType
@@ -331,6 +380,209 @@ public sealed class AgentService : IAgentService
         }
 
         return calculationRequest;
+    }
+
+    private async Task<AgentResult>
+        HandleOptimizationFrequencyConversationAsync(
+            AgentRequest request,
+            ConversationReply? conversationReply,
+            PendingCalculationParameterRequest? pending,
+            CancellationToken cancellationToken)
+    {
+        if (_optimizationFrequencyService == null)
+        {
+            AgentResult unavailable = new AgentResult();
+            unavailable.IsSupported = false;
+            unavailable.TaskType =
+                CalculationTaskType.OptimizationFrequency;
+            unavailable.Error =
+                "联合优化频率计算服务尚未注册。";
+            return unavailable;
+        }
+
+        string coordinateText = string.IsNullOrWhiteSpace(
+            request.CoordinateText)
+            ? pending == null
+                ? string.Empty
+                : pending.CoordinateText
+            : request.CoordinateText;
+
+        int? neutralElectronCount =
+            await TryGetNeutralElectronCountAsync(
+                coordinateText,
+                cancellationToken);
+
+        CalculationParameterResolutionContext resolutionContext =
+            new CalculationParameterResolutionContext();
+        resolutionContext.Engine =
+            CalculationDefaults.DefaultProgram;
+        resolutionContext.TaskType =
+            CalculationTaskType.OptimizationFrequency;
+        resolutionContext.ElectronCount = neutralElectronCount;
+
+        ParameterConversationTurn turn =
+            await _parameterConversationService.HandleAsync(
+                request.SessionId,
+                request.Text,
+                coordinateText,
+                CalculationDefaults
+                    .CreateDefaultOptimizationFrequency(),
+                resolutionContext,
+                cancellationToken);
+
+        if (turn.Status
+            == ParameterConversationTurnStatus.ReadyToSubmit)
+        {
+            OptimizationFrequencyRequest calculationRequest =
+                BuildOptimizationFrequencyRequest(
+                    request,
+                    turn);
+            OptimizationFrequencySubmissionResult submission =
+                await _optimizationFrequencyService.SubmitAsync(
+                    calculationRequest,
+                    cancellationToken);
+            AgentResult submitted =
+                BuildOptimizationFrequencyResult(submission);
+            submitted.RequiresUserAction = false;
+            submitted.AppliedParameters =
+                turn.Resolution == null
+                    ? new List<ResolvedCalculationParameter>()
+                    : new List<ResolvedCalculationParameter>(
+                        turn.Resolution.AppliedParameters);
+            return submitted;
+        }
+
+        if (turn.Status
+            == ParameterConversationTurnStatus.NeedsClarification)
+        {
+            AgentResult clarification =
+                BuildClarificationResult(turn);
+            clarification.TaskType =
+                CalculationTaskType.OptimizationFrequency;
+            clarification.WorkflowId =
+                "optimization-frequency";
+            return clarification;
+        }
+
+        if (turn.Status
+            == ParameterConversationTurnStatus.Rejected)
+        {
+            AgentResult rejected =
+                BuildRejectedResult(turn);
+            rejected.TaskType =
+                CalculationTaskType.OptimizationFrequency;
+            rejected.WorkflowId =
+                "optimization-frequency";
+            return rejected;
+        }
+
+        AgentResult stateResult = new AgentResult();
+        stateResult.IsSupported = true;
+        stateResult.TaskType =
+            CalculationTaskType.OptimizationFrequency;
+        stateResult.WorkflowId =
+            "optimization-frequency";
+        stateResult.Status = turn.Status.ToString();
+        stateResult.Message = turn.Message;
+        return stateResult;
+    }
+
+    private static OptimizationFrequencyRequest
+        BuildOptimizationFrequencyRequest(
+            AgentRequest request,
+            ParameterConversationTurn turn)
+    {
+        OptimizationFrequencyRequest calculationRequest =
+            new OptimizationFrequencyRequest();
+        calculationRequest.SessionId = request.SessionId;
+        calculationRequest.Goal = string.IsNullOrWhiteSpace(
+            turn.OriginalText)
+            ? request.Text
+            : turn.OriginalText;
+        calculationRequest.CoordinateText =
+            turn.CoordinateText;
+        calculationRequest.ResolvedSpec =
+            turn.Resolution == null
+                ? CalculationDefaults
+                    .CreateDefaultOptimizationFrequency()
+                : turn.Resolution.Spec;
+        calculationRequest.ResolvedParameters =
+            turn.Resolution == null
+                ? new List<ResolvedCalculationParameter>()
+                : new List<ResolvedCalculationParameter>(
+                    turn.Resolution.AppliedParameters);
+        return calculationRequest;
+    }
+
+    private static AgentResult
+        BuildOptimizationFrequencyResult(
+            OptimizationFrequencySubmissionResult submission)
+    {
+        AgentResult result = new AgentResult();
+        result.TaskType =
+            CalculationTaskType.OptimizationFrequency;
+        result.WorkflowId = "optimization-frequency";
+
+        if (!submission.Succeeded
+            || submission.Job == null
+            || submission.Result == null)
+        {
+            result.IsSupported = false;
+            result.Error = submission.Error;
+            return result;
+        }
+
+        CalculationJob job = submission.Job;
+        OptimizationFrequencyCalculationSkillResult combined =
+            submission.Result;
+        OptimizationResult optimization =
+            combined.OptimizationResult;
+        FrequencyAnalysisResult frequency =
+            combined.FrequencyResult;
+
+        result.IsSupported = true;
+        result.JobId = job.JobId;
+        result.FinalJobId = job.JobId;
+        result.Status = job.State.ToString();
+        result.InputFilePath =
+            job.SourceInputFilePath;
+        result.OutputFilePath = job.OutputFilePath;
+        result.Message = submission.Message;
+        result.OptimizationConverged =
+            optimization.OptimizationConverged;
+        result.OptimizationStepCount =
+            optimization.StepCount;
+        result.FinalEnergy = optimization.FinalEnergy;
+        result.FinalStructure =
+            FormatOptimizationGeometry(
+                optimization.FinalGeometry);
+
+        if (optimization.FinalConvergence != null)
+        {
+            result.MaximumForce =
+                optimization.FinalConvergence.MaximumForce;
+            result.RmsForce =
+                optimization.FinalConvergence.RmsForce;
+            result.MaximumDisplacement =
+                optimization.FinalConvergence
+                    .MaximumDisplacement;
+            result.RmsDisplacement =
+                optimization.FinalConvergence
+                    .RmsDisplacement;
+        }
+
+        result.FrequencyAnalysisStatus =
+            frequency.NormalTermination
+                ? "Completed"
+                : "Failed";
+        result.FrequencyCount =
+            frequency.Frequencies.Count;
+        result.ImaginaryFrequencyCount =
+            frequency.ImaginaryFrequencyCount;
+        result.MinimumFrequency =
+            frequency.MinimumFrequency;
+        result.IsMinimum = frequency.IsMinimum;
+        return result;
     }
 
     private async Task<AgentResult>

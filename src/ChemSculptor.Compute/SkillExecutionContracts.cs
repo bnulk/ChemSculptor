@@ -76,6 +76,9 @@ public class CalculationResultExtractionResult
     /// <summary>TDDFT 结果；非 TDDFT 作业时为空。</summary>
     public TddftCalculationResult? TddftResult { get; set; }
 
+    /// <summary>振动分析结果；非联合优化频率作业时为空。</summary>
+    public FrequencyAnalysisResult? FrequencyResult { get; set; }
+
     /// <summary>诊断信息。</summary>
     public List<string> Diagnostics { get; set; } = new List<string>();
 }
@@ -91,6 +94,9 @@ public class CalculationResultValidationRequest
 
     /// <summary>几何优化结果；非优化验证时为空。</summary>
     public OptimizationResult? OptimizationResult { get; set; }
+
+    /// <summary>振动分析结果；联合优化频率验证时使用。</summary>
+    public FrequencyAnalysisResult? FrequencyResult { get; set; }
 }
 
 /// <summary>计算结果验证技能结果。</summary>
@@ -278,6 +284,69 @@ public class OptimizationValidationSkillResult
         new OptimizationResult();
 
     /// <summary>验证报告。</summary>
+    public CalculationValidationReport Report { get; set; } =
+        new CalculationValidationReport();
+}
+
+/// <summary>优化与频率联合计算 Skill 结果。</summary>
+public class OptimizationFrequencyCalculationSkillResult
+{
+    /// <summary>计算和结果提取是否成功。</summary>
+    public bool Succeeded { get; set; }
+
+    /// <summary>失败说明。</summary>
+    public string Error { get; set; } = string.Empty;
+
+    /// <summary>联合验证是否通过。</summary>
+    public bool Passed { get; set; }
+
+    /// <summary>计算作业。</summary>
+    public CalculationJob Job { get; set; } =
+        new CalculationJob();
+
+    /// <summary>几何优化结果。</summary>
+    public OptimizationResult OptimizationResult { get; set; } =
+        new OptimizationResult();
+
+    /// <summary>振动分析结果。</summary>
+    public FrequencyAnalysisResult FrequencyResult { get; set; } =
+        new FrequencyAnalysisResult();
+
+    /// <summary>联合验证报告。</summary>
+    public CalculationValidationReport Report { get; set; } =
+        new CalculationValidationReport();
+
+    /// <summary>等待结果。</summary>
+    public CalculationWaitSkillResult Wait { get; set; } =
+        new CalculationWaitSkillResult();
+
+    /// <summary>原子步骤执行轨迹。</summary>
+    public List<OptimizationCalculationStepResult> Steps
+    {
+        get;
+        set;
+    } = new List<OptimizationCalculationStepResult>();
+}
+
+/// <summary>优化频率联合验证 Skill 结果。</summary>
+public class OptimizationFrequencyValidationSkillResult
+{
+    /// <summary>是否通过联合验证。</summary>
+    public bool Passed { get; set; }
+
+    /// <summary>更新后的作业。</summary>
+    public CalculationJob Job { get; set; } =
+        new CalculationJob();
+
+    /// <summary>几何优化结果。</summary>
+    public OptimizationResult OptimizationResult { get; set; } =
+        new OptimizationResult();
+
+    /// <summary>振动分析结果。</summary>
+    public FrequencyAnalysisResult FrequencyResult { get; set; } =
+        new FrequencyAnalysisResult();
+
+    /// <summary>联合验证报告。</summary>
     public CalculationValidationReport Report { get; set; } =
         new CalculationValidationReport();
 }

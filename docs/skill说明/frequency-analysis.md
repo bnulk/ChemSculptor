@@ -11,6 +11,10 @@ calculation.frequency-analysis
 针对最终采用的优化几何，完成一次 Gaussian `Freq` 振动分析。
 恢复、重优化和归档由优化 Workflow 负责。
 
+如果客户端要求“优化后做振动分析”并使用同一个 `opt freq` 作业，
+应使用 `docs/skill说明/optimization-frequency.md`，不要把联合任务
+拆成两个作业。
+
 ## 1. 契约
 
 代码落点：

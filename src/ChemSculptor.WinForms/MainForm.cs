@@ -401,10 +401,17 @@ public sealed class MainForm : Form
     private void AppendOptimizationFeedback(
         AgentMessageResultDto result)
     {
-        if (!string.Equals(
-            result.TaskType,
-            "Optimization",
-            StringComparison.OrdinalIgnoreCase))
+        bool isOptimization =
+            string.Equals(
+                result.TaskType,
+                "Optimization",
+                StringComparison.OrdinalIgnoreCase)
+            || string.Equals(
+                result.TaskType,
+                "OptimizationFrequency",
+                StringComparison.OrdinalIgnoreCase);
+
+        if (!isOptimization)
         {
             return;
         }

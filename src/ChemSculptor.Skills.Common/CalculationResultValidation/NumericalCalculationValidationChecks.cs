@@ -102,6 +102,47 @@ internal static class NumericalCalculationValidationChecks
         report.Checks.Add(check);
     }
 
+    /// <summary>添加一项建议检查。</summary>
+    public static void AddRecommendedCheck(
+        CalculationValidationReport report,
+        string code,
+        string description,
+        CalculationValidationScope scope,
+        string expectedValue,
+        string actualValue,
+        bool passed,
+        string failureMessage)
+    {
+        CalculationValidationCheck check =
+            new CalculationValidationCheck();
+        check.Code = code;
+        check.Description = description;
+        check.Passed = passed;
+        check.Severity = CalculationDiagnosticSeverity.Warning;
+        check.Requirement =
+            CalculationValidationRequirement.Recommended;
+        check.Scope = scope;
+        check.ExpectedValue = expectedValue;
+        check.ActualValue = actualValue;
+
+        if (passed)
+        {
+            check.Message = "通过。";
+        }
+        else
+        {
+            check.Message = failureMessage;
+            CalculationValidationIssue issue =
+                new CalculationValidationIssue();
+            issue.Severity = CalculationDiagnosticSeverity.Warning;
+            issue.Code = code;
+            issue.Message = failureMessage;
+            report.Issues.Add(issue);
+        }
+
+        report.Checks.Add(check);
+    }
+
     /// <summary>获取能量显示文本。</summary>
     public static string GetEnergyText(double? energy)
     {

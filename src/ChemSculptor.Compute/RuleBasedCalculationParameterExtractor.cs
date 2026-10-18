@@ -815,6 +815,8 @@ public sealed class RuleBasedCalculationParameterExtractor
         AddAliasRule(rules, key, alias, value, confidence, priority);
         rules[rules.Count - 1].TaskTypes.Add(
             CalculationTaskType.Optimization);
+        rules[rules.Count - 1].TaskTypes.Add(
+            CalculationTaskType.OptimizationFrequency);
     }
 
     private static void AddOptimizationRegexRule(
@@ -834,6 +836,8 @@ public sealed class RuleBasedCalculationParameterExtractor
             priority);
         rules[rules.Count - 1].TaskTypes.Add(
             CalculationTaskType.Optimization);
+        rules[rules.Count - 1].TaskTypes.Add(
+            CalculationTaskType.OptimizationFrequency);
     }
 
     private static void AddAliasRule(

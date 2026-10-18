@@ -8,6 +8,7 @@ using ChemSculptor.Skills.Common.AnomalyWorkflow;
 using ChemSculptor.Skills.Common.CalculationWorkflow;
 using ChemSculptor.Skills.Common.CalculationResultValidation;
 using ChemSculptor.Skills.Common.OptimizationCalculation;
+using ChemSculptor.Skills.Common.OptimizationFrequencyCalculation;
 using ChemSculptor.Skills.Common.OptimizationRecovery;
 using ChemSculptor.Skills.Common.SinglePointCalculation;
 using ChemSculptor.Skills.Common.TddftCalculation;
@@ -34,6 +35,9 @@ public static class CommonSkillServiceRegistration
             ICalculationResultValidator,
             OptimizationConvergenceValidator>(services);
         ServiceCollectionServiceExtensions.AddSingleton<
+            ICalculationResultValidator,
+            FrequencyAnalysisResultValidator>(services);
+        ServiceCollectionServiceExtensions.AddSingleton<
             CalculationValidationService>(services);
         ServiceCollectionServiceExtensions.AddSingleton<
             WavefunctionStabilityCorrectionPlanner>(services);
@@ -59,6 +63,12 @@ public static class CommonSkillServiceRegistration
         ServiceCollectionServiceExtensions.AddSingleton<
             ISkill,
             OptimizationCalculationSkill>(services);
+        ServiceCollectionServiceExtensions.AddSingleton<
+            ISkill,
+            OptimizationFrequencyCalculationSkill>(services);
+        ServiceCollectionServiceExtensions.AddSingleton<
+            ISkill,
+            OptimizationFrequencyCalculationValidationSkill>(services);
         ServiceCollectionServiceExtensions.AddSingleton<
             ISkill,
             CalculationSubmissionSkill>(services);

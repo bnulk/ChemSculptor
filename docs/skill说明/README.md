@@ -45,6 +45,7 @@ frequency-analysis.md
 wavefunction-stability-check.md
 tddft-single-point.md
 absorption-spectrum.md
+optimization-frequency.md
 ```
 
 任务级 Skill 只负责一次正常任务执行。异常、恢复、派生作业和归档

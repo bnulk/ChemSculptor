@@ -30,7 +30,9 @@ public sealed class OptimizationConvergenceCheck : IAnomalyCheck
         }
 
         return context.Job.Spec.TaskType
-            == CalculationTaskType.Optimization;
+                == CalculationTaskType.Optimization
+            || context.Job.Spec.TaskType
+                == CalculationTaskType.OptimizationFrequency;
     }
 
     /// <summary>执行优化异常检查。</summary>

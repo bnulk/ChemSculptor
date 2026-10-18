@@ -95,6 +95,16 @@ public sealed class CalculationResultExtractionWorkflowSkill : ISkill
         }
 
         if (submission.Job.Spec.TaskType
+            == CalculationTaskType.OptimizationFrequency)
+        {
+            return await ExtractOptimizationFrequencyAsync(
+                request,
+                submission,
+                adapter,
+                cancellationToken);
+        }
+
+        if (submission.Job.Spec.TaskType
             == CalculationTaskType.TdDft)
         {
             return await ExtractTddftAsync(
@@ -257,6 +267,100 @@ public sealed class CalculationResultExtractionWorkflowSkill : ISkill
         taskResult.NodeId = request.NodeId;
         taskResult.Succeeded = true;
         taskResult.Output = SkillJson.Serialize(extractionResult);
+        return taskResult;
+    }
+
+    private static async Task<TaskResult>
+        ExtractOptimizationFrequencyAsync(
+            TaskRequest request,
+            CalculationSubmissionSkillResult submission,
+            IQuantumProgramAdapter adapter,
+            CancellationToken cancellationToken)
+    {
+        if (!(adapter is IOptimizationOutputParser optimizationParser))
+        {
+            throw new NotSupportedException(
+                "当前程序适配器不支持几何优化结果解析。");
+        }
+
+        if (!(adapter is IFrequencyAnalysisProgram frequencyProgram))
+        {
+            throw new NotSupportedException(
+                "当前程序适配器不支持振动分析结果解析。");
+        }
+
+        CalculationJob job = submission.Job;
+        OptimizationResult optimizationResult =
+            await optimizationParser.ParseOptimizationOutputAsync(
+                job.OutputFilePath,
+                cancellationToken);
+        FrequencyAnalysisResult frequencyResult =
+            await frequencyProgram.ParseFrequencyOutputAsync(
+                job.OutputFilePath,
+                cancellationToken);
+
+        optimizationResult.JobId = job.JobId;
+        optimizationResult.Program = job.Spec.Program;
+        optimizationResult.Method = job.Spec.Method;
+        optimizationResult.Basis = job.Spec.Basis;
+        optimizationResult.Charge = job.Spec.Charge;
+        optimizationResult.Multiplicity = job.Spec.Multiplicity;
+        optimizationResult.OutputFilePath =
+            job.OutputFilePath;
+
+        frequencyResult.JobId = job.JobId;
+        frequencyResult.Program = job.Spec.Program;
+        frequencyResult.Method = job.Spec.Method;
+        frequencyResult.Basis = job.Spec.Basis;
+        frequencyResult.OutputFilePath =
+            job.OutputFilePath;
+
+        CalculationResult artifactResult =
+            new CalculationResult();
+        artifactResult.JobId = job.JobId;
+        artifactResult.Program = job.Spec.Program;
+        artifactResult.Method = job.Spec.Method;
+        artifactResult.Basis = job.Spec.Basis;
+        artifactResult.Charge = job.Spec.Charge;
+        artifactResult.Multiplicity = job.Spec.Multiplicity;
+        artifactResult.OutputFilePath = job.OutputFilePath;
+        artifactResult.NormalTermination =
+            optimizationResult.NormalTermination
+            && frequencyResult.NormalTermination;
+        artifactResult.Energy =
+            optimizationResult.FinalEnergy;
+
+        CalculationArtifactDiscoveryContext artifactContext =
+            new CalculationArtifactDiscoveryContext();
+        artifactContext.Job = job;
+        artifactContext.Result = artifactResult;
+        List<CalculationArtifactDescriptor> artifacts =
+            new List<CalculationArtifactDescriptor>(
+                CalculationArtifactCollector.Collect(
+                    job.RunDirectory,
+                    adapter.GetArtifactPatterns(
+                        artifactContext)));
+        optimizationResult.Artifacts =
+            new List<CalculationArtifactDescriptor>(
+                artifacts);
+        frequencyResult.Artifacts =
+            new List<CalculationArtifactDescriptor>(
+                artifacts);
+
+        CalculationResultExtractionResult extractionResult =
+            new CalculationResultExtractionResult();
+        extractionResult.Succeeded = true;
+        extractionResult.Result = artifactResult;
+        extractionResult.OptimizationResult =
+            optimizationResult;
+        extractionResult.FrequencyResult = frequencyResult;
+
+        TaskResult taskResult = new TaskResult();
+        taskResult.WorkflowId = request.WorkflowId;
+        taskResult.NodeId = request.NodeId;
+        taskResult.Succeeded = true;
+        taskResult.Output = SkillJson.Serialize(
+            extractionResult);
         return taskResult;
     }
 

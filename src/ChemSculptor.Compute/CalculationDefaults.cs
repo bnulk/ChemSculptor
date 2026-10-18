@@ -134,6 +134,38 @@ public static class CalculationDefaults
     }
 
     /// <summary>
+    /// 创建默认的几何优化和频率联合计算方案。
+    /// 参数沿用默认优化方案，任务类型设为 OptimizationFrequency。
+    /// </summary>
+    public static CalculationSpec CreateDefaultOptimizationFrequency()
+    {
+        CalculationSpec spec = CreateDefaultOptimization();
+        spec.TaskType =
+            CalculationTaskType.OptimizationFrequency;
+
+        for (int index = 0;
+            index < spec.Parameters.Count;
+            index++)
+        {
+            CalculationParameter parameter = spec.Parameters[index];
+
+            if (string.Equals(
+                parameter.Name,
+                "task",
+                StringComparison.OrdinalIgnoreCase))
+            {
+                parameter.CurrentValue =
+                    CalculationTaskType
+                        .OptimizationFrequency
+                        .ToString();
+                break;
+            }
+        }
+
+        return spec;
+    }
+
+    /// <summary>
     /// 创建默认的 TDDFT 单点计算方案。
     /// 默认计算 50 个激发态，并关闭对称性。
     /// </summary>

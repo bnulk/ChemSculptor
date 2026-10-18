@@ -51,6 +51,14 @@ public static class CalculationSkillIds
     public const string CalculationFrequencyAnalysis =
         "calculation.frequency-analysis";
 
+    /// <summary>在同一作业中完成几何优化和振动分析。</summary>
+    public const string CalculationOptimizationFrequency =
+        "calculation.optimization-frequency";
+
+    /// <summary>验证联合优化频率结果。</summary>
+    public const string CalculationOptimizationFrequencyValidation =
+        "calculation.validate-optimization-frequency";
+
     /// <summary>完成一次 TDDFT 单点计算。</summary>
     public const string CalculationTddftSinglePoint =
         "calculation.tddft-single-point";

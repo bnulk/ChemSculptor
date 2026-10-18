@@ -5,6 +5,105 @@
 
 ---
 
+## v0.68.0（2026-10-18）：联合优化频率 Skill
+
+### 版本
+
+- 当前版本：`0.68.0`
+- 日期：`2026-10-18`
+- 版本类型：新增功能
+
+### 改动目的
+
+在同一个 Gaussian 作业中完成几何优化和振动分析，使用 `opt freq`
+route，从同一份输出中同时返回优化轨迹和频率结果。
+
+### 代码改动
+
+新增：
+
+```text
+src/ChemSculptor.Compute/OptimizationFrequencyModels.cs
+src/ChemSculptor.Skills.Common/OptimizationFrequencyCalculation/
+  OptimizationFrequencyCalculationSkill.cs
+  OptimizationFrequencyCalculationValidationSkill.cs
+src/ChemSculptor.Skills.Common/CalculationResultValidation/
+  FrequencyAnalysisResultValidator.cs
+src/ChemSculptor.Agent/OptimizationFrequencyCalculationService.cs
+src/ChemSculptor.Agent/OptimizationFrequencyWorkflowDefinitionFactory.cs
+.agents/skills/optimization-frequency/
+docs/skill说明/optimization-frequency.md
+tests/ChemSculptor.Core.Tests/OptimizationFrequencyRouteTests.cs
+tests/ChemSculptor.Core.Tests/OptimizationFrequencyCalculationSkillTests.cs
+tests/ChemSculptor.Core.Tests/OptimizationFrequencyRealGaussianTests.cs
+```
+
+扩展：
+
+```text
+src/ChemSculptor.Compute/CalculationModels.cs
+src/ChemSculptor.Compute/CalculationDefaults.cs
+src/ChemSculptor.Compute/CalculationInterfaces.cs
+src/ChemSculptor.Compute/CalculationParameterCatalog.cs
+src/ChemSculptor.Compute/CalculationParameterResolver.cs
+src/ChemSculptor.Compute/RuleBasedCalculationParameterExtractor.cs
+src/ChemSculptor.Compute/SkillExecutionContracts.cs
+src/ChemSculptor.Compute/TaskInterpretation.cs
+src/ChemSculptor.Compute.Gaussian/GaussianRouteKeywordBuilder.cs
+src/ChemSculptor.Skills.Common/CalculationWorkflow/
+  CalculationResultExtractionWorkflowSkill.cs
+src/ChemSculptor.Skills.Common/CommonSkillServiceRegistration.cs
+src/ChemSculptor.Agent/AgentService.cs
+src/ChemSculptor.Agent/AgentServiceRegistration.cs
+src/ChemSculptor.WinForms/MainForm.cs
+```
+
+### 任务类型
+
+```text
+OptimizationFrequency
+```
+
+### 执行链
+
+```text
+prepare-input
+-> submit
+-> wait
+-> extract-result
+-> validate-optimization-frequency
+```
+
+### Gaussian route
+
+```text
+#p CAM-B3LYP/6-31G* opt=(MaxCycles=100) Freq em=GD3BJ
+```
+
+### 结果和验证
+
+```text
+OptimizationResult
+FrequencyAnalysisResult
+虚频作为建议项
+一个作业只产生一个主输出
+```
+
+### 真实 Gaussian 16 验证
+
+使用本机 `C:\G16W\g16.exe` 执行真实水分子 `opt freq` 作业，
+优化和频率解析均通过。
+
+### 验证
+
+```text
+Release 构建：0 警告，0 错误
+测试：218/218 通过
+真实 Gaussian opt freq：1/1 通过
+```
+
+---
+
 ## v0.67.0（2026-10-14）：吸收光谱 Workflow、科学归档和恢复框架
 
 ### 版本

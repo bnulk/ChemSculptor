@@ -157,6 +157,52 @@ public class AgentServiceTests
         }
     }
 
+    /// <summary>验证联合优化频率对话会路由到联合计算服务。</summary>
+    [Fact]
+    public async Task OptimizationFrequencyMessageRoutesToService()
+    {
+        string root = CreateTemporaryRoot();
+
+        try
+        {
+            RecordingWorkflowEngine workflowEngine;
+            RecordingOptimizationService optimizationService;
+            RecordingOptimizationFrequencyService
+                optimizationFrequencyService;
+            AgentService service = CreateAgentService(
+                root,
+                out workflowEngine,
+                out optimizationService,
+                out optimizationFrequencyService);
+
+            AgentRequest request = new AgentRequest();
+            request.SessionId =
+                "session-optimization-frequency-agent";
+            request.Text = "优化并做振动分析";
+            request.CoordinateText =
+                "O 0.000000 0.000000 0.117300\n" +
+                "H 0.000000 0.757200 -0.469200\n" +
+                "H 0.000000 -0.757200 -0.469200";
+
+            AgentResult result =
+                await service.HandleMessageAsync(request);
+
+            Assert.True(result.IsSupported);
+            Assert.Equal(
+                CalculationTaskType.OptimizationFrequency,
+                result.TaskType);
+            Assert.Equal(
+                "job-optimization-frequency-agent",
+                result.JobId);
+            Assert.Equal(1, result.FrequencyCount);
+            Assert.True(result.OptimizationConverged);
+        }
+        finally
+        {
+            DeleteTemporaryRoot(root);
+        }
+    }
+
     /// <summary>验证“吸收光谱”会路由到吸收光谱工作流。</summary>
     [Fact]
     public async Task AbsorptionSpectrumMessageRoutesToWorkflow()
@@ -455,8 +501,44 @@ public class AgentServiceTests
         string root,
         out RecordingWorkflowEngine workflowEngine,
         out RecordingOptimizationService optimizationService,
+        out RecordingOptimizationFrequencyService
+            optimizationFrequencyService)
+    {
+        RecordingAbsorptionSpectrumWorkflowService
+            absorptionService;
+        return CreateAgentService(
+            root,
+            out workflowEngine,
+            out optimizationService,
+            out absorptionService,
+            out optimizationFrequencyService);
+    }
+
+    private static AgentService CreateAgentService(
+        string root,
+        out RecordingWorkflowEngine workflowEngine,
+        out RecordingOptimizationService optimizationService,
         out RecordingAbsorptionSpectrumWorkflowService
             absorptionService)
+    {
+        RecordingOptimizationFrequencyService
+            optimizationFrequencyService;
+        return CreateAgentService(
+            root,
+            out workflowEngine,
+            out optimizationService,
+            out absorptionService,
+            out optimizationFrequencyService);
+    }
+
+    private static AgentService CreateAgentService(
+        string root,
+        out RecordingWorkflowEngine workflowEngine,
+        out RecordingOptimizationService optimizationService,
+        out RecordingAbsorptionSpectrumWorkflowService
+            absorptionService,
+        out RecordingOptimizationFrequencyService
+            optimizationFrequencyService)
     {
         CalculationWorkspaceOptions options = new CalculationWorkspaceOptions();
         options.RootDirectory = root;
@@ -488,13 +570,16 @@ public class AgentServiceTests
         optimizationService = new RecordingOptimizationService();
         absorptionService =
             new RecordingAbsorptionSpectrumWorkflowService();
+        optimizationFrequencyService =
+            new RecordingOptimizationFrequencyService();
         return new AgentService(
             conversationService,
             singlePointService,
             optimizationService,
             parameterService,
             new GeometryTextParser(),
-            absorptionService);
+            absorptionService,
+            optimizationFrequencyService);
     }
 
     private static string CreateTemporaryRoot()
@@ -699,6 +784,87 @@ public class AgentServiceTests
             result.Tddft = tddftSubmission;
             result.Message = "吸收光谱测试完成。";
             return Task.FromResult(result);
+        }
+    }
+
+    private sealed class RecordingOptimizationFrequencyService
+        : IOptimizationFrequencyCalculationService
+    {
+        public OptimizationFrequencyRequest? LastRequest
+        {
+            get;
+            private set;
+        }
+
+        public Task<OptimizationFrequencySubmissionResult> SubmitAsync(
+            OptimizationFrequencyRequest request,
+            CancellationToken cancellationToken = default)
+        {
+            LastRequest = request;
+            CalculationJob job = new CalculationJob();
+            job.JobId = "job-optimization-frequency-agent";
+            job.State = CalculationJobState.Validated;
+            job.SourceInputFilePath = Path.Combine(
+                Path.GetTempPath(),
+                "optimization-frequency.gjf");
+            job.OutputFilePath = Path.Combine(
+                Path.GetTempPath(),
+                "optimization-frequency.log");
+
+            OptimizationResult optimization =
+                new OptimizationResult();
+            optimization.JobId = job.JobId;
+            optimization.NormalTermination = true;
+            optimization.OptimizationConverged = true;
+            optimization.StepCount = 2;
+            optimization.FinalEnergy = -76.2;
+            OptimizationConvergence convergence =
+                new OptimizationConvergence();
+            convergence.MaximumForce = 0.0001;
+            convergence.RmsForce = 0.00004;
+            convergence.MaximumDisplacement = 0.0003;
+            convergence.RmsDisplacement = 0.0001;
+            optimization.FinalConvergence = convergence;
+
+            FrequencyAnalysisResult frequency =
+                new FrequencyAnalysisResult();
+            frequency.JobId = job.JobId;
+            frequency.NormalTermination = true;
+            frequency.Frequencies.Add(100.0);
+            frequency.MinimumFrequency = 100.0;
+            frequency.IsMinimum = true;
+
+            OptimizationFrequencyCalculationSkillResult combined =
+                new OptimizationFrequencyCalculationSkillResult();
+            combined.Succeeded = true;
+            combined.Passed = true;
+            combined.Job = job;
+            combined.OptimizationResult = optimization;
+            combined.FrequencyResult = frequency;
+
+            OptimizationFrequencySubmissionResult result =
+                new OptimizationFrequencySubmissionResult();
+            result.Succeeded = true;
+            result.Job = job;
+            result.Result = combined;
+            result.Message = "联合优化频率已完成。";
+            return Task.FromResult(result);
+        }
+
+        public Task<CalculationJob?> GetJobAsync(
+            string jobId,
+            CancellationToken cancellationToken = default)
+        {
+            return Task.FromResult<CalculationJob?>(null);
+        }
+
+        public Task<OptimizationFrequencyCalculationSkillResult?>
+            GetResultAsync(
+                string jobId,
+                CancellationToken cancellationToken = default)
+        {
+            return Task.FromResult<
+                OptimizationFrequencyCalculationSkillResult?>(null);
         }
     }
 }

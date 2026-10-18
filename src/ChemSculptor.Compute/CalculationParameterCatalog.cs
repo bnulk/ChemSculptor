@@ -405,6 +405,8 @@ public static class CalculationParameterCatalog
         definition.TaskTypes.Add(CalculationTaskType.SinglePoint);
         definition.TaskTypes.Add(CalculationTaskType.Optimization);
         definition.TaskTypes.Add(CalculationTaskType.Frequency);
+        definition.TaskTypes.Add(
+            CalculationTaskType.OptimizationFrequency);
         definition.TaskTypes.Add(CalculationTaskType.TdDft);
         definition.Programs = new List<string>();
         definition.Programs.Add(CalculationDefaults.DefaultProgram);
@@ -432,6 +434,8 @@ public static class CalculationParameterCatalog
                 aliases);
         definition.TaskTypes.Clear();
         definition.TaskTypes.Add(CalculationTaskType.Optimization);
+        definition.TaskTypes.Add(
+            CalculationTaskType.OptimizationFrequency);
         return definition;
     }
 

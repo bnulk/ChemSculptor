@@ -359,6 +359,26 @@ public interface IOptimizationCalculationService
         CancellationToken cancellationToken = default);
 }
 
+/// <summary>联合优化频率计算服务。</summary>
+public interface IOptimizationFrequencyCalculationService
+{
+    /// <summary>提交一次联合优化频率计算。</summary>
+    Task<OptimizationFrequencySubmissionResult> SubmitAsync(
+        OptimizationFrequencyRequest request,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>查询计算作业。</summary>
+    Task<CalculationJob?> GetJobAsync(
+        string jobId,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>查询联合结果。</summary>
+    Task<OptimizationFrequencyCalculationSkillResult?>
+        GetResultAsync(
+            string jobId,
+            CancellationToken cancellationToken = default);
+}
+
 /// <summary>
 /// TDDFT 单点计算服务。
 /// 负责创建 TDDFT 作业、执行 TDDFT 单点工作流并查询结果。

@@ -203,7 +203,15 @@ public sealed class RuleBasedTaskInterpreter : ITaskInterpreter
                 return Task.FromResult(interpretedTask);
             }
 
-            if (ContainsKeyword(normalizedText, "td"))
+            if (ContainsKeyword(normalizedText, "opt")
+                && ContainsKeyword(normalizedText, "freq"))
+            {
+                interpretedTask.TaskType =
+                    CalculationTaskType.OptimizationFrequency;
+                interpretedTask.WorkflowId =
+                    "optimization-frequency";
+            }
+            else if (ContainsKeyword(normalizedText, "td"))
             {
                 interpretedTask.TaskType =
                     CalculationTaskType.TdDft;
@@ -228,6 +236,20 @@ public sealed class RuleBasedTaskInterpreter : ITaskInterpreter
 
             interpretedTask.IsSupported = true;
             interpretedTask.Confidence = 0.9;
+            InterpretElectronicState(
+                normalizedText,
+                interpretedTask);
+            return Task.FromResult(interpretedTask);
+        }
+
+        if (IsOptimizationFrequencyText(normalizedText))
+        {
+            interpretedTask.TaskType =
+                CalculationTaskType.OptimizationFrequency;
+            interpretedTask.WorkflowId =
+                "optimization-frequency";
+            interpretedTask.IsSupported = true;
+            interpretedTask.Confidence = 1.0;
             InterpretElectronicState(
                 normalizedText,
                 interpretedTask);
@@ -306,8 +328,13 @@ public sealed class RuleBasedTaskInterpreter : ITaskInterpreter
 
     private static bool ContainsUnsupportedRouteTask(string text)
     {
-        return ContainsKeyword(text, "freq")
-            || ContainsKeyword(text, "frequency")
+        bool hasFrequency =
+            ContainsKeyword(text, "freq")
+            || ContainsKeyword(text, "frequency");
+        bool hasOptimization =
+            ContainsKeyword(text, "opt");
+
+        return (hasFrequency && !hasOptimization)
             || ContainsKeyword(text, "cis")
             || ContainsKeyword(text, "soc")
             || ContainsKeyword(text, "mecp");
@@ -332,6 +359,23 @@ public sealed class RuleBasedTaskInterpreter : ITaskInterpreter
         }
 
         return false;
+    }
+
+    private static bool IsOptimizationFrequencyText(
+        string text)
+    {
+        bool hasOptimization =
+            ContainsKeyword(text, "优化")
+            || ContainsKeyword(text, "optimization")
+            || ContainsKeyword(text, "opt");
+        bool hasFrequency =
+            ContainsKeyword(text, "振动分析")
+            || ContainsKeyword(text, "频率分析")
+            || ContainsKeyword(text, "频率")
+            || ContainsKeyword(text, "freq")
+            || ContainsKeyword(text, "frequency");
+
+        return hasOptimization && hasFrequency;
     }
 
     private static void InterpretElectronicState(

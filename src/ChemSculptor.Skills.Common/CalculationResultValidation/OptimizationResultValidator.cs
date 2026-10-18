@@ -23,8 +23,10 @@ public sealed class OptimizationResultValidator
             return false;
         }
 
-        return request.Job.Spec.TaskType
-            == CalculationTaskType.Optimization
+        return (request.Job.Spec.TaskType
+                == CalculationTaskType.Optimization
+            || request.Job.Spec.TaskType
+                == CalculationTaskType.OptimizationFrequency)
             && request.OptimizationResult != null;
     }
 

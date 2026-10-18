@@ -47,6 +47,9 @@ public static class AgentServiceRegistration
             IOptimizationCalculationService,
             OptimizationCalculationService>(services);
         ServiceCollectionServiceExtensions.AddSingleton<
+            IOptimizationFrequencyCalculationService,
+            OptimizationFrequencyCalculationService>(services);
+        ServiceCollectionServiceExtensions.AddSingleton<
             ITddftCalculationService,
             TddftCalculationService>(services);
         ServiceCollectionServiceExtensions.AddSingleton<

@@ -359,7 +359,9 @@ public sealed class CalculationParameterResolver
                     .ToString(CultureInfo.InvariantCulture));
         }
 
-        if (spec.TaskType == CalculationTaskType.Optimization)
+        if (spec.TaskType == CalculationTaskType.Optimization
+            || spec.TaskType
+                == CalculationTaskType.OptimizationFrequency)
         {
             SetDefaultExtraOption(
                 spec,
@@ -440,7 +442,10 @@ public sealed class CalculationParameterResolver
             1,
             1000,
             500);
-        if (result.Spec.TaskType == CalculationTaskType.Optimization)
+        if (result.Spec.TaskType
+                == CalculationTaskType.Optimization
+            || result.Spec.TaskType
+                == CalculationTaskType.OptimizationFrequency)
         {
             ValidateIntegerRange(
                 result,

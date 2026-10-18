@@ -12,6 +12,9 @@ public enum CalculationTaskType
     /// <summary>频率计算。</summary>
     Frequency,
 
+    /// <summary>几何优化并在同一作业中执行频率计算。</summary>
+    OptimizationFrequency,
+
     /// <summary>激发态计算。</summary>
     TdDft,
 
