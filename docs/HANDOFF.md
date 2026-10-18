@@ -86,6 +86,7 @@ TDDFT 单点计算 Workflow 已实现
 真实 Gaussian 16 三种吸收光谱模式已验证
 联合优化频率 Skill 已实现
 联合优化频率 Workflow 已实现
+联合优化频率后稳定性检查已接入
 真实 Gaussian opt freq 作业已验证
 ```
 
@@ -105,7 +106,7 @@ ORCA、原始关键词扩展和审批机制暂不实现
 
 ```text
 Release 构建：0 警告，0 错误
-测试：218/218 通过
+测试：219/219 通过
 真实 Gaussian 16：3/3 通过
 真实 Gaussian opt freq：1/1 通过
 ```

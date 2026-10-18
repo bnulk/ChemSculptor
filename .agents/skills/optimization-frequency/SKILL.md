@@ -32,6 +32,7 @@ opt freq       -> optimization-frequency
 一个 route
 同一个输出文件
 同时返回 OptimizationResult 和 FrequencyAnalysisResult
+完成后执行一次波函数稳定性检查
 ```
 
 Gaussian route 示例：
@@ -49,6 +50,7 @@ Gaussian route 示例：
 ```
 
 优化异常、SCF 修复和后续派生作业由外层 Workflow 决定。
+波函数稳定性检查作为联合 Skill 完成后的外置 Workflow 节点执行。
 
 ## 结果
 

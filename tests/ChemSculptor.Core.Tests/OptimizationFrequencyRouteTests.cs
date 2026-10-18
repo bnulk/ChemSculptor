@@ -1,5 +1,7 @@
+using ChemSculptor.Agent;
 using ChemSculptor.Compute;
 using ChemSculptor.Compute.Gaussian;
+using ChemSculptor.Domain;
 
 namespace ChemSculptor.Core.Tests;
 
@@ -102,5 +104,30 @@ public class OptimizationFrequencyRouteTests
             "100",
             result.Spec.ExtraOptions[
                 CalculationOptionKeys.OptimizationMaxCycles]);
+    }
+
+    /// <summary>验证联合 Workflow 在计算节点后执行稳定性检查。</summary>
+    [Fact]
+    public void WorkflowContainsStabilityCheckNode()
+    {
+        WorkflowDefinition definition =
+            OptimizationFrequencyWorkflowDefinitionFactory.Create(
+                "workflow-opt-freq",
+                "联合优化频率");
+
+        Assert.Equal(2, definition.Nodes.Count);
+        WorkflowNode calculation = definition.Nodes[0];
+        WorkflowNode stability = definition.Nodes[1];
+
+        Assert.Equal(
+            CalculationSkillIds.CalculationOptimizationFrequency,
+            calculation.Skill);
+        Assert.Equal(
+            "optimization-frequency-stability-check",
+            stability.Id);
+        Assert.Contains(calculation.Id, stability.DependsOn);
+        Assert.Equal(
+            calculation.Id,
+            stability.Inputs["optimizationFrequency"]);
     }
 }

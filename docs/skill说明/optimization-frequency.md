@@ -182,7 +182,12 @@ src/ChemSculptor.Agent/OptimizationFrequencyWorkflowDefinitionFactory.cs
 
 ```text
 optimization-frequency
+-> optimization-frequency-stability-check
 ```
+
+`optimization-frequency-stability-check` 使用最终联合作业的 Job 和
+OptimizationResult 执行波函数稳定性检查。稳定性结果作为 Workflow
+输出返回，但当前不自动执行稳定性修正。
 
 后续完整 Workflow 可以复用优化异常、SCF 修复和频率科学处理能力，但不能
 把多个作业拆回 Skill 内部。

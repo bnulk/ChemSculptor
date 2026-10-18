@@ -25,6 +25,18 @@ public static class OptimizationFrequencyWorkflowDefinitionFactory
         node.Inputs["request"] = "$input.request";
         definition.Nodes.Add(node);
 
+        WorkflowNode stabilityCheck =
+            new WorkflowNode();
+        stabilityCheck.Id =
+            "optimization-frequency-stability-check";
+        stabilityCheck.Skill =
+            ChemSculptor.Anomaly.Models.AnomalySkillIds
+                .CheckOptimizationStability;
+        stabilityCheck.DependsOn.Add(node.Id);
+        stabilityCheck.Inputs["optimizationFrequency"] =
+            node.Id;
+        definition.Nodes.Add(stabilityCheck);
+
         return definition;
     }
 }

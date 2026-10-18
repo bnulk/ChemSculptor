@@ -548,6 +548,10 @@ public sealed class AgentService : IAgentService
             job.SourceInputFilePath;
         result.OutputFilePath = job.OutputFilePath;
         result.Message = submission.Message;
+        result.WavefunctionStabilityStatus =
+            combined.WavefunctionStabilityStatus;
+        result.WavefunctionStabilitySummary =
+            combined.WavefunctionStabilitySummary;
         result.OptimizationConverged =
             optimization.OptimizationConverged;
         result.OptimizationStepCount =

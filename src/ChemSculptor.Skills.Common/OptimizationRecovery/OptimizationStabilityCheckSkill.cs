@@ -11,6 +11,8 @@ namespace ChemSculptor.Skills.Common.OptimizationRecovery;
 public sealed class OptimizationStabilityCheckSkill : ISkill
 {
     private const string OptimizationKey = "optimization";
+    private const string OptimizationFrequencyKey =
+        "optimizationFrequency";
     private const string RecoveryExecutionKey = "recoveryExecution";
 
     private readonly IAnomalyProviderRegistry _registry;
@@ -66,21 +68,8 @@ public sealed class OptimizationStabilityCheckSkill : ISkill
         TaskRequest request,
         CancellationToken cancellationToken = default)
     {
-        string? optimizationJson;
-
-        if (!request.Inputs.TryGetValue(
-            OptimizationKey,
-            out optimizationJson)
-            || string.IsNullOrWhiteSpace(optimizationJson))
-        {
-            throw new InvalidOperationException(
-                "优化稳定性检查节点缺少 optimization 输入。");
-        }
-
         OptimizationCalculationSkillResult optimization =
-            SkillJson.Deserialize<
-                OptimizationCalculationSkillResult>(
-                    optimizationJson);
+            ReadOptimizationResult(request);
         CalculationJob finalJob = ResolveFinalJob(
             request,
             optimization);
@@ -153,6 +142,48 @@ public sealed class OptimizationStabilityCheckSkill : ISkill
         }
 
         return BuildTaskResult(request, result);
+    }
+
+    private static OptimizationCalculationSkillResult
+        ReadOptimizationResult(TaskRequest request)
+    {
+        string? optimizationJson;
+
+        if (request.Inputs.TryGetValue(
+                OptimizationKey,
+                out optimizationJson)
+            && !string.IsNullOrWhiteSpace(optimizationJson))
+        {
+            return SkillJson.Deserialize<
+                OptimizationCalculationSkillResult>(
+                    optimizationJson);
+        }
+
+        string? combinedJson;
+
+        if (request.Inputs.TryGetValue(
+                OptimizationFrequencyKey,
+                out combinedJson)
+            && !string.IsNullOrWhiteSpace(combinedJson))
+        {
+            OptimizationFrequencyCalculationSkillResult combined =
+                SkillJson.Deserialize<
+                    OptimizationFrequencyCalculationSkillResult>(
+                        combinedJson);
+            OptimizationCalculationSkillResult adapted =
+                new OptimizationCalculationSkillResult();
+            adapted.Succeeded = combined.Succeeded;
+            adapted.Passed = combined.Passed;
+            adapted.Job = combined.Job;
+            adapted.Result = combined.OptimizationResult;
+            adapted.Report = combined.Report;
+            adapted.Wait = combined.Wait;
+            adapted.Error = combined.Error;
+            return adapted;
+        }
+
+        throw new InvalidOperationException(
+            "优化稳定性检查节点缺少 optimization 或 optimizationFrequency 输入。");
     }
 
     /// <summary>当前 Skill 始终可用。</summary>

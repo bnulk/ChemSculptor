@@ -316,6 +316,14 @@ public class OptimizationFrequencyCalculationSkillResult
     public CalculationValidationReport Report { get; set; } =
         new CalculationValidationReport();
 
+    /// <summary>联合作业完成后的波函数稳定性状态。</summary>
+    public string WavefunctionStabilityStatus { get; set; } =
+        string.Empty;
+
+    /// <summary>波函数稳定性检查摘要。</summary>
+    public string WavefunctionStabilitySummary { get; set; } =
+        string.Empty;
+
     /// <summary>等待结果。</summary>
     public CalculationWaitSkillResult Wait { get; set; } =
         new CalculationWaitSkillResult();

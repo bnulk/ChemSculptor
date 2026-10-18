@@ -1,5 +1,6 @@
 using System.Collections.Concurrent;
 using System.Text.Json;
+using ChemSculptor.Anomaly.Models;
 using ChemSculptor.Compute;
 using ChemSculptor.Core;
 using ChemSculptor.Domain;
@@ -175,6 +176,17 @@ public sealed class OptimizationFrequencyCalculationService
 
             OptimizationFrequencyCalculationSkillResult?
                 skillResult = ExtractSkillResult(workflowRun);
+            AnomalyCheckResult? stability =
+                ExtractWavefunctionStability(workflowRun);
+
+            if (skillResult != null && stability != null)
+            {
+                skillResult.WavefunctionStabilityStatus =
+                    MapStabilityStatus(stability.Status);
+                skillResult.WavefunctionStabilitySummary =
+                    stability.Summary;
+            }
+
             bool succeeded =
                 workflowRun.State == WorkflowState.Passed
                 && skillResult != null
@@ -247,6 +259,50 @@ public sealed class OptimizationFrequencyCalculationService
             OptimizationFrequencyCalculationSkillResult>(
                 task.Output,
                 CreateJsonOptions());
+    }
+
+    private static AnomalyCheckResult?
+        ExtractWavefunctionStability(WorkflowRun run)
+    {
+        TaskResult? task;
+
+        if (!run.Results.TryGetValue(
+                "optimization-frequency-stability-check",
+                out task)
+            || string.IsNullOrWhiteSpace(task.Output))
+        {
+            return null;
+        }
+
+        return JsonSerializer.Deserialize<AnomalyCheckResult>(
+            task.Output,
+            CreateJsonOptions());
+    }
+
+    private static string MapStabilityStatus(
+        AnomalyCheckStatus status)
+    {
+        if (status == AnomalyCheckStatus.Passed)
+        {
+            return "Stable";
+        }
+
+        if (status == AnomalyCheckStatus.Finding)
+        {
+            return "Unstable";
+        }
+
+        if (status == AnomalyCheckStatus.Skipped)
+        {
+            return "Skipped";
+        }
+
+        if (status == AnomalyCheckStatus.ExecutionFailed)
+        {
+            return "Failed";
+        }
+
+        return status.ToString();
     }
 
     private async Task SaveParameterAuditAsync(

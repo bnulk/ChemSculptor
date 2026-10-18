@@ -35,7 +35,7 @@ HANDOFF.md
 
 ```text
 Release 构建：0 警告，0 错误
-测试：218/218 通过
+测试：219/219 通过
 真实 Gaussian 16：3/3 通过
 真实 Gaussian opt freq：1/1 通过
 ```
@@ -158,6 +158,7 @@ TDDFT Codex Skill
 TDDFT 单点计算 Workflow
 联合优化频率 Skill
 联合优化频率 Workflow
+联合优化频率后稳定性检查
 真实 Gaussian opt freq 验证
 吸收光谱 Workflow
 吸收光谱三种前置模式

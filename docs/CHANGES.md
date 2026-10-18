@@ -72,6 +72,7 @@ prepare-input
 -> wait
 -> extract-result
 -> validate-optimization-frequency
+-> optimization-frequency-stability-check
 ```
 
 ### Gaussian route
@@ -87,6 +88,7 @@ OptimizationResult
 FrequencyAnalysisResult
 虚频作为建议项
 一个作业只产生一个主输出
+联合计算完成后执行波函数稳定性检查
 ```
 
 ### 真实 Gaussian 16 验证
@@ -98,7 +100,7 @@ FrequencyAnalysisResult
 
 ```text
 Release 构建：0 警告，0 错误
-测试：218/218 通过
+测试：219/219 通过
 真实 Gaussian opt freq：1/1 通过
 ```
 
