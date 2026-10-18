@@ -115,9 +115,13 @@ public class OptimizationFrequencyRouteTests
                 "workflow-opt-freq",
                 "联合优化频率");
 
-        Assert.Equal(2, definition.Nodes.Count);
+        Assert.Equal(6, definition.Nodes.Count);
         WorkflowNode calculation = definition.Nodes[0];
         WorkflowNode stability = definition.Nodes[1];
+        WorkflowNode correctionPlan = definition.Nodes[2];
+        WorkflowNode recoveryJob = definition.Nodes[3];
+        WorkflowNode recoveryExecution = definition.Nodes[4];
+        WorkflowNode recoveryRecheck = definition.Nodes[5];
 
         Assert.Equal(
             CalculationSkillIds.CalculationOptimizationFrequency,
@@ -129,5 +133,23 @@ public class OptimizationFrequencyRouteTests
         Assert.Equal(
             calculation.Id,
             stability.Inputs["optimizationFrequency"]);
+        Assert.Equal(
+            "optimization-frequency-stability-correction-plan",
+            correctionPlan.Id);
+        Assert.Contains(
+            "wavefunction-instability",
+            correctionPlan.ConditionAnyContains);
+        Assert.Equal(
+            correctionPlan.Id,
+            recoveryJob.ConditionInput);
+        Assert.Contains(
+            recoveryJob.Id,
+            recoveryExecution.DependsOn);
+        Assert.Contains(
+            recoveryExecution.Id,
+            recoveryRecheck.DependsOn);
+        Assert.Equal(
+            calculation.Id,
+            recoveryRecheck.Inputs["optimizationFrequency"]);
     }
 }

@@ -160,13 +160,29 @@ frequency.imaginary_modes_present
 
 ## 8. 恢复
 
-当前 Skill 不实现自动恢复。
+稳定性恢复由外层 Workflow 完成：
+
+```text
+stability-check
+-> correction-plan
+-> derived recovery job
+-> recovery execution
+-> stability recheck
+```
+
+规则：
+
+```text
+同自旋多重度：stable=opt
+不同自旋多重度：修改自旋多重度并重新执行 opt freq
+派生作业保留 opt Freq
+```
 
 边界：
 
 ```text
-优化未收敛、SCF 异常和虚频处理由外层 Workflow 决定
-任何恢复都应创建派生作业
+优化未收敛、SCF 异常和虚频处理仍由其他恢复分支决定
+任何稳定性恢复都创建派生作业
 不得覆盖原始 opt freq 作业
 ```
 
@@ -183,11 +199,15 @@ src/ChemSculptor.Agent/OptimizationFrequencyWorkflowDefinitionFactory.cs
 ```text
 optimization-frequency
 -> optimization-frequency-stability-check
+-> stability correction plan
+-> recovery job
+-> recovery execution
+-> stability recheck
 ```
 
 `optimization-frequency-stability-check` 使用最终联合作业的 Job 和
 OptimizationResult 执行波函数稳定性检查。稳定性结果作为 Workflow
-输出返回，但当前不自动执行稳定性修正。
+输出返回；不稳定时进入稳定性修正、派生恢复和复检。
 
 后续完整 Workflow 可以复用优化异常、SCF 修复和频率科学处理能力，但不能
 把多个作业拆回 Skill 内部。

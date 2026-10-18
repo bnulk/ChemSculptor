@@ -115,6 +115,92 @@ public class GaussianRecoveryJobProviderTests
         }
     }
 
+    /// <summary>
+    /// 验证联合优化频率稳定性修正会保留 opt freq 并加入 stable=opt。
+    /// </summary>
+    [Fact]
+    public async Task CreatesStableOptRecoveryForOptimizationFrequency()
+    {
+        string root = CreateTemporaryRoot();
+        string sourcePath = Path.Combine(root, "opt-freq.gjf");
+
+        try
+        {
+            string sourceText =
+                "%chk=source.chk\n" +
+                "%mem=4GB\n" +
+                "%nprocshared=4\n" +
+                "\n" +
+                "#p CAM-B3LYP/6-31G* opt Freq em=GD3BJ\n" +
+                "\n" +
+                "opt freq\n" +
+                "\n" +
+                "0 1\n" +
+                "O 0.000000 0.000000 0.000000\n" +
+                "H 0.000000 0.700000 -0.400000\n";
+            await File.WriteAllTextAsync(
+                sourcePath,
+                sourceText);
+
+            CalculationWorkspaceOptions options =
+                new CalculationWorkspaceOptions();
+            options.RootDirectory = Path.Combine(
+                root,
+                "workspace");
+            WorkspaceManager workspace =
+                new WorkspaceManager(options);
+            FileCalculationRepository repository =
+                new FileCalculationRepository(workspace);
+
+            CalculationJob sourceJob = new CalculationJob();
+            sourceJob.JobId = "job-opt-freq-source";
+            sourceJob.InputFilePath = sourcePath;
+            sourceJob.SourceInputFilePath = sourcePath;
+            sourceJob.Spec =
+                CalculationDefaults
+                    .CreateDefaultOptimizationFrequency();
+            sourceJob.Spec.Multiplicity = 1;
+            await repository.SaveJobAsync(sourceJob);
+
+            CorrectionPlan plan = new CorrectionPlan();
+            plan.Id = "plan-stable-opt";
+            plan.SourceJobId = sourceJob.JobId;
+            plan.Option = new CorrectionOption();
+            plan.Option.Id = "wavefunction-optimization";
+            plan.Option.IntentCode =
+                CorrectionIntentCodes.WavefunctionOptimization;
+            plan.Option.CanUseForRestart = true;
+
+            GaussianRecoveryJobProvider provider =
+                new GaussianRecoveryJobProvider(
+                    workspace,
+                    repository,
+                    new TestQuantumProgramAdapterRegistry(),
+                    new GaussianRecoveryInputWriter());
+            RecoveryJobPreparationRequest request =
+                new RecoveryJobPreparationRequest();
+            request.SourceJob = sourceJob;
+            request.Plan = plan;
+
+            RecoveryJobPreparationResult result =
+                await provider.PrepareAsync(request);
+
+            Assert.True(result.Succeeded);
+            Assert.NotNull(result.RecoveryJob);
+            string recoveryInput =
+                await File.ReadAllTextAsync(
+                    result.RecoveryJob!
+                        .SourceInputFilePath);
+            Assert.Contains("opt", recoveryInput);
+            Assert.Contains("Freq", recoveryInput);
+            Assert.Contains("stable=opt", recoveryInput);
+        }
+        finally
+        {
+            DeleteTemporaryRoot(root);
+        }
+    }
+
     private static string CreateTemporaryRoot()
     {
         string root = Path.Combine(

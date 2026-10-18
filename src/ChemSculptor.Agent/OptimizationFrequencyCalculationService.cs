@@ -176,8 +176,32 @@ public sealed class OptimizationFrequencyCalculationService
 
             OptimizationFrequencyCalculationSkillResult?
                 skillResult = ExtractSkillResult(workflowRun);
+            RecoveryJobExecutionResult? recoveryExecution =
+                ExtractRecoveryExecution(workflowRun);
             AnomalyCheckResult? stability =
                 ExtractWavefunctionStability(workflowRun);
+
+            if (skillResult != null
+                && recoveryExecution != null)
+            {
+                if (recoveryExecution.OptimizationResult != null)
+                {
+                    skillResult.OptimizationResult =
+                        recoveryExecution.OptimizationResult;
+                }
+
+                if (recoveryExecution.FrequencyResult != null)
+                {
+                    skillResult.FrequencyResult =
+                        recoveryExecution.FrequencyResult;
+                }
+
+                if (recoveryExecution.RecoveryJob != null)
+                {
+                    skillResult.Job =
+                        recoveryExecution.RecoveryJob;
+                }
+            }
 
             if (skillResult != null && stability != null)
             {
@@ -190,7 +214,12 @@ public sealed class OptimizationFrequencyCalculationService
             bool succeeded =
                 workflowRun.State == WorkflowState.Passed
                 && skillResult != null
-                && skillResult.Passed;
+                && skillResult.Passed
+                && (stability == null
+                    || stability.Status
+                        == AnomalyCheckStatus.Passed
+                    || stability.Status
+                        == AnomalyCheckStatus.Skipped);
 
             job.State = succeeded
                 ? CalculationJobState.Validated
@@ -266,15 +295,44 @@ public sealed class OptimizationFrequencyCalculationService
     {
         TaskResult? task;
 
-        if (!run.Results.TryGetValue(
+        if (run.Results.TryGetValue(
+                "optimization-frequency-stability-recheck",
+                out task)
+            && !string.IsNullOrWhiteSpace(task.Output))
+        {
+            return JsonSerializer.Deserialize<AnomalyCheckResult>(
+                task.Output,
+                CreateJsonOptions());
+        }
+
+        if (run.Results.TryGetValue(
                 "optimization-frequency-stability-check",
+                out task)
+            && !string.IsNullOrWhiteSpace(task.Output))
+        {
+            return JsonSerializer.Deserialize<AnomalyCheckResult>(
+                task.Output,
+                CreateJsonOptions());
+        }
+
+        return null;
+    }
+
+    private static RecoveryJobExecutionResult?
+        ExtractRecoveryExecution(WorkflowRun run)
+    {
+        TaskResult? task;
+
+        if (!run.Results.TryGetValue(
+                "optimization-frequency-stability-recovery-execution",
                 out task)
             || string.IsNullOrWhiteSpace(task.Output))
         {
             return null;
         }
 
-        return JsonSerializer.Deserialize<AnomalyCheckResult>(
+        return JsonSerializer.Deserialize<
+            RecoveryJobExecutionResult>(
             task.Output,
             CreateJsonOptions());
     }

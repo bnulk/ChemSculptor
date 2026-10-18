@@ -46,11 +46,11 @@ Gaussian route 示例：
 ```text
 不在 Skill 内部拆成两个作业
 不在 Skill 内部自动修复虚频
-不在 Skill 内部增加优化恢复策略
+不在 Skill 内部直接增加派生恢复作业
 ```
 
 优化异常、SCF 修复和后续派生作业由外层 Workflow 决定。
-波函数稳定性检查作为联合 Skill 完成后的外置 Workflow 节点执行。
+波函数稳定性检查和稳定性矫正作为联合 Skill 完成后的外置 Workflow 节点执行。
 
 ## 结果
 

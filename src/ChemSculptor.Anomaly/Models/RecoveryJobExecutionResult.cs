@@ -25,4 +25,7 @@ public sealed class RecoveryJobExecutionResult
 
     /// <summary>派生几何优化解析出的通用结果。</summary>
     public OptimizationResult? OptimizationResult { get; set; }
+
+    /// <summary>派生联合优化频率作业解析出的振动结果。</summary>
+    public FrequencyAnalysisResult? FrequencyResult { get; set; }
 }

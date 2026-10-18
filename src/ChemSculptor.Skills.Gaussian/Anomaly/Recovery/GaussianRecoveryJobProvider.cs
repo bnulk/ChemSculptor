@@ -77,7 +77,9 @@ public sealed class GaussianRecoveryJobProvider
         CorrectionOption option = request.Plan.Option;
 
         if (request.SourceJob.Spec.TaskType
-            == CalculationTaskType.Optimization)
+                == CalculationTaskType.Optimization
+            || request.SourceJob.Spec.TaskType
+                == CalculationTaskType.OptimizationFrequency)
         {
             return option.CanUseForRestart
                 && (IsOptimizationCorrectionIntent(
@@ -122,7 +124,9 @@ public sealed class GaussianRecoveryJobProvider
         }
 
         if (request.SourceJob.Spec.TaskType
-            == CalculationTaskType.Optimization)
+                == CalculationTaskType.Optimization
+            || request.SourceJob.Spec.TaskType
+                == CalculationTaskType.OptimizationFrequency)
         {
             return await PrepareOptimizationAsync(
                 request,

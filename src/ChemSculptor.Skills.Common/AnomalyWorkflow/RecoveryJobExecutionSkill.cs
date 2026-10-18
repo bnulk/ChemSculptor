@@ -260,7 +260,9 @@ public sealed class RecoveryJobExecutionSkill : ISkill
         }
 
         if (recoveryJob.Spec.TaskType
-            == CalculationTaskType.Optimization)
+                == CalculationTaskType.Optimization
+            || recoveryJob.Spec.TaskType
+                == CalculationTaskType.OptimizationFrequency)
         {
             if (!(adapter is IOptimizationOutputParser optimizationParser))
             {
@@ -310,15 +312,53 @@ public sealed class RecoveryJobExecutionSkill : ISkill
                     adapter.GetArtifactPatterns(
                         optimizationArtifactContext));
 
+            FrequencyAnalysisResult? frequencyResult = null;
+
+            if (recoveryJob.Spec.TaskType
+                == CalculationTaskType.OptimizationFrequency)
+            {
+                if (!(adapter is IFrequencyAnalysisProgram
+                    frequencyProgram))
+                {
+                    result.Message =
+                        "当前程序适配器不支持联合优化频率恢复结果解析。";
+                    return result;
+                }
+
+                frequencyResult =
+                    await frequencyProgram
+                        .ParseFrequencyOutputAsync(
+                            recoveryJob.OutputFilePath,
+                            cancellationToken);
+                frequencyResult.JobId = recoveryJob.JobId;
+                frequencyResult.Program =
+                    recoveryJob.Spec.Program;
+                frequencyResult.Method =
+                    recoveryJob.Spec.Method;
+                frequencyResult.Basis =
+                    recoveryJob.Spec.Basis;
+                frequencyResult.OutputFilePath =
+                    recoveryJob.OutputFilePath;
+                frequencyResult.Artifacts =
+                    new List<CalculationArtifactDescriptor>(
+                        optimizationResult.Artifacts);
+            }
+
             await _calculationRepository.SaveJobAsync(
                 recoveryJob,
                 cancellationToken);
 
             result.Succeeded =
-                optimizationResult.NormalTermination;
+                optimizationResult.NormalTermination
+                && (frequencyResult == null
+                    || frequencyResult.NormalTermination);
             result.OptimizationResult = optimizationResult;
+            result.FrequencyResult = frequencyResult;
             result.Message = result.Succeeded
-                ? "派生优化恢复作业已完成。"
+                ? recoveryJob.Spec.TaskType
+                    == CalculationTaskType.OptimizationFrequency
+                    ? "派生联合优化频率恢复作业已完成。"
+                    : "派生优化恢复作业已完成。"
                 : "派生优化作业已结束，但没有正常终止。";
             return result;
         }

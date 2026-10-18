@@ -152,11 +152,14 @@ public sealed class GaussianRecoveryInputWriter
         }
 
         if (recoverySpec == null
-            || recoverySpec.TaskType
-                != CalculationTaskType.Optimization)
+            || (recoverySpec.TaskType
+                    != CalculationTaskType.Optimization
+                && recoverySpec.TaskType
+                    != CalculationTaskType.OptimizationFrequency))
         {
             result.Succeeded = false;
-            result.Error = "恢复方案不是几何优化任务。";
+            result.Error =
+                "恢复方案不是几何优化或联合优化频率任务。";
             return result;
         }
 

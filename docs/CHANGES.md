@@ -5,6 +5,67 @@
 
 ---
 
+## v0.69.0（2026-10-18）：联合优化频率稳定性矫正
+
+### 版本
+
+- 当前版本：`0.69.0`
+- 日期：`2026-10-18`
+- 版本类型：新增功能
+
+### 改动目的
+
+在联合优化频率 Workflow 完成稳定性检查后，补齐稳定性异常诊断、修正规划、
+派生恢复作业、执行和复检闭环。恢复作业继续保持 `opt freq`，不会退化成
+单独的 `opt` 作业。
+
+### 代码改动
+
+新增/扩展：
+
+```text
+src/ChemSculptor.Agent/OptimizationFrequencyWorkflowDefinitionFactory.cs
+src/ChemSculptor.Agent/OptimizationFrequencyCalculationService.cs
+src/ChemSculptor.Skills.Common/OptimizationRecovery/OptimizationStabilityCheckSkill.cs
+src/ChemSculptor.Skills.Common/AnomalyWorkflow/RecoveryJobExecutionSkill.cs
+src/ChemSculptor.Compute.Gaussian/Anomaly/Recovery/GaussianRecoveryInputWriter.cs
+src/ChemSculptor.Skills.Gaussian/Anomaly/Recovery/GaussianRecoveryJobProvider.cs
+src/ChemSculptor.Anomaly/Models/RecoveryJobExecutionResult.cs
+tests/ChemSculptor.Core.Tests/OptimizationFrequencyRouteTests.cs
+tests/ChemSculptor.Core.Tests/GaussianRecoveryJobProviderTests.cs
+```
+
+### 工作流
+
+```text
+optimization-frequency
+-> optimization-frequency-stability-check
+-> stability correction plan
+-> derived recovery job
+-> recovery execution
+-> stability recheck
+```
+
+仅当稳定性检查发现波函数不稳定时才执行修正分支。
+
+### 恢复规则
+
+```text
+同自旋多重度：stable=opt
+不同自旋多重度：修改自旋多重度后重新执行 opt freq
+恢复输入保留 opt Freq 和原子坐标
+```
+
+### 验证
+
+```text
+Release 构建：0 警告，0 错误
+测试：220/220 通过
+真实 Gaussian opt freq：1/1 通过
+```
+
+---
+
 ## v0.68.0（2026-10-18）：联合优化频率 Skill
 
 ### 版本
