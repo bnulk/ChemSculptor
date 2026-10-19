@@ -1,6 +1,7 @@
 using ChemSculptor.Compute;
 using ChemSculptor.Compute.Gaussian.FrequencyAnalysis;
 using ChemSculptor.Compute.Gaussian.Tddft;
+using ChemSculptor.Compute.Gaussian.Nto;
 using ChemSculptor.InputProcessor.GeometryIntake;
 using System.Diagnostics;
 
@@ -14,7 +15,8 @@ public sealed class Gaussian16ProgramAdapter
     : IQuantumProgramAdapter,
       IOptimizationOutputParser,
       IFrequencyAnalysisProgram,
-      ITddftOutputParser
+      ITddftOutputParser,
+      INtoProgram
 {
     /// <summary>默认程序名称。</summary>
     public const string ProgramNameValue = "Gaussian 16";
@@ -32,6 +34,8 @@ public sealed class Gaussian16ProgramAdapter
     private readonly GaussianFrequencyOutputParser
         _frequencyOutputParser;
     private readonly GaussianTddftOutputParser _tddftOutputParser;
+    private readonly GaussianNtoInputWriter _ntoInputWriter;
+    private readonly GaussianNtoOutputParser _ntoOutputParser;
     private readonly Gaussian16ProgramAdapterOptions _options;
 
     /// <summary>创建 Gaussian 16 适配器。</summary>
@@ -44,6 +48,8 @@ public sealed class Gaussian16ProgramAdapter
         GaussianFrequencyInputWriter frequencyInputWriter,
         GaussianFrequencyOutputParser frequencyOutputParser,
         GaussianTddftOutputParser tddftOutputParser,
+        GaussianNtoInputWriter ntoInputWriter,
+        GaussianNtoOutputParser ntoOutputParser,
         Gaussian16ProgramAdapterOptions options)
     {
         if (inputWriter == null)
@@ -89,6 +95,18 @@ public sealed class Gaussian16ProgramAdapter
                 nameof(tddftOutputParser));
         }
 
+        if (ntoInputWriter == null)
+        {
+            throw new ArgumentNullException(
+                nameof(ntoInputWriter));
+        }
+
+        if (ntoOutputParser == null)
+        {
+            throw new ArgumentNullException(
+                nameof(ntoOutputParser));
+        }
+
         if (options == null)
         {
             throw new ArgumentNullException(nameof(options));
@@ -102,6 +120,8 @@ public sealed class Gaussian16ProgramAdapter
         _frequencyInputWriter = frequencyInputWriter;
         _frequencyOutputParser = frequencyOutputParser;
         _tddftOutputParser = tddftOutputParser;
+        _ntoInputWriter = ntoInputWriter;
+        _ntoOutputParser = ntoOutputParser;
         _options = options;
     }
 
@@ -410,6 +430,28 @@ public sealed class Gaussian16ProgramAdapter
     {
         return _tddftOutputParser.ParseTddftOutputAsync(
             outputPath,
+            cancellationToken);
+    }
+
+    /// <summary>生成 Gaussian NTO 输入。</summary>
+    public Task WriteNtoInputAsync(
+        NtoInputWriteRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        return _ntoInputWriter.WriteAsync(
+            request,
+            cancellationToken);
+    }
+
+    /// <summary>解析 Gaussian NTO 输出。</summary>
+    public Task<NtoTransitionResult> ParseNtoOutputAsync(
+        string outputPath,
+        NtoSelectedState selectedState,
+        CancellationToken cancellationToken = default)
+    {
+        return _ntoOutputParser.ParseAsync(
+            outputPath,
+            selectedState,
             cancellationToken);
     }
 

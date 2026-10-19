@@ -62,4 +62,8 @@ public static class CalculationSkillIds
     /// <summary>完成一次 TDDFT 单点计算。</summary>
     public const string CalculationTddftSinglePoint =
         "calculation.tddft-single-point";
+
+    /// <summary>为一个激发态计算 NTO。</summary>
+    public const string CalculationNtoTransition =
+        "calculation.nto-transition";
 }

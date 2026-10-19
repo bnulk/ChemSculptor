@@ -5,6 +5,96 @@
 
 ---
 
+## v0.70.0（2026-10-19）：NTO Skill 和 NTO Workflow
+
+### 版本
+
+- 当前版本：`0.70.0`
+- 日期：`2026-10-19`
+- 版本类型：新增功能
+
+### 改动目的
+
+从已有 TDDFT 激发态结果选择目标状态，并基于源 TDDFT 检查点逐个生成
+NTO 派生作业。NTO Skill 负责单个激发态，NTO Workflow 负责筛选和聚合。
+
+### 代码改动
+
+新增：
+
+```text
+src/ChemSculptor.Compute/NtoModels.cs
+src/ChemSculptor.Compute.Gaussian/Nto/
+  GaussianNtoInputWriter.cs
+  GaussianNtoOutputParser.cs
+src/ChemSculptor.Skills.Common/NtoCalculation/
+  NtoTransitionCalculationSkill.cs
+src/ChemSculptor.Agent/NtoWorkflowService.cs
+.agents/skills/nto/
+docs/skill说明/nto.md
+tests/ChemSculptor.Core.Tests/NtoStateSelectorTests.cs
+tests/ChemSculptor.Core.Tests/GaussianNtoTests.cs
+tests/ChemSculptor.Core.Tests/NtoWorkflowServiceTests.cs
+```
+
+扩展：
+
+```text
+src/ChemSculptor.Compute/CalculationModels.cs
+src/ChemSculptor.Compute/CalculationInterfaces.cs
+src/ChemSculptor.Compute/CalculationSkillIds.cs
+src/ChemSculptor.Compute.Gaussian/Gaussian16ProgramAdapter.cs
+src/ChemSculptor.Skills.Common/CommonSkillServiceRegistration.cs
+src/ChemSculptor.Skills.Gaussian/GaussianSkillServiceRegistration.cs
+src/ChemSculptor.Agent/AgentServiceRegistration.cs
+```
+
+### 状态选择
+
+默认和指定波长范围：
+
+```text
+只考虑 f > 0
+按 f 降序最多选择 5 个
+最大/最小正 f 比超过 10 时，只保留 f >= max(f)/10
+```
+
+全部 NTO：
+
+```text
+包含 f = 0 的暗态
+不应用前 5 和振子强度阈值
+```
+
+默认和波长范围内没有正 f 状态时：
+
+```text
+不提交 NTO 作业
+返回正常空结果
+不生成异常记录
+```
+
+### Gaussian 翻译
+
+```text
+Geom=AllCheck
+Guess=(Read,Only)
+Density=(Check,Transition=n)
+Pop=(Minimal,NTO,SaveNTO)
+nosymm
+```
+
+### 验证
+
+```text
+Release 构建：0 警告，0 错误
+测试：230/230 通过
+```
+
+真实 Gaussian NTO 端到端验收尚未执行。
+
+---
+
 ## v0.69.0（2026-10-18）：联合优化频率稳定性矫正
 
 ### 版本

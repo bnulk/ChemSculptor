@@ -58,6 +58,9 @@ public static class AgentServiceRegistration
         ServiceCollectionServiceExtensions.AddSingleton<
             IAbsorptionSpectrumWorkflowService,
             AbsorptionSpectrumWorkflowService>(services);
+        ServiceCollectionServiceExtensions.AddSingleton<
+            INtoWorkflowService,
+            NtoWorkflowService>(services);
         ServiceCollectionServiceExtensions.AddSingleton<ICalculationQueryService, CalculationQueryService>(
             services);
         ServiceCollectionServiceExtensions.AddSingleton<IAgentService, AgentService>(

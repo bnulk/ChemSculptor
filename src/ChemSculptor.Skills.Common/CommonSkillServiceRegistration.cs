@@ -9,6 +9,7 @@ using ChemSculptor.Skills.Common.CalculationWorkflow;
 using ChemSculptor.Skills.Common.CalculationResultValidation;
 using ChemSculptor.Skills.Common.OptimizationCalculation;
 using ChemSculptor.Skills.Common.OptimizationFrequencyCalculation;
+using ChemSculptor.Skills.Common.NtoCalculation;
 using ChemSculptor.Skills.Common.OptimizationRecovery;
 using ChemSculptor.Skills.Common.SinglePointCalculation;
 using ChemSculptor.Skills.Common.TddftCalculation;
@@ -60,6 +61,9 @@ public static class CommonSkillServiceRegistration
         ServiceCollectionServiceExtensions.AddSingleton<
             ISkill,
             TddftSinglePointCalculationSkill>(services);
+        ServiceCollectionServiceExtensions.AddSingleton<
+            ISkill,
+            NtoTransitionCalculationSkill>(services);
         ServiceCollectionServiceExtensions.AddSingleton<
             ISkill,
             OptimizationCalculationSkill>(services);

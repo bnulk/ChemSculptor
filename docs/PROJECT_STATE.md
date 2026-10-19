@@ -3,7 +3,7 @@
 ## 当前版本
 
 ```text
-0.69.0
+0.70.0
 ```
 
 ## 文档维护原则
@@ -35,7 +35,7 @@ HANDOFF.md
 
 ```text
 Release 构建：0 警告，0 错误
-测试：220/220 通过
+测试：230/230 通过
 真实 Gaussian 16：3/3 通过
 真实 Gaussian opt freq：1/1 通过
 ```
@@ -161,6 +161,9 @@ TDDFT 单点计算 Workflow
 联合优化频率后稳定性检查
 联合优化频率稳定性矫正和派生恢复
 真实 Gaussian opt freq 验证
+NTO 单状态 Skill
+NTO Workflow 和状态选择
+Gaussian NTO 输入和输出适配
 吸收光谱 Workflow
 吸收光谱三种前置模式
 吸收光谱 Agent 路由和客户端反馈
@@ -232,6 +235,7 @@ TDDFT 单点计算 Workflow 已实现
 吸收光谱 Workflow 和科学数据归档已实现
 吸收光谱专用恢复策略尚未实现，仅保留扩展框架
 联合优化频率已包含波函数稳定性矫正，虚频修正策略仍未实现
+NTO 当前只支持 Gaussian TDDFT 源结果，尚未执行真实 NTO 端到端验收
 科学点文件清单已进入 CalculationPoint
 WinForms 已按清单保存完整成果包
 关系、物理量和科学叙述已可追溯

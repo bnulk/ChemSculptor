@@ -18,6 +18,9 @@ public enum CalculationTaskType
     /// <summary>激发态计算。</summary>
     TdDft,
 
+    /// <summary>自然过渡轨道计算。</summary>
+    Nto,
+
     /// <summary>自旋轨道耦合计算。</summary>
     Soc,
 

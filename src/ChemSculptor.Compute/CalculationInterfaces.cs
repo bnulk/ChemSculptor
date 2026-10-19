@@ -63,6 +63,21 @@ public interface IQuantumProgramAdapter
         CancellationToken cancellationToken = default);
 }
 
+/// <summary>计算程序可选的 NTO 能力。</summary>
+public interface INtoProgram
+{
+    /// <summary>根据源 TDDFT 输入生成 NTO 输入。</summary>
+    Task WriteNtoInputAsync(
+        NtoInputWriteRequest request,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>解析 NTO 输出。</summary>
+    Task<NtoTransitionResult> ParseNtoOutputAsync(
+        string outputPath,
+        NtoSelectedState selectedState,
+        CancellationToken cancellationToken = default);
+}
+
 /// <summary>
 /// 执行后端。
 /// 负责本机进程或远程集群的提交、查询、取回和取消。
@@ -410,6 +425,15 @@ public interface IAbsorptionSpectrumWorkflowService
     /// <summary>执行吸收光谱工作流。</summary>
     Task<AbsorptionSpectrumSubmissionResult> SubmitAsync(
         AbsorptionSpectrumRequest request,
+        CancellationToken cancellationToken = default);
+}
+
+/// <summary>NTO 工作流服务。</summary>
+public interface INtoWorkflowService
+{
+    /// <summary>执行 NTO 状态选择和派生作业编排。</summary>
+    Task<NtoWorkflowResult> SubmitAsync(
+        NtoRequest request,
         CancellationToken cancellationToken = default);
 }
 
