@@ -11,6 +11,23 @@ description: "从已有 TDDFT 激发态结果选择状态，并基于检查点�
 
 当前只支持 Gaussian 16。
 
+## 客户端输入
+
+文本中出现 `NTO` 时进入本 Workflow，并使用当前会话最近一次 TDDFT 作业作为源。
+
+```text
+NTO
+NTO 300-500
+全部 NTO
+全部吸收的 NTO
+全部波长的 NTO
+```
+
+- `NTO`：使用默认振子强度选择规则。
+- `NTO 300-500`：两个数字由短横连接时按波长范围解释，默认单位为 nm。
+- `NTO` 前出现“全部”：选择全部激发态，包括暗态。
+- 没有可用源 TDDFT 时，返回 `NoTddftSource`，提示先完成 TDDFT。
+
 ## Workflow
 
 ```text

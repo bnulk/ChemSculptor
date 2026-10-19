@@ -1,3 +1,5 @@
+using System.Text.RegularExpressions;
+
 namespace ChemSculptor.Compute;
 
 /// <summary>
@@ -39,6 +41,16 @@ public sealed class InterpretedTask
         get;
         set;
     } = AbsorptionSpectrumMode.OptimizeThenTddft;
+
+    /// <summary>NTO 激发态选择模式。</summary>
+    public NtoSelectionMode NtoSelectionMode { get; set; } =
+        NtoSelectionMode.Default;
+
+    /// <summary>NTO 波长范围下限，单位 nm。</summary>
+    public double? NtoWavelengthMinNm { get; set; }
+
+    /// <summary>NTO 波长范围上限，单位 nm。</summary>
+    public double? NtoWavelengthMaxNm { get; set; }
 }
 
 /// <summary>
@@ -59,6 +71,13 @@ public interface ITaskInterpreter
 /// </summary>
 public sealed class RuleBasedTaskInterpreter : ITaskInterpreter
 {
+    private static readonly Regex NtoWavelengthRangePattern =
+        new Regex(
+            @"(?<min>\d+(?:\.\d+)?)\s*(?:nm|纳米)?\s*[-–—~至到]\s*(?<max>\d+(?:\.\d+)?)\s*(?:nm|纳米)?",
+            RegexOptions.Compiled
+            | RegexOptions.IgnoreCase
+            | RegexOptions.CultureInvariant);
+
     /// <summary>单点计算的规则关键词。</summary>
     private const string SinglePointKeyword = "单点";
 
@@ -139,6 +158,73 @@ public sealed class RuleBasedTaskInterpreter : ITaskInterpreter
         }
 
         string normalizedText = text.Trim();
+
+        int ntoKeywordIndex = normalizedText.IndexOf(
+            "nto",
+            StringComparison.OrdinalIgnoreCase);
+
+        if (ntoKeywordIndex >= 0)
+        {
+            interpretedTask.TaskType =
+                CalculationTaskType.Nto;
+            interpretedTask.WorkflowId = "nto";
+            interpretedTask.IsSupported = true;
+            interpretedTask.Confidence = 1.0;
+
+            if (HasAllNtoQualifier(
+                normalizedText,
+                ntoKeywordIndex))
+            {
+                interpretedTask.NtoSelectionMode =
+                    NtoSelectionMode.All;
+            }
+            else
+            {
+                Match range =
+                    NtoWavelengthRangePattern.Match(
+                        normalizedText);
+
+                if (range.Success)
+                {
+                    double minimum;
+                    double maximum;
+
+                    if (double.TryParse(
+                            range.Groups["min"].Value,
+                            System.Globalization.NumberStyles.Float,
+                            System.Globalization.CultureInfo
+                                .InvariantCulture,
+                            out minimum)
+                        && double.TryParse(
+                            range.Groups["max"].Value,
+                            System.Globalization.NumberStyles.Float,
+                            System.Globalization.CultureInfo
+                                .InvariantCulture,
+                            out maximum)
+                        && minimum > 0.0
+                        && maximum > 0.0
+                        && minimum <= maximum)
+                    {
+                        interpretedTask.NtoSelectionMode =
+                            NtoSelectionMode.WavelengthRange;
+                        interpretedTask.NtoWavelengthMinNm =
+                            minimum;
+                        interpretedTask.NtoWavelengthMaxNm =
+                            maximum;
+                    }
+                    else
+                    {
+                        interpretedTask.IsSupported = false;
+                        interpretedTask.Diagnostics.Add(
+                            "NTO 波长范围无效，请使用例如 300-500 nm。");
+                        return Task.FromResult(
+                            interpretedTask);
+                    }
+                }
+            }
+
+            return Task.FromResult(interpretedTask);
+        }
 
         if (ContainsAnyKeyword(
             normalizedText,
@@ -359,6 +445,20 @@ public sealed class RuleBasedTaskInterpreter : ITaskInterpreter
         }
 
         return false;
+    }
+
+    private static bool HasAllNtoQualifier(
+        string text,
+        int ntoKeywordIndex)
+    {
+        if (ntoKeywordIndex <= 0)
+        {
+            return false;
+        }
+
+        string qualifierText =
+            text.Substring(0, ntoKeywordIndex);
+        return ContainsKeyword(qualifierText, "全部");
     }
 
     private static bool IsOptimizationFrequencyText(

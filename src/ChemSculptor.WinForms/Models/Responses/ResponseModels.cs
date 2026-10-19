@@ -71,6 +71,13 @@ public sealed class AgentMessageResultDto
 
     public string ScientificResultId { get; set; } = string.Empty;
 
+    public string NtoSelectionMode { get; set; } = string.Empty;
+
+    public int NtoSelectedStateCount { get; set; }
+
+    public List<string> NtoJobIds { get; set; } =
+        new List<string>();
+
     public int ExcitedStateCount { get; set; }
 
     public int StrongestExcitedStateIndex { get; set; }

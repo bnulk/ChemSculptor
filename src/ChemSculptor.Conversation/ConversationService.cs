@@ -67,6 +67,12 @@ public sealed class ConversationService : IConversationService
             interpretedTask.TargetStateLabel;
         intent.AbsorptionSpectrumMode =
             interpretedTask.AbsorptionSpectrumMode;
+        intent.NtoSelectionMode =
+            interpretedTask.NtoSelectionMode;
+        intent.NtoWavelengthMinNm =
+            interpretedTask.NtoWavelengthMinNm;
+        intent.NtoWavelengthMaxNm =
+            interpretedTask.NtoWavelengthMaxNm;
         intent.Diagnostics = new List<string>(interpretedTask.Diagnostics);
 
         ConversationReply reply = new ConversationReply();

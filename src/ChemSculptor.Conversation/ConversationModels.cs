@@ -267,6 +267,16 @@ public sealed class ConversationIntent
         get;
         set;
     } = AbsorptionSpectrumMode.OptimizeThenTddft;
+
+    /// <summary>NTO 激发态选择模式。</summary>
+    public NtoSelectionMode NtoSelectionMode { get; set; } =
+        NtoSelectionMode.Default;
+
+    /// <summary>NTO 波长范围下限，单位 nm。</summary>
+    public double? NtoWavelengthMinNm { get; set; }
+
+    /// <summary>NTO 波长范围上限，单位 nm。</summary>
+    public double? NtoWavelengthMaxNm { get; set; }
 }
 
 /// <summary>需要用户回答的问题。</summary>

@@ -31,16 +31,7 @@ public sealed class GaussianNtoOutputParser
             text.IndexOf(
                 "Normal termination",
                 StringComparison.OrdinalIgnoreCase) >= 0;
-        result.NtoFound =
-            text.IndexOf(
-                "Natural Transition Orbitals",
-                StringComparison.OrdinalIgnoreCase) >= 0
-            || text.IndexOf(
-                "Natural Transition Orbital",
-                StringComparison.OrdinalIgnoreCase) >= 0
-            || text.IndexOf(
-                "NTO",
-                StringComparison.OrdinalIgnoreCase) >= 0;
+        result.NtoFound = ContainsNtoOutputMarker(text);
         result.Succeeded =
             result.NormalTermination && result.NtoFound;
 
@@ -58,5 +49,24 @@ public sealed class GaussianNtoOutputParser
         }
 
         return result;
+    }
+
+    private static bool ContainsNtoOutputMarker(string text)
+    {
+        return text.IndexOf(
+                "Natural Transition Orbitals",
+                StringComparison.OrdinalIgnoreCase) >= 0
+            || text.IndexOf(
+                "Natural Transition Orbital",
+                StringComparison.OrdinalIgnoreCase) >= 0
+            || text.IndexOf(
+                "Saving Alpha spin NTOs",
+                StringComparison.OrdinalIgnoreCase) >= 0
+            || text.IndexOf(
+                "Saving Beta spin NTOs",
+                StringComparison.OrdinalIgnoreCase) >= 0
+            || text.IndexOf(
+                "Populations using transition density",
+                StringComparison.OrdinalIgnoreCase) >= 0;
     }
 }

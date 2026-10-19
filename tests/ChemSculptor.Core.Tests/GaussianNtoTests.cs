@@ -101,6 +101,70 @@ public class GaussianNtoTests
         }
     }
 
+    /// <summary>验证真实 Gaussian NTO 布居段落可以被识别。</summary>
+    [Fact]
+    public async Task ParsesGaussianNtoPopulationOutput()
+    {
+        string root = CreateTemporaryRoot();
+        string outputPath = Path.Combine(root, "nto.log");
+
+        try
+        {
+            await File.WriteAllTextAsync(
+                outputPath,
+                " Using densities on the checkpoint file.\n" +
+                " Saving Alpha spin NTOs for state    1 to file 20524.\n" +
+                " Populations using transition density between ground and state  1.\n" +
+                " Normal termination of Gaussian 16\n");
+            NtoSelectedState state = new NtoSelectedState();
+            state.StateIndex = 1;
+            state.StateLabel = "Singlet-1";
+
+            NtoTransitionResult result =
+                await new GaussianNtoOutputParser()
+                    .ParseAsync(outputPath, state);
+
+            Assert.True(result.Succeeded);
+            Assert.True(result.NormalTermination);
+            Assert.True(result.NtoFound);
+        }
+        finally
+        {
+            DeleteTemporaryRoot(root);
+        }
+    }
+
+    /// <summary>验证 route 回显中的 NTO 不会被误判为计算产物。</summary>
+    [Fact]
+    public async Task DoesNotTreatRouteEchoAsNtoOutput()
+    {
+        string root = CreateTemporaryRoot();
+        string outputPath = Path.Combine(root, "nto.log");
+
+        try
+        {
+            await File.WriteAllTextAsync(
+                outputPath,
+                "#p CAM-B3LYP/6-31G* Pop=(Minimal,NTO,SaveNTO)\n" +
+                " Normal termination of Gaussian 16\n");
+            NtoSelectedState state = new NtoSelectedState();
+            state.StateIndex = 1;
+
+            NtoTransitionResult result =
+                await new GaussianNtoOutputParser()
+                    .ParseAsync(outputPath, state);
+
+            Assert.False(result.Succeeded);
+            Assert.True(result.NormalTermination);
+            Assert.False(result.NtoFound);
+            Assert.Contains("没有解析到自然过渡轨道", result.Error);
+        }
+        finally
+        {
+            DeleteTemporaryRoot(root);
+        }
+    }
+
     private static string CreateTemporaryRoot()
     {
         string root = Path.Combine(

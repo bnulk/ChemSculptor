@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using ChemSculptor.Compute;
 using ChemSculptor.Conversation;
 using ChemSculptor.InputProcessor;
@@ -19,6 +20,9 @@ public sealed class AgentService : IAgentService
         _optimizationFrequencyService;
     private readonly IAbsorptionSpectrumWorkflowService?
         _absorptionSpectrumService;
+    private readonly INtoWorkflowService? _ntoWorkflowService;
+    private readonly ConcurrentDictionary<string, string>
+        _lastTddftJobIds;
     private readonly CalculationParameterConversationService
         _parameterConversationService;
     private readonly IGeometryTextParser _geometryParser;
@@ -36,6 +40,7 @@ public sealed class AgentService : IAgentService
             optimizationService,
             parameterConversationService,
             geometryParser,
+            null,
             null,
             null)
     {
@@ -57,6 +62,7 @@ public sealed class AgentService : IAgentService
             parameterConversationService,
             geometryParser,
             absorptionSpectrumService,
+            null,
             null)
     {
     }
@@ -72,6 +78,30 @@ public sealed class AgentService : IAgentService
             absorptionSpectrumService,
         IOptimizationFrequencyCalculationService?
             optimizationFrequencyService)
+        : this(
+            conversationService,
+            singlePointService,
+            optimizationService,
+            parameterConversationService,
+            geometryParser,
+            absorptionSpectrumService,
+            optimizationFrequencyService,
+            null)
+    {
+    }
+
+    /// <summary>创建带 NTO Workflow 的智能体服务。</summary>
+    public AgentService(
+        IConversationService conversationService,
+        ISinglePointCalculationService singlePointService,
+        IOptimizationCalculationService optimizationService,
+        CalculationParameterConversationService parameterConversationService,
+        IGeometryTextParser geometryParser,
+        IAbsorptionSpectrumWorkflowService?
+            absorptionSpectrumService,
+        IOptimizationFrequencyCalculationService?
+            optimizationFrequencyService,
+        INtoWorkflowService? ntoWorkflowService)
     {
         if (conversationService == null)
         {
@@ -108,9 +138,13 @@ public sealed class AgentService : IAgentService
         _optimizationService = optimizationService;
         _optimizationFrequencyService =
             optimizationFrequencyService;
+        _ntoWorkflowService = ntoWorkflowService;
         _absorptionSpectrumService = absorptionSpectrumService;
         _parameterConversationService = parameterConversationService;
         _geometryParser = geometryParser;
+        _lastTddftJobIds =
+            new ConcurrentDictionary<string, string>(
+                StringComparer.OrdinalIgnoreCase);
     }
 
     /// <summary>处理客户端原始消息。</summary>
@@ -216,6 +250,15 @@ public sealed class AgentService : IAgentService
                 request,
                 conversationReply,
                 null,
+                cancellationToken);
+        }
+
+        if (conversationReply.Intent.TaskType
+            == CalculationTaskType.Nto)
+        {
+            return await HandleNtoAsync(
+                request,
+                conversationReply,
                 cancellationToken);
         }
 
@@ -589,6 +632,111 @@ public sealed class AgentService : IAgentService
         return result;
     }
 
+    private async Task<AgentResult> HandleNtoAsync(
+        AgentRequest request,
+        ConversationReply conversationReply,
+        CancellationToken cancellationToken)
+    {
+        AgentResult result = new AgentResult();
+        result.TaskType = CalculationTaskType.Nto;
+        result.WorkflowId = "nto";
+        result.NtoSelectionMode =
+            conversationReply.Intent.NtoSelectionMode;
+
+        if (_ntoWorkflowService == null)
+        {
+            result.IsSupported = false;
+            result.Error =
+                "NTO Workflow 服务尚未注册。";
+            return result;
+        }
+
+        string? sourceJobId;
+
+        if (!_lastTddftJobIds.TryGetValue(
+                request.SessionId,
+                out sourceJobId)
+            || string.IsNullOrWhiteSpace(sourceJobId))
+        {
+            result.IsSupported = true;
+            result.Status = "NoTddftSource";
+            result.Message =
+                "当前会话没有可用的 TDDFT 源作业，请先完成 TDDFT 计算。";
+            result.Error =
+                result.Message;
+            return result;
+        }
+
+        NtoRequest ntoRequest = new NtoRequest();
+        ntoRequest.SessionId = request.SessionId;
+        ntoRequest.Goal = request.Text;
+        ntoRequest.SourceTddftJobId = sourceJobId;
+        ntoRequest.SelectionMode =
+            conversationReply.Intent.NtoSelectionMode;
+        ntoRequest.WavelengthMinNm =
+            conversationReply.Intent.NtoWavelengthMinNm;
+        ntoRequest.WavelengthMaxNm =
+            conversationReply.Intent.NtoWavelengthMaxNm;
+
+        NtoWorkflowResult workflow =
+            await _ntoWorkflowService.SubmitAsync(
+                ntoRequest,
+                cancellationToken);
+        result.IsSupported =
+            workflow.Status != NtoWorkflowStatus.Failed;
+        result.Status = workflow.Status.ToString();
+        result.Message = workflow.Message;
+        result.TddftJobId = sourceJobId;
+        result.NtoSelectionMode = workflow.SelectionMode;
+        result.NtoSelectedStateCount =
+            workflow.SelectedStates.Count;
+        result.NtoJobIds = new List<string>();
+
+        for (int index = 0;
+            index < workflow.TransitionResults.Count;
+            index++)
+        {
+            NtoTransitionResult transition =
+                workflow.TransitionResults[index];
+
+            if (!string.IsNullOrWhiteSpace(
+                transition.JobId))
+            {
+                result.NtoJobIds.Add(
+                    transition.JobId);
+            }
+        }
+
+        if (workflow.TransitionResults.Count > 0)
+        {
+            result.JobId =
+                workflow.TransitionResults[0].JobId;
+        }
+
+        if (!result.IsSupported)
+        {
+            result.Error = workflow.Message;
+        }
+
+        return result;
+    }
+
+    private void RecordLastTddftJob(
+        string sessionId,
+        AbsorptionSpectrumSubmissionResult submission)
+    {
+        if (submission.Tddft == null
+            || submission.Tddft.Job == null
+            || string.IsNullOrWhiteSpace(
+                submission.Tddft.Job.JobId))
+        {
+            return;
+        }
+
+        _lastTddftJobIds[sessionId] =
+            submission.Tddft.Job.JobId;
+    }
+
     private async Task<AgentResult>
         HandleAbsorptionSpectrumConversationAsync(
             AgentRequest request,
@@ -681,6 +829,9 @@ public sealed class AgentService : IAgentService
                 await _absorptionSpectrumService.SubmitAsync(
                     absorptionRequest,
                     cancellationToken);
+            RecordLastTddftJob(
+                request.SessionId,
+                submission);
             AgentResult submitted = BuildAbsorptionSpectrumResult(
                 workflowId,
                 mode,

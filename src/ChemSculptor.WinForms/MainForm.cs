@@ -568,6 +568,40 @@ public sealed class MainForm : Form
                 result.MaximumOscillatorStrength));
     }
 
+    /// <summary>显示 NTO 工作流摘要。</summary>
+    private void AppendNtoFeedback(
+        AgentMessageResultDto result)
+    {
+        if (!string.Equals(
+            result.TaskType,
+            "Nto",
+            StringComparison.OrdinalIgnoreCase))
+        {
+            return;
+        }
+
+        AppendMessage("system", "NTO 结果：");
+        AppendMessage(
+            "hint",
+            "选择模式：" +
+            (string.IsNullOrWhiteSpace(
+                result.NtoSelectionMode)
+                ? "未知"
+                : result.NtoSelectionMode));
+        AppendMessage(
+            "hint",
+            "选中激发态数量：" +
+            result.NtoSelectedStateCount.ToString());
+
+        if (result.NtoJobIds.Count > 0)
+        {
+            AppendMessage(
+                "hint",
+                "NTO 作业：" +
+                string.Join("、", result.NtoJobIds));
+        }
+    }
+
     private static string FormatBoolean(bool? value)
     {
         if (!value.HasValue)
@@ -765,10 +799,41 @@ public sealed class MainForm : Form
             AppendParameterFeedback(result);
             AppendOptimizationFeedback(result);
             AppendAbsorptionSpectrumFeedback(result);
+            AppendNtoFeedback(result);
 
             if (result.RequiresUserAction
                 && string.IsNullOrWhiteSpace(result.JobId))
             {
+                return;
+            }
+
+            if (string.Equals(
+                    result.TaskType,
+                    "Nto",
+                    StringComparison.OrdinalIgnoreCase)
+                && string.Equals(
+                    result.Status,
+                    "NoPositiveOscillatorStrength",
+                    StringComparison.OrdinalIgnoreCase))
+            {
+                AppendMessage("hint", result.Message);
+                return;
+            }
+
+            if (string.Equals(
+                    result.TaskType,
+                    "Nto",
+                    StringComparison.OrdinalIgnoreCase)
+                && string.Equals(
+                    result.Status,
+                    "NoTddftSource",
+                    StringComparison.OrdinalIgnoreCase))
+            {
+                AppendMessage(
+                    "hint",
+                    string.IsNullOrWhiteSpace(result.Message)
+                        ? "当前会话没有可用的 TDDFT 源作业。"
+                        : result.Message);
                 return;
             }
 

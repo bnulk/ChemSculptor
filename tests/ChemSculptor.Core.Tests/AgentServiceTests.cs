@@ -251,6 +251,164 @@ public class AgentServiceTests
         }
     }
 
+    /// <summary>验证没有 TDDFT 源时 NTO 请求返回可执行提示。</summary>
+    [Fact]
+    public async Task NtoWithoutTddftSourceReturnsGuidance()
+    {
+        string root = CreateTemporaryRoot();
+
+        try
+        {
+            RecordingWorkflowEngine workflowEngine;
+            RecordingOptimizationService optimizationService;
+            RecordingAbsorptionSpectrumWorkflowService
+                absorptionService;
+            RecordingNtoWorkflowService ntoService;
+            AgentService service = CreateAgentService(
+                root,
+                out workflowEngine,
+                out optimizationService,
+                out absorptionService,
+                out ntoService);
+
+            AgentRequest request = new AgentRequest();
+            request.SessionId = "session-nto-no-source";
+            request.Text = "做 NTO";
+
+            AgentResult result =
+                await service.HandleMessageAsync(request);
+
+            Assert.True(result.IsSupported);
+            Assert.Equal(CalculationTaskType.Nto, result.TaskType);
+            Assert.Equal("nto", result.WorkflowId);
+            Assert.Equal("NoTddftSource", result.Status);
+            Assert.Contains("先完成 TDDFT", result.Message);
+            Assert.Null(ntoService.LastRequest);
+        }
+        finally
+        {
+            DeleteTemporaryRoot(root);
+        }
+    }
+
+    /// <summary>验证 NTO 使用当前会话最近一次 TDDFT 作业和波长范围。</summary>
+    [Fact]
+    public async Task NtoUsesLatestTddftJobAndWavelengthRange()
+    {
+        string root = CreateTemporaryRoot();
+
+        try
+        {
+            RecordingWorkflowEngine workflowEngine;
+            RecordingOptimizationService optimizationService;
+            RecordingAbsorptionSpectrumWorkflowService
+                absorptionService;
+            RecordingNtoWorkflowService ntoService;
+            AgentService service = CreateAgentService(
+                root,
+                out workflowEngine,
+                out optimizationService,
+                out absorptionService,
+                out ntoService);
+            string coordinates =
+                "O 0.000000 0.000000 0.117300\n" +
+                "H 0.000000 0.757200 -0.469200\n" +
+                "H 0.000000 -0.757200 -0.469200";
+
+            AgentRequest tddftRequest = new AgentRequest();
+            tddftRequest.SessionId = "session-nto-language";
+            tddftRequest.Text = "吸收光谱，不优化";
+            tddftRequest.CoordinateText = coordinates;
+            AgentResult tddftResult =
+                await service.HandleMessageAsync(tddftRequest);
+
+            AgentRequest ntoRequest = new AgentRequest();
+            ntoRequest.SessionId = "session-nto-language";
+            ntoRequest.Text = "NTO 300-500";
+            ntoRequest.CoordinateText = coordinates;
+            AgentResult ntoResult =
+                await service.HandleMessageAsync(ntoRequest);
+
+            Assert.True(tddftResult.IsSupported);
+            Assert.True(ntoResult.IsSupported);
+            Assert.NotNull(ntoService.LastRequest);
+            Assert.Equal(
+                "job-tddft-absorption-agent",
+                ntoService.LastRequest!.SourceTddftJobId);
+            Assert.Equal(
+                NtoSelectionMode.WavelengthRange,
+                ntoService.LastRequest.SelectionMode);
+            Assert.Equal(
+                300.0,
+                ntoService.LastRequest.WavelengthMinNm);
+            Assert.Equal(
+                500.0,
+                ntoService.LastRequest.WavelengthMaxNm);
+            Assert.Equal("Completed", ntoResult.Status);
+            Assert.Equal(1, ntoResult.NtoSelectedStateCount);
+            Assert.Single(ntoResult.NtoJobIds);
+        }
+        finally
+        {
+            DeleteTemporaryRoot(root);
+        }
+    }
+
+    /// <summary>验证全部 NTO 无正 f 状态时返回正常空结果。</summary>
+    [Fact]
+    public async Task AllNtoWithoutPositiveStateReturnsEmptyResult()
+    {
+        string root = CreateTemporaryRoot();
+
+        try
+        {
+            RecordingWorkflowEngine workflowEngine;
+            RecordingOptimizationService optimizationService;
+            RecordingAbsorptionSpectrumWorkflowService
+                absorptionService;
+            RecordingNtoWorkflowService ntoService;
+            AgentService service = CreateAgentService(
+                root,
+                out workflowEngine,
+                out optimizationService,
+                out absorptionService,
+                out ntoService);
+            ntoService.ReturnNoPositiveOscillatorStrength = true;
+            string coordinates =
+                "O 0.000000 0.000000 0.117300\n" +
+                "H 0.000000 0.757200 -0.469200\n" +
+                "H 0.000000 -0.757200 -0.469200";
+
+            AgentRequest tddftRequest = new AgentRequest();
+            tddftRequest.SessionId = "session-nto-all-empty";
+            tddftRequest.Text = "吸收光谱，不优化";
+            tddftRequest.CoordinateText = coordinates;
+            await service.HandleMessageAsync(tddftRequest);
+
+            AgentRequest ntoRequest = new AgentRequest();
+            ntoRequest.SessionId = "session-nto-all-empty";
+            ntoRequest.Text = "全部吸收的 NTO";
+            ntoRequest.CoordinateText = coordinates;
+            AgentResult ntoResult =
+                await service.HandleMessageAsync(ntoRequest);
+
+            Assert.True(ntoResult.IsSupported);
+            Assert.Equal(
+                "NoPositiveOscillatorStrength",
+                ntoResult.Status);
+            Assert.Equal(
+                NtoSelectionMode.All,
+                ntoService.LastRequest!.SelectionMode);
+            Assert.Equal(0, ntoResult.NtoSelectedStateCount);
+            Assert.Empty(ntoResult.NtoJobIds);
+            Assert.Contains("没有", ntoResult.Message);
+        }
+        finally
+        {
+            DeleteTemporaryRoot(root);
+        }
+    }
+
     /// <summary>验证激发态目标在当前阶段被明确拒绝。</summary>
     [Fact]
     public async Task ExcitedStateMessageIsNotImplemented()
@@ -540,6 +698,45 @@ public class AgentServiceTests
         out RecordingOptimizationFrequencyService
             optimizationFrequencyService)
     {
+        RecordingNtoWorkflowService ntoService;
+        return CreateAgentService(
+            root,
+            out workflowEngine,
+            out optimizationService,
+            out absorptionService,
+            out optimizationFrequencyService,
+            out ntoService);
+    }
+
+    private static AgentService CreateAgentService(
+        string root,
+        out RecordingWorkflowEngine workflowEngine,
+        out RecordingOptimizationService optimizationService,
+        out RecordingAbsorptionSpectrumWorkflowService
+            absorptionService,
+        out RecordingNtoWorkflowService ntoService)
+    {
+        RecordingOptimizationFrequencyService
+            optimizationFrequencyService;
+        return CreateAgentService(
+            root,
+            out workflowEngine,
+            out optimizationService,
+            out absorptionService,
+            out optimizationFrequencyService,
+            out ntoService);
+    }
+
+    private static AgentService CreateAgentService(
+        string root,
+        out RecordingWorkflowEngine workflowEngine,
+        out RecordingOptimizationService optimizationService,
+        out RecordingAbsorptionSpectrumWorkflowService
+            absorptionService,
+        out RecordingOptimizationFrequencyService
+            optimizationFrequencyService,
+        out RecordingNtoWorkflowService ntoService)
+    {
         CalculationWorkspaceOptions options = new CalculationWorkspaceOptions();
         options.RootDirectory = root;
 
@@ -572,6 +769,8 @@ public class AgentServiceTests
             new RecordingAbsorptionSpectrumWorkflowService();
         optimizationFrequencyService =
             new RecordingOptimizationFrequencyService();
+        ntoService =
+            new RecordingNtoWorkflowService();
         return new AgentService(
             conversationService,
             singlePointService,
@@ -579,7 +778,8 @@ public class AgentServiceTests
             parameterService,
             new GeometryTextParser(),
             absorptionService,
-            optimizationFrequencyService);
+            optimizationFrequencyService,
+            ntoService);
     }
 
     private static string CreateTemporaryRoot()
@@ -865,6 +1065,66 @@ public class AgentServiceTests
         {
             return Task.FromResult<
                 OptimizationFrequencyCalculationSkillResult?>(null);
+        }
+    }
+
+    private sealed class RecordingNtoWorkflowService
+        : INtoWorkflowService
+    {
+        public NtoRequest? LastRequest { get; private set; }
+
+        public bool ReturnNoPositiveOscillatorStrength
+        {
+            get;
+            set;
+        }
+
+        public Task<NtoWorkflowResult> SubmitAsync(
+            NtoRequest request,
+            CancellationToken cancellationToken = default)
+        {
+            LastRequest = request;
+            NtoWorkflowResult result =
+                new NtoWorkflowResult();
+            result.Succeeded = true;
+            result.Status = NtoWorkflowStatus.Completed;
+            result.SourceTddftJobId =
+                request.SourceTddftJobId;
+            result.SelectionMode = request.SelectionMode;
+
+            if (ReturnNoPositiveOscillatorStrength)
+            {
+                result.Status =
+                    NtoWorkflowStatus
+                        .NoPositiveOscillatorStrength;
+                result.Message =
+                    "没有可计算的激发态。";
+                return Task.FromResult(result);
+            }
+
+            result.Message = "NTO 测试完成。";
+
+            NtoSelectedState state =
+                new NtoSelectedState();
+            state.StateId = "tddft:test:state:1";
+            state.StateIndex = 1;
+            state.StateLabel = "Singlet-1";
+            state.WavelengthNm = 400.0;
+            state.OscillatorStrength = 0.5;
+            result.SelectedStates.Add(state);
+
+            NtoTransitionResult transition =
+                new NtoTransitionResult();
+            transition.Succeeded = true;
+            transition.JobId = "job-nto-language-test";
+            transition.SourceJobId =
+                request.SourceTddftJobId;
+            transition.StateIndex = state.StateIndex;
+            transition.StateLabel = state.StateLabel;
+            transition.NormalTermination = true;
+            transition.NtoFound = true;
+            result.TransitionResults.Add(transition);
+            return Task.FromResult(result);
         }
     }
 }

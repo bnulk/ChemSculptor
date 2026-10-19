@@ -116,6 +116,17 @@ public sealed class AgentResult
     /// <summary>吸收光谱科学成果标识。</summary>
     public string ScientificResultId { get; set; } = string.Empty;
 
+    /// <summary>NTO 选择模式。</summary>
+    public NtoSelectionMode NtoSelectionMode { get; set; } =
+        NtoSelectionMode.Default;
+
+    /// <summary>NTO 选中的激发态数量。</summary>
+    public int NtoSelectedStateCount { get; set; }
+
+    /// <summary>NTO 派生作业标识列表。</summary>
+    public List<string> NtoJobIds { get; set; } =
+        new List<string>();
+
     /// <summary>解析出的激发态数量。</summary>
     public int ExcitedStateCount { get; set; }
 

@@ -5,6 +5,93 @@
 
 ---
 
+## v0.71.0（2026-10-19）：NTO 客户端自然语言接入
+
+### 版本
+
+- 当前版本：`0.71.0`
+- 日期：`2026-10-19`
+- 版本类型：新增功能
+
+### 改动目的
+
+让客户端可以直接用自然语言启动已有 TDDFT 结果的 NTO 计算，并明确默认、
+波长范围和全部激发态三种选择模式。
+
+### 客户端规则
+
+```text
+文本出现 NTO -> 进入 NTO Workflow
+NTO -> 默认振子强度选择
+NTO 300-500 -> 波长范围，默认单位 nm
+NTO 前出现“全部” -> All，包含暗态和全部波长
+全部吸收的 NTO -> All
+全部波长的 NTO -> All
+```
+
+波长范围支持 `-`、`–`、`—`、`~`、`至`、`到`，也接受 `nm` 或“纳米”。
+反向范围会返回明确诊断，不提交 NTO 作业。
+
+### 代码改动
+
+扩展：
+
+```text
+src/ChemSculptor.Compute/TaskInterpretation.cs
+src/ChemSculptor.Conversation/ConversationModels.cs
+src/ChemSculptor.Conversation/ConversationService.cs
+src/ChemSculptor.Agent/AgentModels.cs
+src/ChemSculptor.Agent/AgentService.cs
+src/ChemSculptor.Api/Contracts.cs
+src/ChemSculptor.Api/Endpoints/AgentEndpoints.cs
+src/ChemSculptor.WinForms/MainForm.cs
+src/ChemSculptor.WinForms/Models/Responses/ResponseModels.cs
+.agents/skills/nto/SKILL.md
+docs/skill说明/nto.md
+```
+
+新增：
+
+```text
+tests/ChemSculptor.Core.Tests/NtoInterpretationTests.cs
+```
+
+### 源 TDDFT
+
+Agent 按会话记录最近一次成功提交的 TDDFT 作业。用户随后输入 NTO 时：
+
+```text
+读取当前会话最近 TDDFT JobId
+-> NtoWorkflowService
+-> 状态筛选和派生 NTO 作业
+```
+
+没有源作业时返回 `NoTddftSource`，并提示先完成 TDDFT 计算。
+
+### 客户端结果
+
+Api 和 WinForms 已接入：
+
+```text
+NtoSelectionMode
+NtoSelectedStateCount
+NtoJobIds
+```
+
+全部 NTO 没有正振子强度状态时返回 `NoPositiveOscillatorStrength`，
+按正常空结果处理，不生成异常。
+
+### 验证
+
+```text
+Release 构建：0 警告，0 错误
+测试：242/242 通过
+```
+
+真实 Gaussian NTO 端到端验收仍未执行。
+
+---
+
 ## v0.70.0（2026-10-19）：NTO Skill 和 NTO Workflow
 
 ### 版本

@@ -190,22 +190,62 @@ src/ChemSculptor.Compute.Gaussian/Gaussian16ProgramAdapter.cs
 src/ChemSculptor.Skills.Common/CommonSkillServiceRegistration.cs
 ```
 
-当前 NTO Workflow 通过源 TDDFT 作业标识启动，客户端后续接入时优先使用
-最近一次 TDDFT 结果作为默认源，同时允许显式指定 `sourceTddftJobId`。
+当前 NTO Workflow 通过源 TDDFT 作业标识启动。Agent 当前自动使用同一会话
+最近一次 TDDFT 作业；`NtoRequest.SourceTddftJobId` 保留显式源字段，客户端
+自然语言尚未开放单独指定源作业。
+
+客户端自然语言接入规则：
+
+```text
+文本出现 NTO
+-> CalculationTaskType.Nto
+
+NTO 300-500
+-> WavelengthRange
+-> 默认单位 nm
+
+NTO 前出现“全部”
+全部吸收的 NTO
+全部波长的 NTO
+-> All，包含暗态和全部波长
+```
+
+源 TDDFT 使用同一会话最近一次成功提交的 TDDFT 作业。不存在源作业时返回
+`NoTddftSource` 和“请先完成 TDDFT 计算”的提示，不提交 NTO 作业。
+
+Api 返回：
+
+```text
+NtoSelectionMode
+NtoSelectedStateCount
+NtoJobIds
+```
+
+WinForms 显示选择模式、选中状态数量和派生 NTO 作业标识。
 
 ## 11. 测试
 
 代码落点：
 
 ```text
+tests/ChemSculptor.Core.Tests/NtoInterpretationTests.cs
 tests/ChemSculptor.Core.Tests/NtoStateSelectorTests.cs
 tests/ChemSculptor.Core.Tests/GaussianNtoTests.cs
 tests/ChemSculptor.Core.Tests/NtoWorkflowServiceTests.cs
+tests/ChemSculptor.Core.Tests/AgentServiceTests.cs
 ```
 
 已覆盖：
 
 ```text
+NTO 关键词识别
+短横连接的数字按 nm 波长范围解释
+中文连接词和单位
+NTO 前“全部吸收”“全部波长”等表达
+反向波长范围拒绝
+无 TDDFT 源提示
+复用当前会话最近 TDDFT 作业
+全部 NTO 无正 f 状态返回正常空结果
 默认前 5 选择
 数量级阈值
 波长范围

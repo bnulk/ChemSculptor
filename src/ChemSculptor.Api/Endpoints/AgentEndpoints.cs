@@ -85,6 +85,14 @@ public static class AgentEndpoints
         response.TddftJobId = result.TddftJobId;
         response.ScientificResultId =
             result.ScientificResultId;
+        response.NtoSelectionMode =
+            result.TaskType == CalculationTaskType.Nto
+                ? result.NtoSelectionMode.ToString()
+                : string.Empty;
+        response.NtoSelectedStateCount =
+            result.NtoSelectedStateCount;
+        response.NtoJobIds =
+            new List<string>(result.NtoJobIds);
         response.ExcitedStateCount =
             result.ExcitedStateCount;
         response.StrongestExcitedStateIndex =
