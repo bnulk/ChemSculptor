@@ -45,8 +45,6 @@ public static class CommonSkillServiceRegistration
         ServiceCollectionServiceExtensions.AddSingleton<
             OptimizationConvergenceCheck>(services);
         ServiceCollectionServiceExtensions.AddSingleton<
-            IAnomalyCheck>(services);
-        ServiceCollectionServiceExtensions.AddSingleton<
             IQuantumProgramAdapterRegistry,
             QuantumProgramAdapterRegistry>(services);
         ServiceCollectionServiceExtensions.AddSingleton<

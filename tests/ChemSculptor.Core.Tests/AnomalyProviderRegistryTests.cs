@@ -1,6 +1,8 @@
 using ChemSculptor.Anomaly.Abstractions;
 using ChemSculptor.Anomaly.Models;
 using ChemSculptor.Anomaly.Registry;
+using ChemSculptor.Skills.Common;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace ChemSculptor.Core.Tests;
 
@@ -44,6 +46,30 @@ public class AnomalyProviderRegistryTests
         }
 
         Assert.True(exceptionThrown);
+    }
+
+    /// <summary>验证通用服务注册不会把接口本身作为实现类型。</summary>
+    [Fact]
+    public void CommonRegistrationDoesNotUseInterfaceAsImplementation()
+    {
+        ServiceCollection services = new ServiceCollection();
+
+        CommonSkillServiceRegistration.AddCommonSkills(services);
+
+        for (int index = 0;
+            index < services.Count;
+            index++)
+        {
+            Type? implementationType =
+                services[index].ImplementationType;
+
+            Assert.False(
+                implementationType != null
+                && implementationType.IsInterface,
+                "服务 " +
+                services[index].ServiceType.FullName +
+                " 把接口本身注册为实现类型。");
+        }
     }
 
     private sealed class TestAnomalyCheck : IAnomalyCheck
