@@ -121,6 +121,10 @@ public sealed class NtoInputWriteRequest
     /// <summary>目标检查点文件名。</summary>
     public string CheckpointFileName { get; set; } = string.Empty;
 
+    /// <summary>源 TDDFT 检查点文件名，用作 Gaussian oldchk。</summary>
+    public string SourceCheckpointFileName { get; set; } =
+        string.Empty;
+
     /// <summary>源激发态编号。</summary>
     public int TransitionIndex { get; set; }
 }

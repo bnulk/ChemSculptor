@@ -32,7 +32,8 @@ public class GaussianNtoTests
                 new NtoInputWriteRequest();
             request.SourceInputPath = sourcePath;
             request.TargetInputPath = targetPath;
-            request.CheckpointFileName = "nto-job.chk";
+            request.SourceCheckpointFileName = "tddft.chk";
+            request.CheckpointFileName = "tddft_State3.chk";
             request.TransitionIndex = 3;
 
             await new GaussianNtoInputWriter()
@@ -40,10 +41,18 @@ public class GaussianNtoTests
             string text = await File.ReadAllTextAsync(
                 targetPath);
 
-            Assert.Contains("%chk=nto-job.chk", text);
+            Assert.StartsWith(
+                "%oldchk=tddft.chk" +
+                Environment.NewLine +
+                "%chk=tddft_State3.chk",
+                text);
             Assert.Contains(
                 "CAM-B3LYP/6-31G*",
                 text);
+            Assert.DoesNotContain(
+                "td(nstates=50)",
+                text,
+                StringComparison.OrdinalIgnoreCase);
             Assert.Contains(
                 "Density=(Check,Transition=3)",
                 text);
@@ -56,9 +65,9 @@ public class GaussianNtoTests
             Assert.Contains(
                 "Pop=(Minimal,NTO,SaveNTO)",
                 text);
-            Assert.Contains("tddft source", text);
-            Assert.Contains("0 1", text);
-            Assert.Contains(
+            Assert.DoesNotContain("tddft source", text);
+            Assert.DoesNotContain("0 1", text);
+            Assert.DoesNotContain(
                 "O 0.000000 0.000000 0.117300",
                 text);
         }

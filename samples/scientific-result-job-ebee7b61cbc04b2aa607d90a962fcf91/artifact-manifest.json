@@ -1,0 +1,55 @@
+﻿{
+  "resultId": "absorption-spectrum-job-ebee7b61cbc04b2aa607d90a962fcf91",
+  "rootJobId": "",
+  "points": [
+    {
+      "pointId": "point-job-ebee7b61cbc04b2aa607d90a962fcf91",
+      "sequence": 1,
+      "directoryName": "01-original-m1",
+      "status": "Accepted",
+      "multiplicity": 1,
+      "files": [
+        {
+          "artifactId": "artifact-job-ebee7b61cbc04b2aa607d90a962fcf91-0",
+          "kind": "RestartState",
+          "downloadFileName": "job-ebee7b61cbc04b2aa607d90a962fcf91.chk",
+          "length": 47525888,
+          "sha256": "e8ddd967e00547fe63a4a507edfa3e79edd68e13279f9be6f72af1588167d54e",
+          "isAvailable": true,
+          "error": "",
+          "downloadPath": "/scientific-results/absorption-spectrum-job-ebee7b61cbc04b2aa607d90a962fcf91/artifacts/point-job-ebee7b61cbc04b2aa607d90a962fcf91/artifact-job-ebee7b61cbc04b2aa607d90a962fcf91-0"
+        },
+        {
+          "artifactId": "artifact-job-ebee7b61cbc04b2aa607d90a962fcf91-1",
+          "kind": "RestartState",
+          "downloadFileName": "job-ebee7b61cbc04b2aa607d90a962fcf91.fchk",
+          "length": 1376461,
+          "sha256": "291b35deff0375221c4eb4fad25e6493d4b38b724ba71b21a38c4117d4f978e4",
+          "isAvailable": true,
+          "error": "",
+          "downloadPath": "/scientific-results/absorption-spectrum-job-ebee7b61cbc04b2aa607d90a962fcf91/artifacts/point-job-ebee7b61cbc04b2aa607d90a962fcf91/artifact-job-ebee7b61cbc04b2aa607d90a962fcf91-1"
+        },
+        {
+          "artifactId": "artifact-job-ebee7b61cbc04b2aa607d90a962fcf91-2",
+          "kind": "Input",
+          "downloadFileName": "job-ebee7b61cbc04b2aa607d90a962fcf91.gjf",
+          "length": 691,
+          "sha256": "826255315a821cfe3442980185e5d2fdc797782a75f5804b8c10056bc01383a7",
+          "isAvailable": true,
+          "error": "",
+          "downloadPath": "/scientific-results/absorption-spectrum-job-ebee7b61cbc04b2aa607d90a962fcf91/artifacts/point-job-ebee7b61cbc04b2aa607d90a962fcf91/artifact-job-ebee7b61cbc04b2aa607d90a962fcf91-2"
+        },
+        {
+          "artifactId": "artifact-job-ebee7b61cbc04b2aa607d90a962fcf91-3",
+          "kind": "PrimaryOutput",
+          "downloadFileName": "output.log",
+          "length": 127665,
+          "sha256": "fb043769c3a0bd99aeffcd02b61e139382dc5b559908d0a3c546d54399bfc9c9",
+          "isAvailable": true,
+          "error": "",
+          "downloadPath": "/scientific-results/absorption-spectrum-job-ebee7b61cbc04b2aa607d90a962fcf91/artifacts/point-job-ebee7b61cbc04b2aa607d90a962fcf91/artifact-job-ebee7b61cbc04b2aa607d90a962fcf91-3"
+        }
+      ]
+    }
+  ]
+}

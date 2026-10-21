@@ -1,0 +1,11 @@
+﻿ResultId：absorption-spectrum-job-ebee7b61cbc04b2aa607d90a962fcf91
+状态：Complete
+标题：吸收光谱
+摘要：优化后 TDDFT，解析 50 个激发态，最强吸收态 8，波长 175.7 nm。
+
+叙述点：
+- PointId：point-job-ebee7b61cbc04b2aa607d90a962fcf91
+
+最终物理量：
+- TDDFT 基态能量：-437.59860898199997 Hartree；PointIds：point-job-ebee7b61cbc04b2aa607d90a962fcf91
+- TDDFT 吸收光谱：175.69999999999999 nm；PointIds：point-job-ebee7b61cbc04b2aa607d90a962fcf91

@@ -1,0 +1,9 @@
+﻿PointId：point-job-ebee7b61cbc04b2aa607d90a962fcf91
+Sequence：1
+InitialJobId：job-ebee7b61cbc04b2aa607d90a962fcf91
+AcceptedJobId：job-ebee7b61cbc04b2aa607d90a962fcf91
+RootWorkflowId：session-1
+ParentPointId：
+CorrectionCount：0
+AcceptedBy：AbsorptionScientificDataRecordSkill
+AcceptanceSummary：TDDFT 正常结束并解析到激发态。

@@ -206,6 +206,21 @@ public sealed class Gaussian16ProgramAdapter
             Path.ChangeExtension(inputFileName, ".fchk");
         List<CalculationArtifactPattern> patterns =
             new List<CalculationArtifactPattern>();
+
+        if (job.Spec.TaskType == CalculationTaskType.Nto)
+        {
+            patterns.Add(CreateArtifactPattern(
+                "*.fchk",
+                CalculationArtifactKind.RestartState,
+                "application/octet-stream",
+                true));
+            patterns.Add(CreateArtifactPattern(
+                "*.chk",
+                CalculationArtifactKind.RestartState,
+                "application/octet-stream",
+                true));
+        }
+
         patterns.Add(CreateArtifactPattern(
             outputFileName,
             CalculationArtifactKind.PrimaryOutput,

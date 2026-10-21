@@ -141,10 +141,21 @@ public sealed class NtoTransitionCalculationSkill
             inputFileName);
         string outputPath =
             _workspace.GetJobOutputPath(jobId);
-        string checkpointFileName = jobId + ".chk";
-        string runCheckpointPath = Path.Combine(
+        string sourceCheckpointFileName =
+            Path.GetFileName(request.SourceCheckpointPath);
+        string sourceCheckpointStem =
+            Path.GetFileNameWithoutExtension(
+                sourceCheckpointFileName);
+        string checkpointFileName =
+            sourceCheckpointStem +
+            "_State" +
+            request.SelectedState.StateIndex
+                .ToString(
+                    System.Globalization.CultureInfo.InvariantCulture) +
+            ".chk";
+        string runSourceCheckpointPath = Path.Combine(
             _workspace.GetRunDirectory(jobId),
-            checkpointFileName);
+            sourceCheckpointFileName);
 
         NtoInputWriteRequest writeRequest =
             new NtoInputWriteRequest();
@@ -153,6 +164,8 @@ public sealed class NtoTransitionCalculationSkill
         writeRequest.TargetInputPath = inputPath;
         writeRequest.CheckpointFileName =
             checkpointFileName;
+        writeRequest.SourceCheckpointFileName =
+            sourceCheckpointFileName;
         writeRequest.TransitionIndex =
             request.SelectedState.StateIndex;
         await ntoProgram.WriteNtoInputAsync(
@@ -161,7 +174,7 @@ public sealed class NtoTransitionCalculationSkill
         File.Copy(inputPath, runInputPath, true);
         File.Copy(
             request.SourceCheckpointPath,
-            runCheckpointPath,
+            runSourceCheckpointPath,
             true);
 
         CalculationSpec ntoSpec =

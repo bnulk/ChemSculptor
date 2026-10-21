@@ -1,3 +1,4 @@
+using System.Text.RegularExpressions;
 using ChemSculptor.Compute;
 
 namespace ChemSculptor.Compute.Gaussian.Nto;
@@ -5,6 +6,12 @@ namespace ChemSculptor.Compute.Gaussian.Nto;
 /// <summary>Gaussian NTO 输入写入器。</summary>
 public sealed class GaussianNtoInputWriter
 {
+    private static readonly Regex TdKeywordPattern =
+        new Regex(
+            @"(?i)(?<!\S)TD(?:\s*=\s*(?:\([^)]*\)|[^\s]+)|\([^)]*\))?(?=\s|$)",
+            RegexOptions.Compiled
+            | RegexOptions.CultureInvariant);
+
     /// <summary>从源 TDDFT 输入生成 NTO 输入。</summary>
     public async Task WriteAsync(
         NtoInputWriteRequest request,
@@ -31,13 +38,33 @@ public sealed class GaussianNtoInputWriter
                 "激发态编号必须大于零。");
         }
 
+        if (string.IsNullOrWhiteSpace(
+                request.SourceCheckpointFileName)
+            || !IsFileName(
+                request.SourceCheckpointFileName))
+        {
+            throw new ArgumentException(
+                "源 TDDFT 检查点文件名无效。",
+                nameof(request));
+        }
+
+        if (string.IsNullOrWhiteSpace(
+                request.CheckpointFileName)
+            || !IsFileName(request.CheckpointFileName))
+        {
+            throw new ArgumentException(
+                "NTO 检查点文件名无效。",
+                nameof(request));
+        }
+
         string inputText = await File.ReadAllTextAsync(
             request.SourceInputPath,
             cancellationToken);
         string[] lines = inputText.Split(
             new string[] { "\r\n", "\n", "\r" },
             StringSplitOptions.None);
-        bool routeUpdated = false;
+        string routeLine = string.Empty;
+        List<string> memoryLines = new List<string>();
 
         for (int index = 0;
             index < lines.Length;
@@ -46,32 +73,46 @@ public sealed class GaussianNtoInputWriter
             string trimmed = lines[index].Trim();
 
             if (trimmed.StartsWith(
-                "%chk=",
-                StringComparison.OrdinalIgnoreCase))
+                    "%mem=",
+                    StringComparison.OrdinalIgnoreCase)
+                || trimmed.StartsWith(
+                    "%nprocshared=",
+                    StringComparison.OrdinalIgnoreCase)
+                || trimmed.StartsWith(
+                    "%nproc=",
+                    StringComparison.OrdinalIgnoreCase))
             {
-                lines[index] =
-                    "%chk=" + request.CheckpointFileName;
+                memoryLines.Add(trimmed);
                 continue;
             }
 
-            if (!routeUpdated
+            if (routeLine.Length == 0
                 && trimmed.StartsWith(
                     "#",
                     StringComparison.Ordinal))
             {
-                lines[index] =
-                    AppendNtoKeywords(
-                        lines[index],
-                        request.TransitionIndex);
-                routeUpdated = true;
+                routeLine = BuildNtoRoute(
+                    trimmed,
+                    request.TransitionIndex);
             }
         }
 
-        if (!routeUpdated)
+        if (routeLine.Length == 0)
         {
             throw new InvalidOperationException(
                 "源 TDDFT 输入中没有找到 route line。");
         }
+
+        List<string> outputLines = new List<string>();
+        outputLines.Add(
+            "%oldchk=" +
+            request.SourceCheckpointFileName);
+        outputLines.Add(
+            "%chk=" + request.CheckpointFileName);
+        outputLines.AddRange(memoryLines);
+        outputLines.Add(string.Empty);
+        outputLines.Add(routeLine);
+        outputLines.Add(string.Empty);
 
         string? directory = Path.GetDirectoryName(
             request.TargetInputPath);
@@ -83,32 +124,47 @@ public sealed class GaussianNtoInputWriter
 
         await File.WriteAllTextAsync(
             request.TargetInputPath,
-            string.Join(Environment.NewLine, lines) +
+            string.Join(Environment.NewLine, outputLines) +
                 Environment.NewLine,
             cancellationToken);
     }
 
-    private static string AppendNtoKeywords(
+    private static string BuildNtoRoute(
         string routeLine,
         int transitionIndex)
     {
-        string result = routeLine.TrimEnd();
-        string ntoKeywords =
+        string result = TdKeywordPattern.Replace(
+            routeLine,
+            " ");
+        result = Regex.Replace(
+            result.Trim(),
+            @"\s+",
+            " ");
+
+        result +=
             " Geom=AllCheck Guess=(Read,Only) " +
             "Density=(Check,Transition=" +
             transitionIndex.ToString(
                 System.Globalization.CultureInfo.InvariantCulture) +
             ") Pop=(Minimal,NTO,SaveNTO)";
 
-        result = result + ntoKeywords;
-
         if (result.IndexOf(
             "nosymm",
             StringComparison.OrdinalIgnoreCase) < 0)
         {
-            result = result + " nosymm";
+            result += " nosymm";
         }
 
         return result;
+    }
+
+    private static bool IsFileName(string value)
+    {
+        return string.Equals(
+                Path.GetFileName(value),
+                value,
+                StringComparison.Ordinal)
+            && value.IndexOfAny(
+                Path.GetInvalidFileNameChars()) < 0;
     }
 }
