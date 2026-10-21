@@ -152,6 +152,77 @@ public class OptimizationParserTests
         }
     }
 
+    /// <summary>
+    /// 验证 Gaussian 先输出 SCF、再输出 Step number 时不会产生空末步。
+    /// </summary>
+    [Fact]
+    public async Task ParsesGaussianOrderWithoutEmptyFinalStep()
+    {
+        string root = CreateTemporaryRoot();
+        string outputPath = Path.Combine(root, "gaussian-order.log");
+
+        try
+        {
+            string outputText =
+                CreateGeometryBlock(
+                    "0.000000",
+                    "0.000000",
+                    "0.100000") +
+                " SCF Done:  E(RB3LYP) =  -76.100000     A.U. after    7 cycles\n" +
+                " Step number   1  out of a maximum of  100\n" +
+                CreateConvergenceBlock("NO") +
+                CreateGeometryBlock(
+                    "0.000400",
+                    "0.000000",
+                    "0.100000") +
+                " SCF Done:  E(RB3LYP) =  -76.200000     A.U. after    5 cycles\n" +
+                " Step number   2  out of a maximum of  100\n" +
+                CreateConvergenceBlock("NO") +
+                CreateGeometryBlock(
+                    "0.000500",
+                    "0.000000",
+                    "0.100000") +
+                " SCF Done:  E(RB3LYP) =  -76.300000     A.U. after    4 cycles\n" +
+                " Step number   3  out of a maximum of  100\n" +
+                CreateConvergenceBlock("YES") +
+                " Optimization completed.\n" +
+                " Normal termination of Gaussian 16\n";
+            await File.WriteAllTextAsync(outputPath, outputText);
+
+            GaussianOutputParser parser =
+                new GaussianOutputParser();
+            GaussianOutput gaussianOutput =
+                await parser.ParseAsync(outputPath);
+            OptimizationResult result =
+                new GaussianResultTranslator()
+                    .TranslateOptimization(gaussianOutput);
+
+            Assert.Equal(3, result.StepCount);
+            Assert.Equal(3, result.Trajectory.Count);
+            Assert.All(
+                result.Trajectory,
+                step =>
+                {
+                    Assert.NotNull(step.Energy);
+                    Assert.True(step.ScfConverged);
+                    Assert.Equal(2, step.Geometry.Atoms.Count);
+                });
+            Assert.Equal(
+                -76.100000,
+                result.Trajectory[0].Energy);
+            Assert.Equal(
+                -76.200000,
+                result.Trajectory[1].Energy);
+            Assert.Equal(
+                -76.300000,
+                result.Trajectory[2].Energy);
+        }
+        finally
+        {
+            DeleteTemporaryRoot(root);
+        }
+    }
+
     private static string CreateOptimizationOutputText()
     {
         return

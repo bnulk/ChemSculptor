@@ -213,6 +213,14 @@ tests/ChemSculptor.Core.Tests/OptimizationRecoveryWorkflowTests.cs
 ## 未完成项
 
 ```text
-真实 Gaussian 优化与稳定性恢复端到端验收。
+真实 Gaussian O2 优化与稳定性恢复端到端验收已通过。
 真实含氢体系只优化氢原子的端到端验收。
 ```
+
+Gaussian 轨迹解析兼容实际输出顺序：
+
+```text
+几何 -> SCF Done -> Step number N -> 收敛指标
+```
+
+`Step number N` 绑定前一个 SCF 结果，不能额外生成空末步。

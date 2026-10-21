@@ -161,6 +161,15 @@ public sealed class OptimizationScientificDataRecordSkill : ISkill
                 : ScientificResultStatus.Partial;
         result.Metadata["jobId"] = finalJob.JobId;
         result.Metadata["parentJobId"] = finalJob.ParentJobId;
+        string rootWorkflowId =
+            ResolveRootWorkflowId(optimization, finalJob);
+
+        if (!string.IsNullOrWhiteSpace(rootWorkflowId))
+        {
+            result.Metadata["rootWorkflowId"] =
+                rootWorkflowId;
+        }
+
         result.Metadata["program"] = finalResult.Program;
         result.Metadata["method"] = finalResult.Method;
         result.Metadata["basis"] = finalResult.Basis;
@@ -184,6 +193,25 @@ public sealed class OptimizationScientificDataRecordSkill : ISkill
 
         result.CompletedAt = DateTimeOffset.UtcNow;
         return result;
+    }
+
+    private static string ResolveRootWorkflowId(
+        OptimizationCalculationSkillResult optimization,
+        CalculationJob finalJob)
+    {
+        if (!string.IsNullOrWhiteSpace(
+            finalJob.RootWorkflowId))
+        {
+            return finalJob.RootWorkflowId;
+        }
+
+        if (!string.IsNullOrWhiteSpace(
+            optimization.Job.RootWorkflowId))
+        {
+            return optimization.Job.RootWorkflowId;
+        }
+
+        return optimization.Job.JobId;
     }
 
     private static T DeserializeRequired<T>(

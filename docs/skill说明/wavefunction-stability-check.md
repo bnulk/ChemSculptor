@@ -59,6 +59,16 @@ Gaussian 关键词：
 guess=read geom=check stable
 ```
 
+生成稳定性检查输入前必须移除：
+
+```text
+SP
+opt
+opt=...
+Freq
+已有 stable 和 geom/guess 关键词
+```
+
 ## 4. 结果
 
 代码落点：
@@ -106,6 +116,13 @@ src/ChemSculptor.Anomaly/Models/CommonAnomalyCodes.cs
 
 恢复后必须重新优化并复检。
 
+优化恢复输入必须同时修改：
+
+```text
+Gaussian route
+电荷和自旋多重度行
+```
+
 ## 9. 工作流
 
 代码落点：
@@ -135,4 +152,14 @@ Failed
 tests/ChemSculptor.Core.Tests/OptimizationStabilityCheckTests.cs
 tests/ChemSculptor.Core.Tests/OptimizationWorkflowTests.cs
 tests/ChemSculptor.Core.Tests/RuleBasedCalculationParameterExtractorTests.cs
+tests/ChemSculptor.Core.Tests/OptimizationStabilityRealGaussianTests.cs
+```
+
+真实 Gaussian 已覆盖：
+
+```text
+0 1 单重态 O2
+-> RHF -> UHF 不稳定
+-> 派生 0 3 三重态优化
+-> 稳定性复检通过
 ```

@@ -127,6 +127,48 @@ public class ScientificArtifactApiTests
         }
     }
 
+    /// <summary>验证可按父作业标识找到只保存父作业元数据的成果。</summary>
+    [Fact]
+    public async Task FindsScientificResultByParentJobId()
+    {
+        string root = CreateTemporaryRoot();
+
+        try
+        {
+            ScientificDataRepositoryOptions options =
+                new ScientificDataRepositoryOptions();
+            options.RootDirectory = Path.Combine(
+                root,
+                "scientific-data");
+            FileScientificDataRepository repository =
+                new FileScientificDataRepository(options);
+
+            ScientificResult result = new ScientificResult();
+            result.Id = "optimization-job-recovery";
+            result.Metadata["jobId"] = "job-recovery";
+            result.Metadata["parentJobId"] = "job-original";
+            await repository.SaveAsync(result);
+
+            ScientificResult? byOriginal =
+                ScientificResultLookup.FindByJobId(
+                    repository,
+                    "job-original");
+            ScientificResult? byRecovery =
+                ScientificResultLookup.FindByJobId(
+                    repository,
+                    "job-recovery");
+
+            Assert.NotNull(byOriginal);
+            Assert.NotNull(byRecovery);
+            Assert.Equal(result.Id, byOriginal!.Id);
+            Assert.Equal(result.Id, byRecovery!.Id);
+        }
+        finally
+        {
+            DeleteTemporaryRoot(root);
+        }
+    }
+
     private static ScientificArtifactPointManifest
         CreatePointManifest(
             int sequence,

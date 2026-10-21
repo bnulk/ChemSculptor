@@ -40,15 +40,18 @@ public static class ScientificResultLookup
                 return result;
             }
 
-            string? rootWorkflowId;
-
-            if (result.Metadata.TryGetValue(
+            if (MetadataMatches(
+                result,
                 "rootWorkflowId",
-                out rootWorkflowId)
-                && string.Equals(
-                    rootWorkflowId,
-                    jobId,
-                    StringComparison.OrdinalIgnoreCase))
+                jobId)
+                || MetadataMatches(
+                    result,
+                    "parentJobId",
+                    jobId)
+                || MetadataMatches(
+                    result,
+                    "jobId",
+                    jobId))
             {
                 return result;
             }
@@ -60,6 +63,20 @@ public static class ScientificResultLookup
         }
 
         return null;
+    }
+
+    private static bool MetadataMatches(
+        ScientificResult result,
+        string key,
+        string jobId)
+    {
+        string? value;
+
+        return result.Metadata.TryGetValue(key, out value)
+            && string.Equals(
+                value,
+                jobId,
+                StringComparison.OrdinalIgnoreCase);
     }
 
     private static bool ContainsJob(

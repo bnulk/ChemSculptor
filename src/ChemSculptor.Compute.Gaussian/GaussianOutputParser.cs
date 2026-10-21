@@ -65,6 +65,10 @@ public sealed class GaussianOutputParser
         bool insideGeometry = false;
         List<CanonicalAtom> currentGeometryAtoms =
             new List<CanonicalAtom>();
+        bool awaitingStepEvaluation = false;
+        double? pendingEnergy = null;
+        int? pendingScfIterations = null;
+        CanonicalGeometry? pendingGeometry = null;
 
         for (int index = 0; index < lines.Length; index++)
         {
@@ -126,9 +130,31 @@ public sealed class GaussianOutputParser
                     result.LastStepNumber = stepNumber;
                     result.MaximumOptimizationCycles =
                         maximumCycles;
-                    GetOrCreateStep(
+                    GaussianOptimizationStep step =
+                        GetOrCreateStep(
                         result,
                         stepNumber);
+
+                    if (pendingEnergy.HasValue)
+                    {
+                        step.Energy = pendingEnergy.Value;
+                        step.ScfConverged = true;
+                        step.ScfIterations =
+                            pendingScfIterations;
+                        step.Geometry =
+                            pendingGeometry == null
+                                ? new CanonicalGeometry()
+                                : CloneGeometry(
+                                    pendingGeometry);
+                        pendingEnergy = null;
+                        pendingScfIterations = null;
+                        pendingGeometry = null;
+                        awaitingStepEvaluation = false;
+                    }
+                    else
+                    {
+                        awaitingStepEvaluation = true;
+                    }
                 }
             }
 
@@ -195,27 +221,23 @@ public sealed class GaussianOutputParser
             }
 
             result.ScfConverged = true;
-            GaussianOptimizationStep currentStep =
-                GetOrCreateStep(
-                    result,
-                    ref currentStepNumber);
-            currentStep.ScfConverged = true;
 
             Match iterationsMatch =
                 ScfIterationsPattern.Match(line);
+            int? iterations = null;
 
             if (iterationsMatch.Success)
             {
-                int iterations;
+                int parsedIterations;
 
                 if (int.TryParse(
                     iterationsMatch.Groups[1].Value,
                     NumberStyles.Integer,
                     CultureInfo.InvariantCulture,
-                    out iterations))
+                    out parsedIterations))
                 {
-                    result.ScfIterations = iterations;
-                    currentStep.ScfIterations = iterations;
+                    result.ScfIterations = parsedIterations;
+                    iterations = parsedIterations;
                 }
             }
 
@@ -226,12 +248,36 @@ public sealed class GaussianOutputParser
             {
                 result.Energy = energy;
                 result.EnergyMethod = match.Groups[1].Value;
-                currentStep.Energy = energy;
 
-                if (result.FinalGeometry != null)
+                if (awaitingStepEvaluation
+                    && currentStepNumber.HasValue)
                 {
-                    currentStep.Geometry =
-                        CloneGeometry(result.FinalGeometry);
+                    GaussianOptimizationStep currentStep =
+                        GetOrCreateStep(
+                            result,
+                            currentStepNumber.Value);
+                    currentStep.Energy = energy;
+                    currentStep.ScfConverged = true;
+                    currentStep.ScfIterations = iterations;
+
+                    if (result.FinalGeometry != null)
+                    {
+                        currentStep.Geometry =
+                            CloneGeometry(
+                                result.FinalGeometry);
+                    }
+
+                    awaitingStepEvaluation = false;
+                }
+                else
+                {
+                    pendingEnergy = energy;
+                    pendingScfIterations = iterations;
+                    pendingGeometry =
+                        result.FinalGeometry == null
+                            ? null
+                            : CloneGeometry(
+                                result.FinalGeometry);
                 }
             }
         }

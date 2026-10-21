@@ -184,7 +184,13 @@ public sealed class OptimizationCalculationService
 
             OptimizationResult? optimizationResult =
                 ExtractOptimizationResult(workflowRun);
-            job.State = workflowRun.State == WorkflowState.Passed
+            CalculationValidationReport? report =
+                ResolveValidationReport(workflowRun);
+            bool workflowPassed =
+                workflowRun.State == WorkflowState.Passed
+                && optimizationResult != null
+                && (report == null || report.Passed);
+            job.State = workflowPassed
                 ? CalculationJobState.Validated
                 : CalculationJobState.Failed;
             job.CompletedAt = DateTimeOffset.UtcNow;
@@ -206,16 +212,13 @@ public sealed class OptimizationCalculationService
             _results[jobId] = optimizationResult;
             _finalJobIds[jobId] = finalJobId;
             _correctionCounts[jobId] = correctionCount;
-            CalculationValidationReport? report =
-                ResolveValidationReport(workflowRun);
 
             if (report != null)
             {
                 _validations[jobId] = report;
             }
 
-            result.Succeeded =
-                workflowRun.State == WorkflowState.Passed;
+            result.Succeeded = workflowPassed;
             result.Job = job;
             result.Result = optimizationResult;
             result.Report = report;
