@@ -241,6 +241,61 @@ public class GaussianWavefunctionStabilityTests
         }
     }
 
+    /// <summary>验证稳定性检查输入会移除优化和频率任务关键词。</summary>
+    [Fact]
+    public async Task StabilityInputRemovesOptimizationAndFrequencyTasks()
+    {
+        string root = CreateTemporaryRoot();
+        string sourcePath = Path.Combine(root, "source.gjf");
+        string targetPath = Path.Combine(root, "stability.gjf");
+
+        try
+        {
+            await File.WriteAllTextAsync(
+                sourcePath,
+                "%chk=source.chk\n" +
+                "%mem=4GB\n" +
+                "%nprocshared=4\n" +
+                "\n" +
+                "#p CAM-B3LYP/6-31G* opt=MaxCycles=100 Freq em=GD3BJ scfcyc=200\n" +
+                "\n" +
+                "oxygen\n" +
+                "\n" +
+                "0 1\n" +
+                "O 0.000000 0.000000 0.000000\n" +
+                "O 0.000000 0.000000 1.207000\n");
+
+            GaussianWavefunctionStabilityInputWriter writer =
+                new GaussianWavefunctionStabilityInputWriter();
+            GaussianWavefunctionStabilityInputWriteResult result =
+                await writer.WriteAsync(
+                    sourcePath,
+                    targetPath,
+                    "stability.chk");
+
+            Assert.True(result.Succeeded);
+            string targetText =
+                await File.ReadAllTextAsync(targetPath);
+            Assert.DoesNotContain(
+                "opt=MaxCycles",
+                targetText,
+                StringComparison.OrdinalIgnoreCase);
+            Assert.DoesNotContain(
+                "Freq",
+                targetText,
+                StringComparison.OrdinalIgnoreCase);
+            Assert.Contains(
+                "guess=read geom=check stable",
+                targetText,
+                StringComparison.OrdinalIgnoreCase);
+            Assert.Contains("0 1", targetText);
+        }
+        finally
+        {
+            DeleteTemporaryRoot(root);
+        }
+    }
+
     /// <summary>验证缺少输出时返回 Skipped 和跳过原因。</summary>
     [Fact]
     public async Task CheckReturnsSkippedWithoutOutput()

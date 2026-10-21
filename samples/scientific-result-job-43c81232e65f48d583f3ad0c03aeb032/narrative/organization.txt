@@ -1,0 +1,17 @@
+﻿ResultId：absorption-spectrum-job-43c81232e65f48d583f3ad0c03aeb032
+点集：吸收光谱
+ 点集
+
+科学点：
+- PointId：point-job-43c81232e65f48d583f3ad0c03aeb032
+
+关系：
+- 无关系记录。
+
+物理量：
+- ObservableId：observable-job-43c81232e65f48d583f3ad0c03aeb032-ground-energy
+  PointIds：point-job-43c81232e65f48d583f3ad0c03aeb032
+  RelationIds：
+- ObservableId：observable-job-43c81232e65f48d583f3ad0c03aeb032-spectrum
+  PointIds：point-job-43c81232e65f48d583f3ad0c03aeb032
+  RelationIds：

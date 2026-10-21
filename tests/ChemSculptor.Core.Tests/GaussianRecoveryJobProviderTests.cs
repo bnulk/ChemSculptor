@@ -201,6 +201,94 @@ public class GaussianRecoveryJobProviderTests
         }
     }
 
+    /// <summary>验证优化恢复时会把电荷和多重度写入输入文件。</summary>
+    [Fact]
+    public async Task OptimizationSpinChangeUpdatesChargeMultiplicityLine()
+    {
+        string root = CreateTemporaryRoot();
+        string sourcePath = Path.Combine(root, "oxygen-opt.gjf");
+
+        try
+        {
+            await File.WriteAllTextAsync(
+                sourcePath,
+                "%chk=source.chk\n" +
+                "%mem=4GB\n" +
+                "%nprocshared=4\n" +
+                "\n" +
+                "#p CAM-B3LYP/6-31G* opt=MaxCycles=100 em=GD3BJ\n" +
+                "\n" +
+                "oxygen optimization\n" +
+                "\n" +
+                "0 1\n" +
+                "O 0.000000 0.000000 0.000000\n" +
+                "O 0.000000 0.000000 1.207000\n");
+
+            CalculationWorkspaceOptions options =
+                new CalculationWorkspaceOptions();
+            options.RootDirectory = Path.Combine(root, "workspace");
+            WorkspaceManager workspace = new WorkspaceManager(options);
+            FileCalculationRepository repository =
+                new FileCalculationRepository(workspace);
+
+            CalculationJob sourceJob = new CalculationJob();
+            sourceJob.JobId = "job-oxygen-opt";
+            sourceJob.InputFilePath = sourcePath;
+            sourceJob.SourceInputFilePath = sourcePath;
+            sourceJob.Spec =
+                CalculationDefaults.CreateDefaultOptimization();
+            sourceJob.Spec.Multiplicity = 1;
+            await repository.SaveJobAsync(sourceJob);
+
+            CorrectionPlan plan = new CorrectionPlan();
+            plan.Id = "plan-spin";
+            plan.SourceJobId = sourceJob.JobId;
+            plan.Option = new CorrectionOption();
+            plan.Option.Id = "change-spin";
+            plan.Option.IntentCode =
+                CorrectionIntentCodes.ChangeSpinMultiplicity;
+            plan.Option.CanUseForRestart = true;
+
+            CorrectionChange change = new CorrectionChange();
+            change.Name = "multiplicity";
+            change.OldValue = "1";
+            change.NewValue = "3";
+            plan.Option.Changes.Add(change);
+
+            GaussianRecoveryJobProvider provider =
+                new GaussianRecoveryJobProvider(
+                    workspace,
+                    repository,
+                    new TestQuantumProgramAdapterRegistry(),
+                    new GaussianRecoveryInputWriter());
+            RecoveryJobPreparationRequest request =
+                new RecoveryJobPreparationRequest();
+            request.SourceJob = sourceJob;
+            request.Plan = plan;
+
+            RecoveryJobPreparationResult result =
+                await provider.PrepareAsync(request);
+
+            Assert.True(result.Succeeded);
+            Assert.NotNull(result.RecoveryJob);
+            string recoveryInput =
+                await File.ReadAllTextAsync(
+                    result.RecoveryJob!.SourceInputFilePath);
+            Assert.Contains("0 3", recoveryInput);
+            Assert.DoesNotContain(
+                Environment.NewLine + "0 1" + Environment.NewLine,
+                recoveryInput);
+            Assert.Equal(3, result.RecoveryJob.Spec.Multiplicity);
+            Assert.Equal(
+                ElectronicStateObjective.TargetSpinState,
+                result.RecoveryJob.Spec.ElectronicStateObjective);
+        }
+        finally
+        {
+            DeleteTemporaryRoot(root);
+        }
+    }
+
     private static string CreateTemporaryRoot()
     {
         string root = Path.Combine(

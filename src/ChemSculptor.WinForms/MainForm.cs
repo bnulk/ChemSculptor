@@ -46,7 +46,7 @@ public sealed class MainForm : Form
     public MainForm()
     {
         _http = new HttpClient();
-        _http.Timeout = TimeSpan.FromSeconds(30);
+        _http.Timeout = TimeSpan.FromHours(1);
 
         _sessions = new List<ChatSession>();
         _calculations = new Dictionary<string, CalculationJobItem>(

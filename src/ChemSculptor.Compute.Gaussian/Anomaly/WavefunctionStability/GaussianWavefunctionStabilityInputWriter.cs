@@ -204,18 +204,9 @@ public sealed class GaussianWavefunctionStabilityInputWriter
         {
             string part = parts[index];
 
-            if (string.Equals(
-                part,
-                "SP",
-                StringComparison.OrdinalIgnoreCase)
-                || string.Equals(
-                    part,
-                    "OPT",
-                    StringComparison.OrdinalIgnoreCase)
-                || string.Equals(
-                    part,
-                    "FREQ",
-                    StringComparison.OrdinalIgnoreCase)
+            if (IsTaskKeyword(part, "SP")
+                || IsTaskKeyword(part, "OPT")
+                || IsTaskKeyword(part, "FREQ")
                 || part.StartsWith(
                     "stable",
                     StringComparison.OrdinalIgnoreCase)
@@ -237,6 +228,22 @@ public sealed class GaussianWavefunctionStabilityInputWriter
         keptParts.Add("stable");
 
         return string.Join(" ", keptParts);
+    }
+
+    private static bool IsTaskKeyword(
+        string part,
+        string keyword)
+    {
+        return string.Equals(
+                part,
+                keyword,
+                StringComparison.OrdinalIgnoreCase)
+            || part.StartsWith(
+                keyword + "=",
+                StringComparison.OrdinalIgnoreCase)
+            || part.StartsWith(
+                keyword + "(",
+                StringComparison.OrdinalIgnoreCase);
     }
 
     private sealed class GaussianStabilityInputParts

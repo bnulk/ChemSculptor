@@ -180,6 +180,7 @@ public sealed class GaussianRecoveryInputWriter
         }
 
         bool routeUpdated = false;
+        bool chargeMultiplicityUpdated = false;
 
         for (int index = 0; index < lines.Length; index++)
         {
@@ -200,6 +201,25 @@ public sealed class GaussianRecoveryInputWriter
             {
                 lines[index] = routeLine;
                 routeUpdated = true;
+                continue;
+            }
+
+            int charge;
+            int multiplicity;
+
+            if (!chargeMultiplicityUpdated
+                && TryParseChargeMultiplicity(
+                    trimmed,
+                    out charge,
+                    out multiplicity))
+            {
+                lines[index] =
+                    recoverySpec.Charge.ToString(
+                        System.Globalization.CultureInfo.InvariantCulture) +
+                    " " +
+                    recoverySpec.Multiplicity.ToString(
+                        System.Globalization.CultureInfo.InvariantCulture);
+                chargeMultiplicityUpdated = true;
             }
         }
 
@@ -207,6 +227,14 @@ public sealed class GaussianRecoveryInputWriter
         {
             result.Succeeded = false;
             result.Error = "原始 Gaussian 输入中没有找到 route line。";
+            return result;
+        }
+
+        if (!chargeMultiplicityUpdated)
+        {
+            result.Succeeded = false;
+            result.Error =
+                "原始 Gaussian 输入中没有找到电荷和自旋多重度行。";
             return result;
         }
 

@@ -1,0 +1,12 @@
+%chk=job-43c81232e65f48d583f3ad0c03aeb032.chk
+%mem=4GB
+%nprocshared=4
+
+#p CAM-B3LYP/6-31G* td(nstates=50) em=GD3BJ nosymm scfcyc=200
+
+ChemSculptor single point calculation
+
+0 1
+O -1.745846 -0.414902 -0.017717
+O -2.952036 -0.414902 -0.017717
+
