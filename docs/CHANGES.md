@@ -5,6 +5,53 @@
 
 ---
 
+## v0.71.2（2026-10-21）：线型分子振动解析鲁棒化
+
+### 版本
+
+- 当前版本：`0.71.2`
+- 日期：`2026-10-21`
+- 版本类型：问题修复
+
+### 改动目的
+
+修复双原子和线型分子振动分析的模式数量识别，确保双原子和线型分子使用
+`3N-5`，非线性分子使用 `3N-6`。
+
+### 解析规则
+
+```text
+只采用最后一个 Harmonic frequencies 块
+忽略 Low frequencies 平动和转动模式
+从最终几何判断原子数和线性
+找不到几何时使用 NAtoms 和 Full point group
+双原子和线型：3N-5
+非线性：3N-6
+模式数量不一致时生成诊断，不静默截断
+```
+
+### 代码改动
+
+```text
+src/ChemSculptor.Compute/FrequencyAnalysisModels.cs
+src/ChemSculptor.Compute.Gaussian/FrequencyAnalysis/
+  GaussianFrequencyOutputParser.cs
+src/ChemSculptor.Skills.Common/CalculationResultValidation/
+  FrequencyAnalysisResultValidator.cs
+tests/ChemSculptor.Core.Tests/FrequencyAnalysisTests.cs
+docs/skill说明/frequency-analysis.md
+```
+
+### 验证
+
+```text
+Release 构建：0 警告，0 错误
+测试：256/256 通过
+真实 O2：原子数 2、线型、期望 1、实际 1、频率 1727.4137、无虚频
+```
+
+---
+
 ## v0.71.1（2026-10-21）：O2 稳定性修正与验证结果显示修复
 
 ### 版本

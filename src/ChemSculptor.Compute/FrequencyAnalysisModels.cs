@@ -22,6 +22,18 @@ public sealed class FrequencyAnalysisResult
     public List<double> Frequencies { get; set; } =
         new List<double>();
 
+    /// <summary>最终几何中的原子数量。</summary>
+    public int? AtomCount { get; set; }
+
+    /// <summary>最终几何是否为线型分子。</summary>
+    public bool? IsLinear { get; set; }
+
+    /// <summary>按 3N-5 或 3N-6 计算的期望振动模式数。</summary>
+    public int? ExpectedFrequencyCount { get; set; }
+
+    /// <summary>解析出的模式数是否等于期望模式数。</summary>
+    public bool? FrequencyCountMatchesExpected { get; set; }
+
     /// <summary>虚频数量。</summary>
     public int ImaginaryFrequencyCount { get; set; }
 

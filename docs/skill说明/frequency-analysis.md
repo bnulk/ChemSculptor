@@ -28,6 +28,10 @@ src/ChemSculptor.Compute/FrequencyAnalysisModels.cs
 ```text
 FrequencyAnalysisResult
   FrequencyAnalysisResult.Frequencies
+  FrequencyAnalysisResult.AtomCount
+  FrequencyAnalysisResult.IsLinear
+  FrequencyAnalysisResult.ExpectedFrequencyCount
+  FrequencyAnalysisResult.FrequencyCountMatchesExpected
   FrequencyAnalysisResult.ImaginaryFrequencyCount
   FrequencyAnalysisResult.MinimumFrequency
   FrequencyAnalysisResult.IsMinimum
@@ -89,6 +93,11 @@ src/ChemSculptor.Compute.Gaussian/FrequencyAnalysis/
 验收：
 
 ```text
+只采用最后一个 Harmonic frequencies 块
+忽略 Low frequencies 平动和转动模式
+双原子和线型分子使用 3N-5
+非线性分子使用 3N-6
+模式数量不一致时写入诊断
 能够解析频率、虚频、最低频率和热化学校正。
 ```
 
@@ -113,6 +122,7 @@ src/ChemSculptor.Skills.Common/OptimizationRecovery/
 
 ```text
 检查正常结束、频率是否存在、虚频数和热化学校正。
+ExpectedFrequencyCount 存在时验证实际模式数是否等于 3N-5 或 3N-6。
 ```
 
 代码落点：
@@ -206,6 +216,11 @@ Freq 输入生成
 虚频识别
 优化 Workflow 顺序
 客户端摘要字段
+双原子线型分子 3N-5
+线型三原子分子 3N-5
+非线性分子 3N-6
+多谐波块只采用最后一块
+模式数不一致诊断
 ```
 
 ## 未完成项
@@ -213,5 +228,4 @@ Freq 输入生成
 ```text
 Frequency 专用异常码
 温度、压力、缩放因子参数
-真实 Gaussian 端到端验收
 ```

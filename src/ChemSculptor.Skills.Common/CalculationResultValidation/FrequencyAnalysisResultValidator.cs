@@ -90,6 +90,19 @@ public sealed class FrequencyAnalysisResultValidator
             result.MinimumFrequency.HasValue,
             "振动分析结果中没有最低频率。");
 
+        if (result.ExpectedFrequencyCount.HasValue)
+        {
+            NumericalCalculationValidationChecks.AddRequiredCheck(
+                report,
+                "frequency.mode_count",
+                "振动模式数量符合 3N-5 或 3N-6",
+                CalculationValidationScope.Numerical,
+                result.ExpectedFrequencyCount.Value.ToString(),
+                result.Frequencies.Count.ToString(),
+                result.FrequencyCountMatchesExpected == true,
+                "振动模式数量与分子自由度不一致。");
+        }
+
         NumericalCalculationValidationChecks.AddRecommendedCheck(
             report,
             "frequency.no_imaginary_modes",
