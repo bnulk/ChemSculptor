@@ -26,6 +26,42 @@ public class NtoInterpretationTests
         Assert.Null(intent.NtoWavelengthMaxNm);
     }
 
+    /// <summary>验证“吸收光谱 NTO”要求先执行吸收光谱 Workflow。</summary>
+    [Fact]
+    public async Task AbsorptionNtoRunsAbsorptionFirst()
+    {
+        RuleBasedTaskInterpreter interpreter =
+            new RuleBasedTaskInterpreter();
+
+        InterpretedTask intent =
+            await interpreter.InterpretAsync(
+                "吸收光谱，不优化 nto 300-500");
+
+        Assert.True(intent.IsSupported);
+        Assert.Equal(CalculationTaskType.Nto, intent.TaskType);
+        Assert.True(intent.RunAbsorptionBeforeNto);
+        Assert.Equal(
+            AbsorptionSpectrumMode.TddftOnly,
+            intent.AbsorptionSpectrumMode);
+        Assert.Equal(
+            NtoSelectionMode.WavelengthRange,
+            intent.NtoSelectionMode);
+    }
+
+    /// <summary>验证只输入 NTO 时不强制预先执行吸收光谱。</summary>
+    [Fact]
+    public async Task PureNtoDoesNotForceAbsorptionInInterpreter()
+    {
+        RuleBasedTaskInterpreter interpreter =
+            new RuleBasedTaskInterpreter();
+
+        InterpretedTask intent =
+            await interpreter.InterpretAsync("NTO");
+
+        Assert.True(intent.IsSupported);
+        Assert.False(intent.RunAbsorptionBeforeNto);
+    }
+
     /// <summary>验证两个数字由短横连接时按纳米波长范围解释。</summary>
     [Theory]
     [InlineData("计算 NTO 300-500")]

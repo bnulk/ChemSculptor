@@ -251,9 +251,9 @@ public class AgentServiceTests
         }
     }
 
-    /// <summary>验证没有 TDDFT 源时 NTO 请求返回可执行提示。</summary>
+    /// <summary>验证 NTO 没有源作业时会先执行吸收光谱 Workflow。</summary>
     [Fact]
-    public async Task NtoWithoutTddftSourceReturnsGuidance()
+    public async Task NtoWithoutSourceRunsAbsorptionThenNto()
     {
         string root = CreateTemporaryRoot();
 
@@ -274,6 +274,10 @@ public class AgentServiceTests
             AgentRequest request = new AgentRequest();
             request.SessionId = "session-nto-no-source";
             request.Text = "做 NTO";
+            request.CoordinateText =
+                "O 0.000000 0.000000 0.117300\n" +
+                "H 0.000000 0.757200 -0.469200\n" +
+                "H 0.000000 -0.757200 -0.469200";
 
             AgentResult result =
                 await service.HandleMessageAsync(request);
@@ -281,9 +285,131 @@ public class AgentServiceTests
             Assert.True(result.IsSupported);
             Assert.Equal(CalculationTaskType.Nto, result.TaskType);
             Assert.Equal("nto", result.WorkflowId);
-            Assert.Equal("NoTddftSource", result.Status);
-            Assert.Contains("先完成 TDDFT", result.Message);
+            Assert.Equal("Completed", result.Status);
+            Assert.NotNull(absorptionService.LastRequest);
+            Assert.NotNull(ntoService.LastRequest);
+            Assert.Equal(
+                "job-tddft-absorption-agent",
+                ntoService.LastRequest!.SourceTddftJobId);
+        }
+        finally
+        {
+            DeleteTemporaryRoot(root);
+        }
+    }
+
+    /// <summary>验证“吸收光谱 NTO”会连续运行两个独立 Workflow。</summary>
+    [Fact]
+    public async Task AbsorptionNtoRunsBothWorkflowsInOrder()
+    {
+        string root = CreateTemporaryRoot();
+
+        try
+        {
+            RecordingWorkflowEngine workflowEngine;
+            RecordingOptimizationService optimizationService;
+            RecordingAbsorptionSpectrumWorkflowService
+                absorptionService;
+            RecordingNtoWorkflowService ntoService;
+            AgentService service = CreateAgentService(
+                root,
+                out workflowEngine,
+                out optimizationService,
+                out absorptionService,
+                out ntoService);
+
+            AgentRequest request = new AgentRequest();
+            request.SessionId = "session-absorption-nto";
+            request.Text =
+                "吸收光谱，不优化 nto 300-500";
+            request.CoordinateText =
+                "O 0.000000 0.000000 0.117300\n" +
+                "H 0.000000 0.757200 -0.469200\n" +
+                "H 0.000000 -0.757200 -0.469200";
+
+            AgentResult result =
+                await service.HandleMessageAsync(request);
+
+            Assert.True(result.IsSupported);
+            Assert.Equal(CalculationTaskType.Nto, result.TaskType);
+            Assert.Equal(
+                AbsorptionSpectrumMode.TddftOnly,
+                absorptionService.LastRequest!.Mode);
+            Assert.Equal(
+                "job-tddft-absorption-agent",
+                ntoService.LastRequest!.SourceTddftJobId);
+            Assert.Equal(
+                NtoSelectionMode.WavelengthRange,
+                ntoService.LastRequest.SelectionMode);
+            Assert.Equal(
+                300.0,
+                ntoService.LastRequest.WavelengthMinNm);
+            Assert.Equal(
+                500.0,
+                ntoService.LastRequest.WavelengthMaxNm);
+            Assert.Equal("Completed", result.Status);
+        }
+        finally
+        {
+            DeleteTemporaryRoot(root);
+        }
+    }
+
+    /// <summary>验证参数澄清后仍会自动继续 NTO Workflow。</summary>
+    [Fact]
+    public async Task AbsorptionNtoContinuesAfterParameterClarification()
+    {
+        string root = CreateTemporaryRoot();
+
+        try
+        {
+            RecordingWorkflowEngine workflowEngine;
+            RecordingOptimizationService optimizationService;
+            RecordingAbsorptionSpectrumWorkflowService
+                absorptionService;
+            RecordingNtoWorkflowService ntoService;
+            AgentService service = CreateAgentService(
+                root,
+                out workflowEngine,
+                out optimizationService,
+                out absorptionService,
+                out ntoService);
+            string coordinates =
+                "O 0.000000 0.000000 0.117300\n" +
+                "H 0.000000 0.757200 -0.469200\n" +
+                "H 0.000000 -0.757200 -0.469200";
+
+            AgentRequest firstRequest = new AgentRequest();
+            firstRequest.SessionId =
+                "session-absorption-nto-clarification";
+            firstRequest.Text =
+                "吸收光谱，不优化 nto 对称性";
+            firstRequest.CoordinateText = coordinates;
+            AgentResult first =
+                await service.HandleMessageAsync(firstRequest);
+
+            Assert.True(first.IsSupported);
+            Assert.True(first.RequiresUserAction);
+            Assert.Equal("NeedsClarification", first.Status);
+            Assert.Null(absorptionService.LastRequest);
             Assert.Null(ntoService.LastRequest);
+
+            AgentRequest secondRequest = new AgentRequest();
+            secondRequest.SessionId =
+                "session-absorption-nto-clarification";
+            secondRequest.Text = "关闭对称性";
+            secondRequest.CoordinateText = coordinates;
+            AgentResult second =
+                await service.HandleMessageAsync(secondRequest);
+
+            Assert.True(second.IsSupported);
+            Assert.Equal(CalculationTaskType.Nto, second.TaskType);
+            Assert.Equal("Completed", second.Status);
+            Assert.NotNull(absorptionService.LastRequest);
+            Assert.NotNull(ntoService.LastRequest);
+            Assert.Equal(
+                "job-tddft-absorption-agent",
+                ntoService.LastRequest!.SourceTddftJobId);
         }
         finally
         {

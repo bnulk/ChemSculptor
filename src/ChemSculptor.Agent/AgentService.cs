@@ -652,18 +652,67 @@ public sealed class AgentService : IAgentService
         }
 
         string? sourceJobId;
-
-        if (!_lastTddftJobIds.TryGetValue(
+        bool hasTddftSource =
+            _lastTddftJobIds.TryGetValue(
                 request.SessionId,
                 out sourceJobId)
-            || string.IsNullOrWhiteSpace(sourceJobId))
+            && !string.IsNullOrWhiteSpace(sourceJobId);
+
+        if (conversationReply.Intent.RunAbsorptionBeforeNto
+            || !hasTddftSource)
         {
-            result.IsSupported = true;
-            result.Status = "NoTddftSource";
-            result.Message =
-                "当前会话没有可用的 TDDFT 源作业，请先完成 TDDFT 计算。";
+            if (_absorptionSpectrumService == null)
+            {
+                result.IsSupported = false;
+                result.Error =
+                    "NTO 缺少 TDDFT 源，且吸收光谱工作流服务尚未注册。";
+                return result;
+            }
+
+            ConversationReply absorptionReply =
+                CreateAbsorptionReplyForNto(
+                    conversationReply.Intent);
+            return await
+                HandleAbsorptionSpectrumConversationAsync(
+                    request,
+                    absorptionReply,
+                    null,
+                    cancellationToken,
+                    true,
+                    conversationReply.Intent.NtoSelectionMode,
+                    conversationReply.Intent
+                        .NtoWavelengthMinNm,
+                    conversationReply.Intent
+                        .NtoWavelengthMaxNm);
+        }
+
+        return await SubmitNtoAsync(
+            request,
+            sourceJobId!,
+            conversationReply.Intent.NtoSelectionMode,
+            conversationReply.Intent.NtoWavelengthMinNm,
+            conversationReply.Intent.NtoWavelengthMaxNm,
+            cancellationToken);
+    }
+
+    private async Task<AgentResult> SubmitNtoAsync(
+        AgentRequest request,
+        string sourceJobId,
+        NtoSelectionMode selectionMode,
+        double? wavelengthMinNm,
+        double? wavelengthMaxNm,
+        CancellationToken cancellationToken)
+    {
+        AgentResult result = new AgentResult();
+        result.TaskType = CalculationTaskType.Nto;
+        result.WorkflowId = "nto";
+        result.NtoSelectionMode = selectionMode;
+
+        if (_ntoWorkflowService == null)
+        {
+            result.IsSupported = false;
             result.Error =
-                result.Message;
+                "NTO Workflow 服务尚未注册。";
             return result;
         }
 
@@ -671,12 +720,9 @@ public sealed class AgentService : IAgentService
         ntoRequest.SessionId = request.SessionId;
         ntoRequest.Goal = request.Text;
         ntoRequest.SourceTddftJobId = sourceJobId;
-        ntoRequest.SelectionMode =
-            conversationReply.Intent.NtoSelectionMode;
-        ntoRequest.WavelengthMinNm =
-            conversationReply.Intent.NtoWavelengthMinNm;
-        ntoRequest.WavelengthMaxNm =
-            conversationReply.Intent.NtoWavelengthMaxNm;
+        ntoRequest.SelectionMode = selectionMode;
+        ntoRequest.WavelengthMinNm = wavelengthMinNm;
+        ntoRequest.WavelengthMaxNm = wavelengthMaxNm;
 
         NtoWorkflowResult workflow =
             await _ntoWorkflowService.SubmitAsync(
@@ -721,6 +767,25 @@ public sealed class AgentService : IAgentService
         return result;
     }
 
+    private static ConversationReply CreateAbsorptionReplyForNto(
+        ConversationIntent ntoIntent)
+    {
+        ConversationIntent absorptionIntent =
+            new ConversationIntent();
+        absorptionIntent.TaskType =
+            CalculationTaskType.TdDft;
+        absorptionIntent.WorkflowId =
+            "absorption-spectrum";
+        absorptionIntent.IsSupported = true;
+        absorptionIntent.Confidence = 1.0;
+        absorptionIntent.AbsorptionSpectrumMode =
+            ntoIntent.AbsorptionSpectrumMode;
+
+        ConversationReply reply = new ConversationReply();
+        reply.Intent = absorptionIntent;
+        return reply;
+    }
+
     private void RecordLastTddftJob(
         string sessionId,
         AbsorptionSpectrumSubmissionResult submission)
@@ -742,7 +807,12 @@ public sealed class AgentService : IAgentService
             AgentRequest request,
             ConversationReply? conversationReply,
             PendingCalculationParameterRequest? pending,
-            CancellationToken cancellationToken)
+            CancellationToken cancellationToken,
+            bool runNtoAfterAbsorption = false,
+            NtoSelectionMode ntoSelectionMode =
+                NtoSelectionMode.Default,
+            double? ntoWavelengthMinNm = null,
+            double? ntoWavelengthMaxNm = null)
     {
         if (_absorptionSpectrumService == null)
         {
@@ -752,6 +822,18 @@ public sealed class AgentService : IAgentService
             unavailable.Error =
                 "吸收光谱工作流服务尚未注册。";
             return unavailable;
+        }
+
+        if (pending != null)
+        {
+            runNtoAfterAbsorption =
+                pending.RunNtoAfterAbsorption;
+            ntoSelectionMode =
+                pending.NtoSelectionMode;
+            ntoWavelengthMinNm =
+                pending.NtoWavelengthMinNm;
+            ntoWavelengthMaxNm =
+                pending.NtoWavelengthMaxNm;
         }
 
         string coordinateText = string.IsNullOrWhiteSpace(
@@ -799,7 +881,11 @@ public sealed class AgentService : IAgentService
                 resolutionContext,
                 cancellationToken,
                 workflowId,
-                mode);
+                mode,
+                runNtoAfterAbsorption,
+                ntoSelectionMode,
+                ntoWavelengthMinNm,
+                ntoWavelengthMaxNm);
 
         if (turn.Status
             == ParameterConversationTurnStatus.ReadyToSubmit)
@@ -842,6 +928,32 @@ public sealed class AgentService : IAgentService
                     ? new List<ResolvedCalculationParameter>()
                     : new List<ResolvedCalculationParameter>(
                         turn.Resolution.AppliedParameters);
+
+            if (runNtoAfterAbsorption
+                && submitted.IsSupported)
+            {
+                string? sourceJobId;
+
+                if (_lastTddftJobIds.TryGetValue(
+                        request.SessionId,
+                        out sourceJobId)
+                    && !string.IsNullOrWhiteSpace(
+                        sourceJobId))
+                {
+                    return await SubmitNtoAsync(
+                        request,
+                        sourceJobId,
+                        ntoSelectionMode,
+                        ntoWavelengthMinNm,
+                        ntoWavelengthMaxNm,
+                        cancellationToken);
+                }
+
+                submitted.IsSupported = false;
+                submitted.Error =
+                    "吸收光谱完成，但没有取得可用于 NTO 的 TDDFT 作业。";
+            }
+
             return submitted;
         }
 

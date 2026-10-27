@@ -115,6 +115,19 @@ public sealed class PendingCalculationParameterRequest
         set;
     } = AbsorptionSpectrumMode.OptimizeThenTddft;
 
+    /// <summary>吸收光谱完成后是否继续执行 NTO Workflow。</summary>
+    public bool RunNtoAfterAbsorption { get; set; }
+
+    /// <summary>后续 NTO 激发态选择模式。</summary>
+    public NtoSelectionMode NtoSelectionMode { get; set; } =
+        NtoSelectionMode.Default;
+
+    /// <summary>后续 NTO 波长范围下限，单位 nm。</summary>
+    public double? NtoWavelengthMinNm { get; set; }
+
+    /// <summary>后续 NTO 波长范围上限，单位 nm。</summary>
+    public double? NtoWavelengthMaxNm { get; set; }
+
     /// <summary>已经提取的全部参数意图。</summary>
     public List<CalculationParameterIntent> ParameterIntents
     {
@@ -277,6 +290,9 @@ public sealed class ConversationIntent
 
     /// <summary>NTO 波长范围上限，单位 nm。</summary>
     public double? NtoWavelengthMaxNm { get; set; }
+
+    /// <summary>NTO 前是否必须先执行吸收光谱 Workflow。</summary>
+    public bool RunAbsorptionBeforeNto { get; set; }
 }
 
 /// <summary>需要用户回答的问题。</summary>

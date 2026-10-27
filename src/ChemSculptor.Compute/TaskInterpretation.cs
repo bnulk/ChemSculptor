@@ -51,6 +51,9 @@ public sealed class InterpretedTask
 
     /// <summary>NTO 波长范围上限，单位 nm。</summary>
     public double? NtoWavelengthMaxNm { get; set; }
+
+    /// <summary>NTO 前是否必须先执行吸收光谱 Workflow。</summary>
+    public bool RunAbsorptionBeforeNto { get; set; }
 }
 
 /// <summary>
@@ -170,6 +173,51 @@ public sealed class RuleBasedTaskInterpreter : ITaskInterpreter
             interpretedTask.WorkflowId = "nto";
             interpretedTask.IsSupported = true;
             interpretedTask.Confidence = 1.0;
+
+            bool absorptionRequested =
+                ContainsAnyKeyword(
+                    normalizedText,
+                    AbsorptionSpectrumKeywords);
+
+            if (absorptionRequested)
+            {
+                bool skipOptimization =
+                    ContainsAnyKeyword(
+                        normalizedText,
+                        SkipOptimizationKeywords);
+                bool constrainedOptimization =
+                    ContainsAnyKeyword(
+                        normalizedText,
+                        OptimizationConstraintKeywords);
+
+                if (skipOptimization && constrainedOptimization)
+                {
+                    interpretedTask.IsSupported = false;
+                    interpretedTask.Diagnostics.Add(
+                        "“不优化”和“冻结非氢原子”不能同时使用。");
+                    return Task.FromResult(
+                        interpretedTask);
+                }
+
+                interpretedTask.RunAbsorptionBeforeNto = true;
+
+                if (skipOptimization)
+                {
+                    interpretedTask.AbsorptionSpectrumMode =
+                        AbsorptionSpectrumMode.TddftOnly;
+                }
+                else if (constrainedOptimization)
+                {
+                    interpretedTask.AbsorptionSpectrumMode =
+                        AbsorptionSpectrumMode
+                            .ConstrainedOptimizationThenTddft;
+                }
+                else
+                {
+                    interpretedTask.AbsorptionSpectrumMode =
+                        AbsorptionSpectrumMode.OptimizeThenTddft;
+                }
+            }
 
             if (HasAllNtoQualifier(
                 normalizedText,

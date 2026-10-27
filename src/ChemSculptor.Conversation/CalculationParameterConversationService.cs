@@ -48,7 +48,12 @@ public sealed class CalculationParameterConversationService
         CancellationToken cancellationToken = default,
         string workflowId = "",
         AbsorptionSpectrumMode absorptionSpectrumMode =
-            AbsorptionSpectrumMode.OptimizeThenTddft)
+            AbsorptionSpectrumMode.OptimizeThenTddft,
+        bool runNtoAfterAbsorption = false,
+        NtoSelectionMode ntoSelectionMode =
+            NtoSelectionMode.Default,
+        double? ntoWavelengthMinNm = null,
+        double? ntoWavelengthMaxNm = null)
     {
         if (string.IsNullOrWhiteSpace(sessionId))
         {
@@ -183,7 +188,11 @@ public sealed class CalculationParameterConversationService
                 resolution,
                 intents,
                 workflowId,
-                absorptionSpectrumMode);
+                absorptionSpectrumMode,
+                runNtoAfterAbsorption,
+                ntoSelectionMode,
+                ntoWavelengthMinNm,
+                ntoWavelengthMaxNm);
         session.PendingParameterRequest = nextPending;
         await _repository.SaveSessionAsync(
             session,
@@ -287,7 +296,11 @@ public sealed class CalculationParameterConversationService
         CalculationParameterResolutionResult resolution,
         List<CalculationParameterIntent> intents,
         string workflowId,
-        AbsorptionSpectrumMode absorptionSpectrumMode)
+        AbsorptionSpectrumMode absorptionSpectrumMode,
+        bool runNtoAfterAbsorption,
+        NtoSelectionMode ntoSelectionMode,
+        double? ntoWavelengthMinNm,
+        double? ntoWavelengthMaxNm)
     {
         PendingCalculationParameterRequest pending =
             new PendingCalculationParameterRequest();
@@ -305,6 +318,13 @@ public sealed class CalculationParameterConversationService
         pending.TaskType = resolution.Spec.TaskType;
         pending.WorkflowId = workflowId;
         pending.AbsorptionSpectrumMode = absorptionSpectrumMode;
+        pending.RunNtoAfterAbsorption =
+            runNtoAfterAbsorption;
+        pending.NtoSelectionMode = ntoSelectionMode;
+        pending.NtoWavelengthMinNm =
+            ntoWavelengthMinNm;
+        pending.NtoWavelengthMaxNm =
+            ntoWavelengthMaxNm;
         pending.ParameterIntents =
             new List<CalculationParameterIntent>(intents);
         pending.Questions =

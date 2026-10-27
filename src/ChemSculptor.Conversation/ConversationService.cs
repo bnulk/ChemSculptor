@@ -73,6 +73,8 @@ public sealed class ConversationService : IConversationService
             interpretedTask.NtoWavelengthMinNm;
         intent.NtoWavelengthMaxNm =
             interpretedTask.NtoWavelengthMaxNm;
+        intent.RunAbsorptionBeforeNto =
+            interpretedTask.RunAbsorptionBeforeNto;
         intent.Diagnostics = new List<string>(interpretedTask.Diagnostics);
 
         ConversationReply reply = new ConversationReply();
