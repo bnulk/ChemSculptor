@@ -2,6 +2,45 @@
 
 ## 当前阶段
 
+全过程计算档案包第 1 步已完成。
+
+```text
+已冻结 Calculation Run Archive Package 规范
+档案边界固定为 RootWorkflowId
+全部阶段和全部作业尝试必须保留
+输入、输出、检查点、规范化结果、验证、参数审计和后处理证据已定义
+失败、取消、跳过、被拒绝和被取代作业必须显式保留
+scratch、缓存、临时交换文件和锁文件默认排除
+排除项必须写入 exclusions.json
+缺失、不可读、摘要不一致和安全拒绝状态已定义
+计算失败不等于档案包不完整
+science/ 保存科学点集合
+process/ 保存全部执行证据
+科学点集合继续作为计算与“数据转文章”的连接点
+本阶段没有修改实现代码
+```
+
+规范：
+
+```text
+docs/Calculation-Run-Archive-Package-Spec.md
+```
+
+计算成果包与报告生成层第 0 步已完成。
+
+```text
+新增 ChemSculptor.Reporting 独立项目
+定义 ReportPackageRequest
+定义 ReportEvidenceSnapshot
+定义 ReportDocument
+定义 ReportPackageManifest
+固定 camelCase、字符串枚举和模式版本 1.0
+新增统一 JSON 序列化入口
+新增 5 项核心契约测试
+新增第 0 步教程
+尚未实现快照构建、章节生成、渲染、组装、API 和客户端接入
+```
+
 对话式计算参数方案已落地前十三步。
 
 ```text
@@ -105,6 +144,9 @@ Api 和 WinForms 已返回 NTO 选择模式和作业摘要
 振动解析已支持双原子和线型分子的 3N-5
 振动解析只采用最后一个 Harmonic frequencies 块
 振动模式数与 3N-5 或 3N-6 不一致时生成诊断
+报告核心契约已冻结
+报告层仅依赖 Compute 和 ScientificData
+报告契约 JSON 往返已验证
 ```
 
 ## 当前边界
@@ -119,13 +161,22 @@ ORCA、原始关键词扩展和审批机制暂不实现
 联合优化频率已包含波函数稳定性矫正，虚频修正仍未实现
 NTO 当前只支持 Gaussian TDDFT 源结果
 当前会话没有 TDDFT 源时返回 NoTddftSource，不提交 NTO
+报告层只完成第 0 步契约
+证据快照尚未读取 ScientificData 仓储
+报告文档尚未渲染为 Markdown
+成果包清单当前只定义数据结构，不执行文件发现和 SHA-256 计算
+Api 和 WinForms 尚未接入新报告层
+全过程档案规范已完成第 1 步
+当前保存仍以最新作业和最终科学点成果包为主
+根工作流下全部作业尚不能持久化枚举
+全过程文件发现、校验、组装和下载尚未实现
 ```
 
 ## 验证结果
 
 ```text
 Release 构建：0 警告，0 错误
-测试：256/256 通过
+测试：265/265 通过
 真实 Gaussian 16：3/3 通过
 真实 Gaussian opt freq：1/1 通过
 真实 Gaussian O2 稳定性修正：1/1 通过
@@ -145,11 +196,37 @@ Release 构建：0 警告，0 错误
 尚未增加 NTO 结果专题科学数据归档
 尚未使用真实 Gaussian 验证冻结非氢原子的优化输入和位移检查
 尚未完成优化成果包下载和客户端科学摘要闭环
+尚未实现 ReportEvidenceSnapshotBuilder
+尚未实现报告文件清单和 SHA-256 校验
+尚未实现通用章节提供者
+尚未实现确定性 Markdown 渲染器
+尚未实现成果包组装器
+尚未接入成果包 API 和客户端保存
+尚未以吸收光谱和 NTO 作为内容提供者验收通用层
+尚未实现根工作流持久化证据账本
+尚未实现按 RootWorkflowId 枚举全部作业
+尚未实现全过程产物发现和 exclusions.json
+尚未实现全过程 manifest.json 与 checksums.sha256
+尚未实现全过程档案 API 和客户端下载
 ```
 
 ## 下一步精确任务
 
-优化主链和稳定性扩展已经完成。下一阶段建议：
+下一步精确任务：建立根工作流持久化证据账本。
+
+```text
+目标：服务重启后只凭 RootWorkflowId 找回全部阶段和作业尝试
+记录：阶段顺序、阶段状态、节点、JobId、ParentJobId、AttemptNumber
+关联：科学点、科学成果、运行目录和来源作业
+边界：不复制文件、不生成报告、不组装档案包、不接 Api
+要求：失败、取消、跳过和被取代记录同样持久化
+测试：单作业、多作业、恢复作业、服务重启和缺失关联
+```
+
+完成第 2 步后，再按用户指定推进全部作业枚举、全过程证据快照、
+文件清单、档案组装和客户端下载。
+
+历史阶段建议：
 
 ```text
 使用真实 Gaussian 16 执行优化和稳定性端到端验收
@@ -197,3 +274,29 @@ docs/HANDOFF.md
 ```
 
 任何一项未更新，本阶段都不得标记为完成。
+
+## 本次第 0 步关联文件
+
+```text
+ChemSculptor.slnx
+src/ChemSculptor.Reporting/ChemSculptor.Reporting.csproj
+src/ChemSculptor.Reporting/ReportContracts.cs
+src/ChemSculptor.Reporting/ReportPackageRequest.cs
+src/ChemSculptor.Reporting/ReportEvidenceSnapshot.cs
+src/ChemSculptor.Reporting/ReportDocument.cs
+src/ChemSculptor.Reporting/ReportPackageManifest.cs
+src/ChemSculptor.Reporting/ReportContractSerializer.cs
+tests/ChemSculptor.Core.Tests/ChemSculptor.Core.Tests.csproj
+tests/ChemSculptor.Core.Tests/ReportContractTests.cs
+docs/Tutorials/Report-Package-Step-00-Contracts-Tutorial.md
+```
+
+## 本次全过程档案第 1 步关联文件
+
+```text
+docs/Calculation-Run-Archive-Package-Spec.md
+docs/Scientific-Point-Artifact-Package-Spec.md
+docs/PROJECT_STATE.md
+docs/CHANGES.md
+docs/HANDOFF.md
+```

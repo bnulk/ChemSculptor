@@ -5,6 +5,196 @@
 
 ---
 
+## v0.73.0（2026-11-17）：全过程计算档案包语义冻结
+
+### 版本
+
+- 当前版本：`0.73.0`
+- 日期：`2026-11-17`
+- 版本类型：新增设计规范
+
+### 改动目的
+
+冻结“全过程计算档案包”的语义和验收标准。目标是下载一个根工作流中
+全部阶段的全部作业尝试和持久化输入输出文件，而不是继续只下载最终作业
+所对应的科学点文件。
+
+### 与科学点集合的分层
+
+```text
+科学点成果包
+  最终科学结论
+  科学点集合是计算部分与“数据转文章”部分的连接点
+
+全过程计算档案包
+  以一个 RootWorkflowId 为边界
+  保存全部阶段、全部作业尝试和全部执行证据
+  同时完整保留科学点集合
+```
+
+全过程档案目录明确分为：
+
+```text
+science/
+  科学点集合、关系、物理量和叙述
+
+process/
+  请求、工作流、阶段、作业尝试、输入、输出、检查点和后处理证据
+```
+
+`science/` 保持为文章部分的正式输入；`process/` 用于复现、审计和排错。
+
+### 冻结规则
+
+```text
+全过程档案以 RootWorkflowId 为唯一范围
+全部阶段必须记录，明确跳过的阶段也必须记录
+全部作业尝试必须保留，不只保留 AcceptedJobId
+失败、取消、被拒绝和被取代的作业同样保留
+输入、输出、检查点、规范化结果、验证和参数审计按条件收录
+后处理产物和科学派生文件进入全过程清单
+scratch、缓存、临时交换文件和锁文件默认排除
+排除项必须写入 exclusions.json
+未分类持久化文件进入 other/，不静默遗漏
+每个预期文件必须有 Included、Missing、NotExpected 或其它显式状态
+计算失败不等于档案包不完整
+档案完整性由 manifest.json 和 checksums.sha256 证明
+```
+
+### 新增规范
+
+```text
+docs/Calculation-Run-Archive-Package-Spec.md
+```
+
+规范包含：
+
+```text
+术语和范围
+完整档案的定义
+档案完整性与计算结论状态的分离
+请求、阶段、作业、输入、输出和后处理证据规则
+排除、缺失、不可读、摘要不一致和安全拒绝状态
+目录结构与 manifest 字段
+科学点集合冻结语义
+确定性和安全要求
+第一步验收标准和后续实现场景
+```
+
+### 关联规范
+
+`docs/Scientific-Point-Artifact-Package-Spec.md` 已补充两种包的边界：
+全过程档案不能替代科学点集合，科学点成果包也不能代替全过程执行证据。
+
+### 本阶段边界
+
+```text
+未修改计算代码
+未实现根工作流持久化作业索引
+未实现全部作业枚举
+未实现文件发现、复制、打包和校验生成
+未修改 API 和 WinForms
+```
+
+### 验收
+
+规范已明确收录、排除、缺失、失败和包级完整性规则，
+并明确科学点集合的最终科学结果地位。
+
+---
+
+## v0.72.0（2026-11-14）：计算成果包与报告生成层第 0 步
+
+### 版本
+
+- 当前版本：`0.72.0`
+- 日期：`2026-11-14`
+- 版本类型：新增功能
+
+### 改动目的
+
+为通用计算成果包与报告生成层冻结核心契约。该层从已持久化的科学成果和
+计算证据生成报告，不重新执行计算，也不依赖吸收光谱、NTO 等具体业务。
+
+### 新增项目
+
+```text
+src/ChemSculptor.Reporting/
+  ChemSculptor.Reporting.csproj
+  ReportContracts.cs
+  ReportPackageRequest.cs
+  ReportEvidenceSnapshot.cs
+  ReportDocument.cs
+  ReportPackageManifest.cs
+  ReportContractSerializer.cs
+```
+
+依赖边界：
+
+```text
+ChemSculptor.Reporting
+  -> ChemSculptor.Compute
+  -> ChemSculptor.ScientificData
+```
+
+不依赖 Agent、Api、WinForms、具体 Workflow 或 Gaussian。
+
+### 四个核心契约
+
+```text
+ReportPackageRequest
+  报告意图、ResultId、剖面、语言、章节和内容包含选项
+
+ReportEvidenceSnapshot
+  可空 ScientificResult、关联作业、结果、验证、参数审计、
+  来源指纹、证据问题、完整性和快照 SHA-256
+
+ReportDocument
+  与渲染格式无关的文档中间表示，使用章节和通用内容块
+
+ReportPackageManifest
+  最终真实文件清单、角色、大小、SHA-256、来源和必要性
+```
+
+“不可变”由第 1 步持久化规范快照和 `SnapshotSha256` 保证。
+本步不提前实现快照读取、章节生成、Markdown 渲染、成果包组装、
+API 或 WinForms 接入。
+
+### JSON 约定
+
+```text
+camelCase
+枚举输出为字符串
+模式版本固定为 1.0
+统一通过 ReportContractSerializer 读写
+```
+
+### 测试
+
+```text
+四个核心契约 JSON 往返
+通用文档不依赖吸收光谱或 NTO 类型
+证据快照显式表达缺失证据
+成果包清单记录文件角色和校验信息
+模式版本和字符串枚举固定
+```
+
+### 验证
+
+```text
+Release 构建：0 警告，0 错误
+定向测试：5/5 通过
+全量测试：265/265 通过
+```
+
+### 教程
+
+```text
+docs/Tutorials/Report-Package-Step-00-Contracts-Tutorial.md
+```
+
+---
+
 ## v0.71.2（2026-10-21）：线型分子振动解析鲁棒化
 
 ### 版本

@@ -3,7 +3,7 @@
 ## 当前版本
 
 ```text
-0.71.2
+0.73.0
 ```
 
 ## 文档维护原则
@@ -35,7 +35,7 @@ HANDOFF.md
 
 ```text
 Release 构建：0 警告，0 错误
-测试：256/256 通过
+测试：265/265 通过
 真实 Gaussian 16：3/3 通过
 真实 Gaussian opt freq：1/1 通过
 真实 Gaussian O2 稳定性修正：1/1 通过
@@ -79,6 +79,38 @@ ChemSculptor.Api
 ChemSculptor.WinForms
 ```
 
+报告契约与成果包边界：
+
+```text
+ScientificData + Compute 的持久化证据
+  ↓
+ChemSculptor.Reporting
+  → ReportPackageRequest
+  → ReportEvidenceSnapshot
+  → ReportDocument
+  → ReportPackageManifest
+```
+
+当前只完成契约定义。证据快照读取、文档生成、Markdown 渲染、
+成果包组装以及 API 和客户端接入尚未实现。
+
+计算成果包分为两个明确层次：
+
+```text
+科学点成果包
+  保存最终科学结论
+  科学点集合是计算部分与“数据转文章”部分的连接点
+
+全过程计算档案包
+  以一个 RootWorkflowId 为边界
+  保存全部阶段、全部作业尝试和全部持久化执行证据
+  同时完整保留科学点集合
+```
+
+全过程档案规范已经冻结，但根工作流持久化作业索引、完整文件发现、
+成果包组装和客户端下载尚未实现。当前客户端“保存”仍以最终科学点
+成果包和最新作业入口为主。
+
 依赖原则：
 
 ```text
@@ -87,6 +119,8 @@ ScientificSummary 只引用 ScientificData
 Api 引用 ScientificSummary
 通用工作流不包含具体计算程序规则
 报告和客户端科学摘要只从 ScientificData 读取
+ChemSculptor.Reporting 只引用 Compute 和 ScientificData
+Reporting 不依赖 Agent、Api、WinForms、具体 Workflow 或 Gaussian
 ```
 
 ## 已完成模块
@@ -208,6 +242,13 @@ WinForms 成果包保存
 客户端科学摘要
 客户端摘要 API
 WinForms 领取和显示摘要
+报告核心契约
+报告证据快照模型
+报告文档中间表示
+成果包文件清单模型
+报告契约统一 JSON 序列化
+全过程计算档案包规范
+科学点集合与全过程执行证据分层
 ```
 
 ## 核心数据流
@@ -254,9 +295,88 @@ WinForms 已按清单保存完整成果包
 关系、物理量和科学叙述已可追溯
 成果包 checksums、压缩和断点续传尚未实现
 客户端摘要当前使用 Api 内存邮箱
+报告层只完成核心契约，尚未读取证据或生成成果包
+报告层尚未接入 Api 和 WinForms
+全过程档案规范只完成语义冻结，尚未实现
+当前保存入口仍以最新作业和最终科学点成果包为主
+根工作流下的全部作业尚不能通过持久化索引完整枚举
+scratch、缓存和临时文件的排除清单尚未实现
 ```
 
 ## 下一阶段
+
+全过程计算档案包：
+
+```text
+第 1 步：包语义和验收标准已冻结
+第 2 步：根工作流持久化证据账本尚未实现
+第 3 步：作业仓储完整枚举和筛选尚未实现
+第 4 步：报告包范围契约扩展尚未实现
+第 5 步：阶段与作业因果关系尚未实现
+第 6 步：全过程产物发现策略尚未实现
+第 7 步：完整文件清单和 SHA-256 尚未实现
+第 8 步：全过程证据快照尚未实现
+第 9 步：通用报告章节提供者尚未实现
+第 10 步：确定性 Markdown 渲染尚未实现
+第 11 步：领域章节提供者尚未实现
+第 12 步：成果包组装器尚未实现
+第 13 步：成果包 API 尚未实现
+第 14 步：客户端完整保存尚未实现
+第 15 步：完整测试矩阵尚未实现
+第 16 步：真实长流程验收尚未实现
+```
+
+第 1 步规范：
+
+```text
+docs/Calculation-Run-Archive-Package-Spec.md
+```
+
+第 1 步已完成：
+
+```text
+以 RootWorkflowId 冻结全过程档案边界
+冻结全部阶段和全部作业尝试的收录范围
+冻结输入、输出、检查点、规范化结果、验证、参数审计和后处理产物规则
+冻结失败、取消、跳过、被拒绝和被取代作业的保留规则
+冻结 scratch、缓存、临时文件和锁文件的排除规则
+冻结缺失、不可读、摘要不一致和安全拒绝状态
+冻结 science/ 与 process/ 的分层
+明确计算失败不等于档案包不完整
+```
+
+下一步：建立持久化根工作流证据账本，使服务重启后仍能只凭
+`RootWorkflowId` 找回全部阶段和作业尝试。
+
+计算成果包与报告生成层：
+
+```text
+第 0 步：核心契约已完成
+第 1 步：证据快照构建尚未开始
+第 2 步：文件清单和 SHA-256 尚未开始
+第 3 步：通用章节提供者尚未开始
+第 4 步：确定性 Markdown 渲染尚未开始
+第 5 步：成果包组装尚未开始
+第 6 步：Api 接入尚未开始
+第 7 步：客户端保存接入尚未开始
+第 8 步：吸收光谱和 NTO 内容提供者尚未开始
+第 9 步：跨 Workflow 通用性测试尚未开始
+```
+
+第 0 步已完成：
+
+```text
+定义 ReportPackageRequest
+定义 ReportEvidenceSnapshot
+定义 ReportDocument
+定义 ReportPackageManifest
+固定 camelCase、字符串枚举和模式版本 1.0
+证明核心契约可以 JSON 往返
+证明通用文档契约不依赖吸收光谱或 NTO 类型
+```
+
+下一步：实现 `ReportEvidenceSnapshotBuilder`，根据 `ResultId` 和关联作业
+生成不可变证据快照，不在本阶段实现渲染或成果包下载。
 
 优化任务建设进度：
 
@@ -403,6 +523,8 @@ docs/Tutorials/Skill-Collections-and-Workflow-Tutorial.md
 docs/Tutorials/ScientificData-Tutorial.md
 docs/Tutorials/Scientific-Repository-Upgrade-Tutorial.md
 docs/Tutorials/Oxygen-End-to-End-Tutorial.md
+docs/Tutorials/Report-Package-Step-00-Contracts-Tutorial.md
+docs/Calculation-Run-Archive-Package-Spec.md
 docs/Coding-Conventions.md
 ```
 

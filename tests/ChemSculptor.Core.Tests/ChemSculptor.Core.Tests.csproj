@@ -35,6 +35,7 @@
     <ProjectReference Include="..\..\src\ChemSculptor.ScientificData\ChemSculptor.ScientificData.csproj" />
     <ProjectReference Include="..\..\src\ChemSculptor.ScientificData.Extraction\ChemSculptor.ScientificData.Extraction.csproj" />
     <ProjectReference Include="..\..\src\ChemSculptor.ScientificSummary\ChemSculptor.ScientificSummary.csproj" />
+    <ProjectReference Include="..\..\src\ChemSculptor.Reporting\ChemSculptor.Reporting.csproj" />
   </ItemGroup>
 
 </Project>
