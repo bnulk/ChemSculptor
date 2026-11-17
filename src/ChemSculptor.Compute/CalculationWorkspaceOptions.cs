@@ -14,6 +14,10 @@ public sealed class CalculationWorkspaceOptions
     /// <summary>计算作业目录名称。</summary>
     public string JobsDirectoryName { get; set; } = "jobs";
 
+    /// <summary>根工作流证据目录名称。</summary>
+    public string WorkflowRunsDirectoryName { get; set; } =
+        "workflow-runs";
+
     /// <summary>输入文件目录名称。</summary>
     public string InputDirectoryName { get; set; } = "input";
 

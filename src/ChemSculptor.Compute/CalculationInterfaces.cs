@@ -162,6 +162,11 @@ public interface ICalculationWorkspace
         string jobId,
         CancellationToken cancellationToken = default);
 
+    /// <summary>确保根工作流证据目录存在。</summary>
+    Task EnsureWorkflowRunWorkspaceAsync(
+        string rootWorkflowId,
+        CancellationToken cancellationToken = default);
+
     /// <summary>获取几何资产目录。</summary>
     string GetGeometryDirectory(string geometryId);
 
@@ -176,6 +181,12 @@ public interface ICalculationWorkspace
 
     /// <summary>获取结果目录。</summary>
     string GetResultDirectory(string jobId);
+
+    /// <summary>获取根工作流证据目录。</summary>
+    string GetWorkflowRunDirectory(string rootWorkflowId);
+
+    /// <summary>获取根工作流证据账本路径。</summary>
+    string GetWorkflowRunLedgerPath(string rootWorkflowId);
 
     /// <summary>获取程序输出文件路径。</summary>
     string GetJobOutputPath(string jobId);
@@ -255,6 +266,36 @@ public interface ICalculationRepository
         string jobId,
         CancellationToken cancellationToken = default);
 
+}
+
+/// <summary>
+/// 根工作流证据账本仓储。
+/// 提供按 RootWorkflowId 读取、保存、登记阶段和附加作业的原子操作。
+/// </summary>
+public interface ICalculationWorkflowEvidenceLedgerRepository
+{
+    /// <summary>读取账本；不存在时返回 null。</summary>
+    Task<CalculationWorkflowEvidenceLedger?> GetAsync(
+        string rootWorkflowId,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>保存完整账本。</summary>
+    Task SaveAsync(
+        CalculationWorkflowEvidenceLedger ledger,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>登记或更新一个阶段。</summary>
+    Task<CalculationWorkflowStageEvidence> EnsureStageAsync(
+        string rootWorkflowId,
+        CalculationWorkflowStageEvidence stage,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>把作业尝试登记到指定阶段。</summary>
+    Task AttachJobAsync(
+        string rootWorkflowId,
+        string stageId,
+        CalculationJob job,
+        CancellationToken cancellationToken = default);
 }
 
 /// <summary>

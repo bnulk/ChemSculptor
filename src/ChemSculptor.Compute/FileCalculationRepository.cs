@@ -10,24 +10,46 @@ namespace ChemSculptor.Compute;
 public sealed class FileCalculationRepository : ICalculationRepository
 {
     private readonly ICalculationWorkspace _workspace;
+    private readonly ICalculationWorkflowEvidenceLedgerRepository
+        _evidenceLedger;
     private readonly JsonSerializerOptions _jsonOptions;
 
-    /// <summary>创建文件仓储。</summary>
+    /// <summary>
+    /// 创建文件仓储。
+    /// 使用同工作区的默认证据账本仓储登记作业尝试索引。
+    /// </summary>
     public FileCalculationRepository(ICalculationWorkspace workspace)
+        : this(
+            workspace,
+            new FileCalculationWorkflowEvidenceLedgerRepository(
+                workspace))
+    {
+    }
+
+    /// <summary>创建带指定证据账本仓储的文件仓储。</summary>
+    public FileCalculationRepository(
+        ICalculationWorkspace workspace,
+        ICalculationWorkflowEvidenceLedgerRepository evidenceLedger)
     {
         if (workspace == null)
         {
             throw new ArgumentNullException(nameof(workspace));
         }
 
+        if (evidenceLedger == null)
+        {
+            throw new ArgumentNullException(nameof(evidenceLedger));
+        }
+
         _workspace = workspace;
+        _evidenceLedger = evidenceLedger;
         _jsonOptions = new JsonSerializerOptions(JsonSerializerDefaults.Web);
         _jsonOptions.WriteIndented = true;
         _jsonOptions.Converters.Add(new JsonStringEnumConverter());
     }
 
     /// <summary>保存作业清单。</summary>
-    public Task SaveJobAsync(
+    public async Task SaveJobAsync(
         CalculationJob job,
         CancellationToken cancellationToken = default)
     {
@@ -37,7 +59,8 @@ public sealed class FileCalculationRepository : ICalculationRepository
         }
 
         string path = _workspace.GetJobManifestPath(job.JobId);
-        return WriteJsonAsync(path, job, cancellationToken);
+        await WriteJsonAsync(path, job, cancellationToken);
+        await RegisterJobAttemptAsync(job, cancellationToken);
     }
 
     /// <summary>读取作业清单。</summary>
@@ -181,5 +204,51 @@ public sealed class FileCalculationRepository : ICalculationRepository
         {
             Directory.CreateDirectory(directory);
         }
+    }
+
+    private async Task RegisterJobAttemptAsync(
+        CalculationJob job,
+        CancellationToken cancellationToken)
+    {
+        string rootWorkflowId = ResolveRootWorkflowId(job);
+
+        if (string.IsNullOrWhiteSpace(rootWorkflowId))
+        {
+            return;
+        }
+
+        string stageId = ResolveEvidenceStageId(job);
+        await _evidenceLedger.AttachJobAsync(
+            rootWorkflowId,
+            stageId,
+            job,
+            cancellationToken);
+    }
+
+    private static string ResolveEvidenceStageId(CalculationJob job)
+    {
+        if (!string.IsNullOrWhiteSpace(job.EvidenceStageId))
+        {
+            return job.EvidenceStageId;
+        }
+
+        return CalculationWorkflowStageIds.ResolveDefaultStageId(
+            job.Spec?.TaskType
+                ?? CalculationTaskType.SinglePoint);
+    }
+
+    private static string ResolveRootWorkflowId(CalculationJob job)
+    {
+        if (!string.IsNullOrWhiteSpace(job.RootWorkflowId))
+        {
+            return job.RootWorkflowId;
+        }
+
+        if (!string.IsNullOrWhiteSpace(job.WorkflowId))
+        {
+            return job.WorkflowId;
+        }
+
+        return string.Empty;
     }
 }

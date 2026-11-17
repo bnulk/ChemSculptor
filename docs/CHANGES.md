@@ -5,6 +5,129 @@
 
 ---
 
+## v0.74.0（2026-11-17）：根工作流持久化证据账本
+
+### 版本
+
+- 当前版本：`0.74.0`
+- 日期：`2026-11-17`
+- 版本类型：新增功能
+
+### 改动目的
+
+实现全过程计算档案包第 2 步。服务重启后，只凭 `RootWorkflowId`
+即可找回根工作流中的阶段、作业尝试、父子关系和状态，为后续
+全过程作业枚举、文件发现、校验和档案组装建立稳定索引。
+
+### 核心边界
+
+```text
+只保存阶段关系、作业尝试索引和状态
+不复制计算文件
+不生成报告
+不组装档案包
+不修改 API 和 WinForms
+科学点集合继续作为计算与“数据转文章”的连接点
+```
+
+### 新增文件
+
+```text
+src/ChemSculptor.Compute/CalculationWorkflowEvidenceLedger.cs
+src/ChemSculptor.Compute/FileCalculationWorkflowEvidenceLedgerRepository.cs
+tests/ChemSculptor.Core.Tests/CalculationWorkflowEvidenceLedgerTests.cs
+```
+
+### 账本模型
+
+```text
+CalculationWorkflowEvidenceLedger
+  根工作流标识、会话、目标、整体状态、阶段和作业尝试
+
+CalculationWorkflowStageEvidence
+  稳定阶段标识、阶段类型、顺序、状态、时间、作业尝试和诊断
+
+CalculationWorkflowJobAttemptEvidence
+  作业标识、阶段、父作业、尝试序号、状态、任务类型和程序
+```
+
+账本路径为：
+
+```text
+<workspace>/workflow-runs/<RootWorkflowId>/ledger.json
+```
+
+### 持久化规则
+
+```text
+同一作业重复保存只更新索引，不产生重复尝试
+失败、取消、父作业和恢复作业均保留
+作业改归阶段时移除旧阶段中的悬空引用
+临时文件写入后再原子替换 ledger.json
+JSON 使用 camelCase 和字符串枚举
+阶段按 Order 和 StageId 稳定排序
+作业尝试按创建时间和 CalculationJobId 稳定排序
+```
+
+### 根工作流传递
+
+单点、优化、联合优化频率、TDDFT 和吸收光谱请求均支持可空
+`RootWorkflowId`。请求未提供时：
+
+```text
+单点、优化和 TDDFT 使用自身 JobId 作为根标识
+吸收光谱创建 workflow-<guid> 并传给优化和 TDDFT
+NTO 和恢复作业继承来源作业的根标识
+```
+
+### 显式阶段
+
+`CalculationJob.EvidenceStageId` 允许调用方指定真实阶段。
+文件作业仓储优先使用显式阶段，为空时才按任务类型回退：
+
+```text
+稳定性检查：wavefunction-stability
+稳定性检查后的多重度变更或 stable=opt：stability-correction
+普通优化派生恢复：optimization-recovery
+联合优化频率的独立振动作业：frequency
+NTO 派生作业：nto
+```
+
+### 测试
+
+```text
+单作业登记和文件持久化
+同一作业重复保存只更新
+父作业与恢复作业共享根工作流
+失败和取消记录保留
+复合阶段稳定排序
+仓储实例重建后按根标识读取
+空根标识拒绝
+JSON 原子写入和字符串枚举
+文件作业仓储自动登记
+显式阶段优先于任务类型推断
+作业改归阶段不留下悬空引用
+吸收光谱优化与 TDDFT 共享根工作流
+TDDFT 请求根标识传递
+稳定性修正派生作业阶段归类
+```
+
+### 验证
+
+```text
+Release 构建：0 警告，0 错误
+全量测试：277/277 通过
+```
+
+### 教程式说明
+
+账本不是作业文件的副本，而是根工作流的“目录中的目录”。
+后续档案组装先读取账本确定阶段和作业范围，再逐个作业读取
+`manifest.json`、输入、输出、结果、验证和参数审计。这样服务重启
+不依赖内存状态，也不会把“哪些作业属于本次工作流”交给文件扫描猜测。
+
+---
+
 ## v0.73.0（2026-11-17）：全过程计算档案包语义冻结
 
 ### 版本

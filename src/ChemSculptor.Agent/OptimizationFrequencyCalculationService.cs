@@ -124,7 +124,10 @@ public sealed class OptimizationFrequencyCalculationService
             CalculationJob job = new CalculationJob();
             job.JobId = jobId;
             job.WorkflowId = jobId;
-            job.RootWorkflowId = jobId;
+            job.RootWorkflowId =
+                ResolveRootWorkflowId(
+                    request.RootWorkflowId,
+                    jobId);
             job.SessionId = request.SessionId;
             job.GeometryId = request.GeometryId;
             job.Goal = request.Goal;
@@ -258,6 +261,19 @@ public sealed class OptimizationFrequencyCalculationService
         return _repository.GetJobAsync(
             jobId,
             cancellationToken);
+    }
+
+    private static string ResolveRootWorkflowId(
+        string requestedRootWorkflowId,
+        string fallbackRootWorkflowId)
+    {
+        if (!string.IsNullOrWhiteSpace(
+            requestedRootWorkflowId))
+        {
+            return requestedRootWorkflowId;
+        }
+
+        return fallbackRootWorkflowId;
     }
 
     /// <summary>查询联合结果。</summary>

@@ -54,6 +54,8 @@ public class TddftCalculationServiceTests
             TddftCalculationRequest request =
                 new TddftCalculationRequest();
             request.SessionId = "session-tddft-service";
+            request.RootWorkflowId =
+                "workflow-tddft-service";
             request.Goal = "吸收光谱 TDDFT";
             request.CoordinateText =
                 "O 0.000000 0.000000 0.117300\n" +
@@ -73,6 +75,9 @@ public class TddftCalculationServiceTests
                 CalculationJobState.Validated,
                 result.Job.State);
             Assert.Single(result.Result.ExcitedStates);
+            Assert.Equal(
+                request.RootWorkflowId,
+                result.Job.RootWorkflowId);
 
             CalculationJob? savedJob =
                 await service.GetJobAsync(result.Job.JobId);

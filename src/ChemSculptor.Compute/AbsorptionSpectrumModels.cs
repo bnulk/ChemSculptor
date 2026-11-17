@@ -96,6 +96,12 @@ public sealed class AbsorptionSpectrumRequest
     /// <summary>客户端会话标识。</summary>
     public string SessionId { get; set; } = string.Empty;
 
+    /// <summary>
+    /// 可选的根工作流标识。
+    /// 为空时由吸收光谱工作流创建，并传给全部子阶段。
+    /// </summary>
+    public string RootWorkflowId { get; set; } = string.Empty;
+
     /// <summary>几何资产标识。</summary>
     public string GeometryId { get; set; } = string.Empty;
 
@@ -134,6 +140,9 @@ public sealed class AbsorptionSpectrumSubmissionResult
 
     /// <summary>实际执行的吸收光谱模式。</summary>
     public AbsorptionSpectrumMode Mode { get; set; }
+
+    /// <summary>贯穿全部子阶段的根工作流标识。</summary>
+    public string RootWorkflowId { get; set; } = string.Empty;
 
     /// <summary>优化阶段结果；直接 TDDFT 模式时为空。</summary>
     public OptimizationSubmissionResult? Optimization { get; set; }

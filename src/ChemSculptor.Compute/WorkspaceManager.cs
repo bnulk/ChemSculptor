@@ -45,6 +45,16 @@ public sealed class WorkspaceManager : ICalculationWorkspace
         return Task.CompletedTask;
     }
 
+    /// <summary>确保根工作流证据目录存在。</summary>
+    public Task EnsureWorkflowRunWorkspaceAsync(
+        string rootWorkflowId,
+        CancellationToken cancellationToken = default)
+    {
+        Directory.CreateDirectory(
+            GetWorkflowRunDirectory(rootWorkflowId));
+        return Task.CompletedTask;
+    }
+
     /// <summary>获取几何资产目录。</summary>
     public string GetGeometryDirectory(string geometryId)
     {
@@ -63,6 +73,29 @@ public sealed class WorkspaceManager : ICalculationWorkspace
             _options.RootDirectory,
             _options.JobsDirectoryName,
             safeJobId);
+    }
+
+    /// <summary>获取根工作流证据目录。</summary>
+    public string GetWorkflowRunDirectory(
+        string rootWorkflowId)
+    {
+        string safeRootWorkflowId = ValidateIdentifier(
+            rootWorkflowId,
+            nameof(rootWorkflowId));
+        return Path.Combine(
+            _options.RootDirectory,
+            _options.WorkflowRunsDirectoryName,
+            safeRootWorkflowId);
+    }
+
+    /// <summary>获取根工作流证据账本路径。</summary>
+    public string GetWorkflowRunLedgerPath(
+        string rootWorkflowId)
+    {
+        return Path.Combine(
+            GetWorkflowRunDirectory(rootWorkflowId),
+            CalculationWorkspacePaths
+                .WorkflowEvidenceLedgerFileName);
     }
 
     /// <summary>获取输入目录。</summary>

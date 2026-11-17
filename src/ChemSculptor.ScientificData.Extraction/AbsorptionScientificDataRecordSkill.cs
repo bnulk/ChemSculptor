@@ -319,7 +319,9 @@ public sealed class AbsorptionScientificDataRecordSkill
         point.Provenance.InitialJobId = tddftJob.JobId;
         point.Provenance.AcceptedJobId = tddftJob.JobId;
         point.Provenance.RootWorkflowId =
-            archiveRequest.Request.SessionId;
+            ResolveRootWorkflowId(
+                archiveRequest,
+                tddftJob);
         point.Provenance.AcceptedBy =
             "AbsorptionScientificDataRecordSkill";
         point.Provenance.AcceptanceSummary =
@@ -589,5 +591,24 @@ public sealed class AbsorptionScientificDataRecordSkill
         }
 
         return ScientificArtifactKind.Other;
+    }
+
+    private static string ResolveRootWorkflowId(
+        AbsorptionSpectrumArchiveRequest request,
+        CalculationJob tddftJob)
+    {
+        if (!string.IsNullOrWhiteSpace(
+            request.Request.RootWorkflowId))
+        {
+            return request.Request.RootWorkflowId;
+        }
+
+        if (!string.IsNullOrWhiteSpace(
+            tddftJob.RootWorkflowId))
+        {
+            return tddftJob.RootWorkflowId;
+        }
+
+        return request.Request.SessionId;
     }
 }

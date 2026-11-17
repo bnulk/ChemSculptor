@@ -246,6 +246,8 @@ public sealed class OptimizationFrequencyAnalysisSkill : ISkill
         frequencyJob.WorkflowId = finalJob.WorkflowId;
         frequencyJob.ParentJobId = finalJob.JobId;
         frequencyJob.RootWorkflowId = finalJob.RootWorkflowId;
+        frequencyJob.EvidenceStageId =
+            CalculationWorkflowStageIds.Frequency;
         frequencyJob.AttemptNumber = finalJob.AttemptNumber;
         frequencyJob.GeometryId = finalJob.GeometryId;
         frequencyJob.Goal = "振动分析";

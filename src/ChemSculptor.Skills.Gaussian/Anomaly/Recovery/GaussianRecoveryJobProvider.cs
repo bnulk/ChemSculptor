@@ -209,6 +209,9 @@ public sealed class GaussianRecoveryJobProvider
         recoveryJob.WorkflowId = sourceJob.WorkflowId;
         recoveryJob.ParentJobId = sourceJob.JobId;
         recoveryJob.RootWorkflowId = rootWorkflowId;
+        recoveryJob.EvidenceStageId = ResolveRecoveryStageId(
+            recoverySpec,
+            request.Plan.Option!.IntentCode);
         recoveryJob.AttemptNumber = attemptNumber;
         recoveryJob.CorrectionPlanId = request.Plan.Id;
         recoveryJob.GeometryId = sourceJob.GeometryId;
@@ -318,6 +321,9 @@ public sealed class GaussianRecoveryJobProvider
         recoveryJob.WorkflowId = sourceJob.WorkflowId;
         recoveryJob.ParentJobId = sourceJob.JobId;
         recoveryJob.RootWorkflowId = rootWorkflowId;
+        recoveryJob.EvidenceStageId = ResolveRecoveryStageId(
+            recoverySpec,
+            request.Plan.Option!.IntentCode);
         recoveryJob.AttemptNumber = attemptNumber;
         recoveryJob.CorrectionPlanId = request.Plan.Id;
         recoveryJob.GeometryId = sourceJob.GeometryId;
@@ -373,6 +379,36 @@ public sealed class GaussianRecoveryJobProvider
                 intentCode,
                 CorrectionIntentCodes.ReuseScfRecovery,
                 StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static string ResolveRecoveryStageId(
+        CalculationSpec recoverySpec,
+        string intentCode)
+    {
+        if (string.Equals(
+                intentCode,
+                CorrectionIntentCodes.WavefunctionOptimization,
+                StringComparison.OrdinalIgnoreCase))
+        {
+            return CalculationWorkflowStageIds.StabilityCorrection;
+        }
+
+        if (string.Equals(
+                intentCode,
+                CorrectionIntentCodes.ChangeSpinMultiplicity,
+                StringComparison.OrdinalIgnoreCase))
+        {
+            return CalculationWorkflowStageIds.StabilityCorrection;
+        }
+
+        if (recoverySpec.TaskType == CalculationTaskType.Optimization
+            || recoverySpec.TaskType
+                == CalculationTaskType.OptimizationFrequency)
+        {
+            return CalculationWorkflowStageIds.OptimizationRecovery;
+        }
+
+        return CalculationWorkflowStageIds.StabilityCorrection;
     }
 
     private static void ApplyOptimizationChanges(

@@ -20,6 +20,9 @@ public static class AgentServiceRegistration
             workspaceOptions);
         ServiceCollectionServiceExtensions.AddSingleton<ICalculationWorkspace, WorkspaceManager>(
             services);
+        ServiceCollectionServiceExtensions.AddSingleton<
+            ICalculationWorkflowEvidenceLedgerRepository,
+            FileCalculationWorkflowEvidenceLedgerRepository>(services);
         ServiceCollectionServiceExtensions.AddSingleton<ITaskInterpreter, RuleBasedTaskInterpreter>(
             services);
         ServiceCollectionServiceExtensions.AddSingleton<IConversationRepository, InMemoryConversationRepository>(

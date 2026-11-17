@@ -6,6 +6,9 @@ public sealed class OptimizationFrequencyRequest
     /// <summary>客户端会话标识。</summary>
     public string SessionId { get; set; } = string.Empty;
 
+    /// <summary>可选的根工作流标识；为空时由本次作业新建。</summary>
+    public string RootWorkflowId { get; set; } = string.Empty;
+
     /// <summary>几何资产标识。</summary>
     public string GeometryId { get; set; } = string.Empty;
 

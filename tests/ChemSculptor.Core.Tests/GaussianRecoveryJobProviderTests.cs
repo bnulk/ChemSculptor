@@ -80,6 +80,9 @@ public class GaussianRecoveryJobProviderTests
             Assert.NotNull(result.RecoveryJob);
             Assert.NotNull(result.Attempt);
             Assert.Equal(
+                CalculationWorkflowStageIds.StabilityCorrection,
+                result.RecoveryJob.EvidenceStageId);
+            Assert.Equal(
                 sourceJob.JobId,
                 result.RecoveryJob.ParentJobId);
             Assert.Equal(1, result.RecoveryJob.AttemptNumber);
@@ -187,6 +190,9 @@ public class GaussianRecoveryJobProviderTests
 
             Assert.True(result.Succeeded);
             Assert.NotNull(result.RecoveryJob);
+            Assert.Equal(
+                CalculationWorkflowStageIds.StabilityCorrection,
+                result.RecoveryJob.EvidenceStageId);
             string recoveryInput =
                 await File.ReadAllTextAsync(
                     result.RecoveryJob!
@@ -271,6 +277,9 @@ public class GaussianRecoveryJobProviderTests
 
             Assert.True(result.Succeeded);
             Assert.NotNull(result.RecoveryJob);
+            Assert.Equal(
+                CalculationWorkflowStageIds.StabilityCorrection,
+                result.RecoveryJob.EvidenceStageId);
             string recoveryInput =
                 await File.ReadAllTextAsync(
                     result.RecoveryJob!.SourceInputFilePath);

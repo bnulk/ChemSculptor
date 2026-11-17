@@ -2,7 +2,7 @@
 
 ## 当前阶段
 
-全过程计算档案包第 1 步已完成。
+全过程计算档案包第 2 步已完成。
 
 ```text
 已冻结 Calculation Run Archive Package 规范
@@ -17,13 +17,33 @@ scratch、缓存、临时交换文件和锁文件默认排除
 science/ 保存科学点集合
 process/ 保存全部执行证据
 科学点集合继续作为计算与“数据转文章”的连接点
-本阶段没有修改实现代码
 ```
 
 规范：
 
 ```text
 docs/Calculation-Run-Archive-Package-Spec.md
+```
+
+第 2 步根工作流持久化证据账本已完成：
+
+```text
+新增 CalculationWorkflowEvidenceLedger
+新增 FileCalculationWorkflowEvidenceLedgerRepository
+账本路径固定为 workflow-runs/<RootWorkflowId>/ledger.json
+单点、优化、联合优化频率、TDDFT 和吸收光谱支持 RootWorkflowId
+吸收光谱创建根工作流并传播给优化和 TDDFT
+NTO、稳定性检查和恢复作业继承来源作业根标识
+作业可以显式指定 EvidenceStageId
+缺失显式阶段时按任务类型回退到默认阶段
+稳定性检查、稳定性修正、优化恢复和频率作业使用显式阶段
+同一作业重复保存只更新，不产生重复尝试
+失败、取消、父作业和恢复作业均保留
+作业改归阶段时不会在旧阶段留下悬空引用
+JSON 使用 camelCase 和字符串枚举
+临时文件写入后再原子替换 ledger.json
+仓储实例重建后仍可按 RootWorkflowId 读取全部已登记索引
+本阶段不复制计算文件、不生成报告、不组装档案包、不改 API 和 WinForms
 ```
 
 计算成果包与报告生成层第 0 步已完成。
@@ -167,8 +187,10 @@ NTO 当前只支持 Gaussian TDDFT 源结果
 成果包清单当前只定义数据结构，不执行文件发现和 SHA-256 计算
 Api 和 WinForms 尚未接入新报告层
 全过程档案规范已完成第 1 步
+根工作流持久化证据账本已完成第 2 步
 当前保存仍以最新作业和最终科学点成果包为主
-根工作流下全部作业尚不能持久化枚举
+账本已保存作业尝试索引，但尚未实现仓储级全量枚举和筛选
+尚未实现账本与科学点、科学成果、运行目录的缺失关联审计
 全过程文件发现、校验、组装和下载尚未实现
 ```
 
@@ -176,7 +198,7 @@ Api 和 WinForms 尚未接入新报告层
 
 ```text
 Release 构建：0 警告，0 错误
-测试：265/265 通过
+测试：277/277 通过
 真实 Gaussian 16：3/3 通过
 真实 Gaussian opt freq：1/1 通过
 真实 Gaussian O2 稳定性修正：1/1 通过
@@ -203,7 +225,6 @@ Release 构建：0 警告，0 错误
 尚未实现成果包组装器
 尚未接入成果包 API 和客户端保存
 尚未以吸收光谱和 NTO 作为内容提供者验收通用层
-尚未实现根工作流持久化证据账本
 尚未实现按 RootWorkflowId 枚举全部作业
 尚未实现全过程产物发现和 exclusions.json
 尚未实现全过程 manifest.json 与 checksums.sha256
@@ -212,19 +233,20 @@ Release 构建：0 警告，0 错误
 
 ## 下一步精确任务
 
-下一步精确任务：建立根工作流持久化证据账本。
+下一步精确任务：实现按 RootWorkflowId 的仓储级作业完整枚举、筛选和缺失关联审计。
 
 ```text
-目标：服务重启后只凭 RootWorkflowId 找回全部阶段和作业尝试
-记录：阶段顺序、阶段状态、节点、JobId、ParentJobId、AttemptNumber
+目标：从 ledger.json 解析出根工作流全部作业尝试，并读取对应 manifest.json
+区分：已登记且清单存在、已登记但清单缺失、目录存在但未登记
+筛选：阶段、状态、任务类型、父作业、恢复尝试和程序
 关联：科学点、科学成果、运行目录和来源作业
 边界：不复制文件、不生成报告、不组装档案包、不接 Api
-要求：失败、取消、跳过和被取代记录同样持久化
-测试：单作业、多作业、恢复作业、服务重启和缺失关联
+要求：不得静默忽略缺失 manifest 或孤立作业目录
+测试：多阶段多作业、失败和取消、恢复链、缺失清单、孤立目录和服务重启
 ```
 
-完成第 2 步后，再按用户指定推进全部作业枚举、全过程证据快照、
-文件清单、档案组装和客户端下载。
+完成第 3 步后，再按用户指定推进全过程证据快照、文件清单、
+档案组装和客户端下载。
 
 历史阶段建议：
 
@@ -268,6 +290,41 @@ conversation.txt 是客户端会话记录
 每次修改代码后，必须同时更新：
 
 ```text
+docs/PROJECT_STATE.md
+docs/CHANGES.md
+docs/HANDOFF.md
+```
+
+## 本次全过程档案第 2 步关联文件
+
+```text
+src/ChemSculptor.Compute/CalculationWorkflowEvidenceLedger.cs
+src/ChemSculptor.Compute/FileCalculationWorkflowEvidenceLedgerRepository.cs
+src/ChemSculptor.Compute/CalculationInterfaces.cs
+src/ChemSculptor.Compute/CalculationModels.cs
+src/ChemSculptor.Compute/CalculationWorkspaceOptions.cs
+src/ChemSculptor.Compute/CalculationWorkspacePaths.cs
+src/ChemSculptor.Compute/WorkspaceManager.cs
+src/ChemSculptor.Compute/FileCalculationRepository.cs
+src/ChemSculptor.Compute/OptimizationModels.cs
+src/ChemSculptor.Compute/OptimizationFrequencyModels.cs
+src/ChemSculptor.Compute/TddftModels.cs
+src/ChemSculptor.Compute/AbsorptionSpectrumModels.cs
+src/ChemSculptor.Agent/AgentServiceRegistration.cs
+src/ChemSculptor.Agent/AbsorptionSpectrumWorkflowService.cs
+src/ChemSculptor.Agent/OptimizationCalculationService.cs
+src/ChemSculptor.Agent/OptimizationFrequencyCalculationService.cs
+src/ChemSculptor.Agent/SinglePointCalculationService.cs
+src/ChemSculptor.Agent/TddftCalculationService.cs
+src/ChemSculptor.ScientificData.Extraction/AbsorptionScientificDataRecordSkill.cs
+src/ChemSculptor.Skills.Common/NtoCalculation/NtoTransitionCalculationSkill.cs
+src/ChemSculptor.Skills.Common/OptimizationRecovery/OptimizationFrequencyAnalysisSkill.cs
+src/ChemSculptor.Skills.Gaussian/Anomaly/Recovery/GaussianRecoveryJobProvider.cs
+src/ChemSculptor.Skills.Gaussian/Anomaly/WavefunctionStability/GaussianWavefunctionStabilityCheckSkill.cs
+tests/ChemSculptor.Core.Tests/CalculationWorkflowEvidenceLedgerTests.cs
+tests/ChemSculptor.Core.Tests/AbsorptionSpectrumWorkflowServiceTests.cs
+tests/ChemSculptor.Core.Tests/TddftCalculationServiceTests.cs
+tests/ChemSculptor.Core.Tests/GaussianRecoveryJobProviderTests.cs
 docs/PROJECT_STATE.md
 docs/CHANGES.md
 docs/HANDOFF.md

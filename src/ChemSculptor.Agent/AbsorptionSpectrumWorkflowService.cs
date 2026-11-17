@@ -18,14 +18,31 @@ public sealed class AbsorptionSpectrumWorkflowService
         _resultRecorder;
     private readonly IAbsorptionSpectrumRecoveryFramework
         _recoveryFramework;
+    private readonly ICalculationWorkflowEvidenceLedgerRepository
+        _evidenceLedger;
 
     /// <summary>创建吸收光谱工作流服务。</summary>
+    public AbsorptionSpectrumWorkflowService(
+        IOptimizationCalculationService optimizationService,
+        ITddftCalculationService tddftService,
+        ICalculationWorkflowEvidenceLedgerRepository evidenceLedger)
+        : this(
+            optimizationService,
+            tddftService,
+            evidenceLedger,
+            null,
+            new NoOpAbsorptionSpectrumRecoveryFramework())
+    {
+    }
+
+    /// <summary>创建吸收光谱工作流服务；兼容既有测试和调用方。</summary>
     public AbsorptionSpectrumWorkflowService(
         IOptimizationCalculationService optimizationService,
         ITddftCalculationService tddftService)
         : this(
             optimizationService,
             tddftService,
+            (ICalculationWorkflowEvidenceLedgerRepository?)null,
             null,
             new NoOpAbsorptionSpectrumRecoveryFramework())
     {
@@ -35,10 +52,26 @@ public sealed class AbsorptionSpectrumWorkflowService
     public AbsorptionSpectrumWorkflowService(
         IOptimizationCalculationService optimizationService,
         ITddftCalculationService tddftService,
+        IAbsorptionSpectrumResultRecorder? resultRecorder,
+        ICalculationWorkflowEvidenceLedgerRepository evidenceLedger)
+        : this(
+            optimizationService,
+            tddftService,
+            evidenceLedger,
+            resultRecorder,
+            new NoOpAbsorptionSpectrumRecoveryFramework())
+    {
+    }
+
+    /// <summary>创建带科学数据归档的吸收光谱工作流服务；兼容既有调用方。</summary>
+    public AbsorptionSpectrumWorkflowService(
+        IOptimizationCalculationService optimizationService,
+        ITddftCalculationService tddftService,
         IAbsorptionSpectrumResultRecorder? resultRecorder)
         : this(
             optimizationService,
             tddftService,
+            null,
             resultRecorder,
             new NoOpAbsorptionSpectrumRecoveryFramework())
     {
@@ -48,6 +81,7 @@ public sealed class AbsorptionSpectrumWorkflowService
     public AbsorptionSpectrumWorkflowService(
         IOptimizationCalculationService optimizationService,
         ITddftCalculationService tddftService,
+        ICalculationWorkflowEvidenceLedgerRepository? evidenceLedger,
         IAbsorptionSpectrumResultRecorder? resultRecorder,
         IAbsorptionSpectrumRecoveryFramework recoveryFramework)
     {
@@ -71,6 +105,8 @@ public sealed class AbsorptionSpectrumWorkflowService
 
         _optimizationService = optimizationService;
         _tddftService = tddftService;
+        _evidenceLedger = evidenceLedger
+            ?? new UnavailableWorkflowEvidenceLedgerRepository();
         _resultRecorder = resultRecorder;
         _recoveryFramework = recoveryFramework;
     }
@@ -105,7 +141,15 @@ public sealed class AbsorptionSpectrumWorkflowService
         }
 
         result.Mode = request.Mode;
+        result.RootWorkflowId = ResolveRootWorkflowId(request);
         string tddftCoordinateText = request.CoordinateText;
+
+        await EnsureStageAsync(
+            result.RootWorkflowId,
+            request.Mode == AbsorptionSpectrumMode.TddftOnly
+                ? CalculationWorkflowStageIds.Tddft
+                : CalculationWorkflowStageIds.Optimization,
+            cancellationToken);
 
         if (request.Mode != AbsorptionSpectrumMode.TddftOnly)
         {
@@ -116,6 +160,8 @@ public sealed class AbsorptionSpectrumWorkflowService
             OptimizationRequest optimizationRequest =
                 new OptimizationRequest();
             optimizationRequest.SessionId = request.SessionId;
+            optimizationRequest.RootWorkflowId =
+                result.RootWorkflowId;
             optimizationRequest.GeometryId = request.GeometryId;
             optimizationRequest.Goal = request.Goal;
             optimizationRequest.CoordinateText =
@@ -163,6 +209,7 @@ public sealed class AbsorptionSpectrumWorkflowService
         TddftCalculationRequest tddftRequest =
             new TddftCalculationRequest();
         tddftRequest.SessionId = request.SessionId;
+        tddftRequest.RootWorkflowId = result.RootWorkflowId;
         tddftRequest.GeometryId = request.GeometryId;
         tddftRequest.Goal = request.Goal;
         tddftRequest.CoordinateText = tddftCoordinateText;
@@ -201,6 +248,10 @@ public sealed class AbsorptionSpectrumWorkflowService
 
         if (_resultRecorder != null)
         {
+            await EnsureStageAsync(
+                result.RootWorkflowId,
+                CalculationWorkflowStageIds.Archive,
+                cancellationToken);
             AbsorptionSpectrumArchiveRequest archiveRequest =
                 new AbsorptionSpectrumArchiveRequest();
             archiveRequest.Request = request;
@@ -233,6 +284,74 @@ public sealed class AbsorptionSpectrumWorkflowService
         }
 
         return result;
+    }
+
+    private string ResolveRootWorkflowId(
+        AbsorptionSpectrumRequest request)
+    {
+        if (!string.IsNullOrWhiteSpace(
+            request.RootWorkflowId))
+        {
+            return request.RootWorkflowId;
+        }
+
+        return "workflow-" + Guid.NewGuid().ToString("N");
+    }
+
+    private async Task EnsureStageAsync(
+        string rootWorkflowId,
+        string stageId,
+        CancellationToken cancellationToken)
+    {
+        CalculationWorkflowStageEvidence stage =
+            new CalculationWorkflowStageEvidence();
+        stage.StageId = stageId;
+        stage.StageType = stageId;
+        stage.Order =
+            CalculationWorkflowStageIds.ResolveDefaultOrder(
+                stageId);
+        await _evidenceLedger.EnsureStageAsync(
+            rootWorkflowId,
+            stage,
+            cancellationToken);
+    }
+
+    private sealed class
+        UnavailableWorkflowEvidenceLedgerRepository
+        : ICalculationWorkflowEvidenceLedgerRepository
+    {
+        public Task<CalculationWorkflowEvidenceLedger?> GetAsync(
+            string rootWorkflowId,
+            CancellationToken cancellationToken = default)
+        {
+            return Task.FromResult<
+                CalculationWorkflowEvidenceLedger?>(null);
+        }
+
+        public Task SaveAsync(
+            CalculationWorkflowEvidenceLedger ledger,
+            CancellationToken cancellationToken = default)
+        {
+            return Task.CompletedTask;
+        }
+
+        public Task<CalculationWorkflowStageEvidence>
+            EnsureStageAsync(
+                string rootWorkflowId,
+                CalculationWorkflowStageEvidence stage,
+                CancellationToken cancellationToken = default)
+        {
+            return Task.FromResult(stage);
+        }
+
+        public Task AttachJobAsync(
+            string rootWorkflowId,
+            string stageId,
+            CalculationJob job,
+            CancellationToken cancellationToken = default)
+        {
+            return Task.CompletedTask;
+        }
     }
 
     private async Task SetFailureAsync(

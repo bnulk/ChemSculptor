@@ -41,4 +41,10 @@ public static class CalculationWorkspacePaths
 
     /// <summary>结果验证报告文件名称。</summary>
     public const string JobValidationFileName = "validation.json";
+
+    /// <summary>根工作流证据账本文件名称。</summary>
+    public const string WorkflowEvidenceLedgerFileName = "ledger.json";
+
+    /// <summary>根工作流证据账本写入时的临时文件后缀。</summary>
+    public const string JsonTemporaryFileSuffix = ".tmp";
 }

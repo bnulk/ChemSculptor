@@ -270,6 +270,9 @@ public sealed class CalculationRequest
     /// <summary>客户端会话标识。</summary>
     public string SessionId { get; set; } = string.Empty;
 
+    /// <summary>可选的根工作流标识；为空时由本次作业新建。</summary>
+    public string RootWorkflowId { get; set; } = string.Empty;
+
     /// <summary>几何资产标识。</summary>
     public string GeometryId { get; set; } = string.Empty;
 
@@ -356,6 +359,9 @@ public sealed class CalculationJob
 
     /// <summary>根工作流标识；普通作业为空。</summary>
     public string RootWorkflowId { get; set; } = string.Empty;
+
+    /// <summary>根工作流中的显式阶段标识；为空时按任务类型推断。</summary>
+    public string EvidenceStageId { get; set; } = string.Empty;
 
     /// <summary>恢复尝试序号；普通作业为 0。</summary>
     public int AttemptNumber { get; set; }

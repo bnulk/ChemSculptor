@@ -59,6 +59,35 @@ public class AbsorptionSpectrumWorkflowServiceTests
             tddft.LastRequest!.CoordinateText);
     }
 
+    /// <summary>验证优化和 TDDFT 阶段共用同一个根工作流标识。</summary>
+    [Fact]
+    public async Task OptimizeAndTddftShareRootWorkflowId()
+    {
+        RecordingOptimizationService optimization =
+            new RecordingOptimizationService();
+        RecordingTddftService tddft =
+            new RecordingTddftService();
+        AbsorptionSpectrumWorkflowService service =
+            new AbsorptionSpectrumWorkflowService(
+                optimization,
+                tddft);
+
+        AbsorptionSpectrumSubmissionResult result =
+            await service.SubmitAsync(
+                CreateRequest(
+                    AbsorptionSpectrumMode.OptimizeThenTddft));
+
+        Assert.True(result.Succeeded);
+        Assert.False(string.IsNullOrWhiteSpace(
+            result.RootWorkflowId));
+        Assert.Equal(
+            result.RootWorkflowId,
+            optimization.LastRequest!.RootWorkflowId);
+        Assert.Equal(
+            result.RootWorkflowId,
+            tddft.LastRequest!.RootWorkflowId);
+    }
+
     /// <summary>验证冻结模式会把 HydrogensOnly 传给优化阶段。</summary>
     [Fact]
     public async Task ConstrainedModeSetsHydrogensOnlyConstraint()

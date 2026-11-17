@@ -262,6 +262,9 @@ public sealed class GaussianWavefunctionStabilityCheckSkill
         stabilityJob.TaskId = originalJob.TaskId;
         stabilityJob.SessionId = originalJob.SessionId;
         stabilityJob.WorkflowId = originalJob.WorkflowId;
+        stabilityJob.RootWorkflowId = ResolveRootWorkflowId(originalJob);
+        stabilityJob.EvidenceStageId =
+            CalculationWorkflowStageIds.WavefunctionStability;
         stabilityJob.GeometryId = originalJob.GeometryId;
         stabilityJob.Goal = "波函数稳定性检查";
         stabilityJob.Spec = originalJob.Spec;
@@ -494,6 +497,17 @@ public sealed class GaussianWavefunctionStabilityCheckSkill
         return state == CalculationJobState.Completed
             || state == CalculationJobState.Failed
             || state == CalculationJobState.Canceled;
+    }
+
+    private static string ResolveRootWorkflowId(
+        CalculationJob job)
+    {
+        if (!string.IsNullOrWhiteSpace(job.RootWorkflowId))
+        {
+            return job.RootWorkflowId;
+        }
+
+        return job.WorkflowId ?? string.Empty;
     }
 
     /// <summary>执行 JSON Skill 请求。</summary>

@@ -187,6 +187,8 @@ public sealed class NtoTransitionCalculationSkill
         job.ParentJobId = request.SourceJob.JobId;
         job.RootWorkflowId =
             request.SourceJob.RootWorkflowId;
+        job.EvidenceStageId =
+            CalculationWorkflowStageIds.Nto;
         job.GeometryId = request.SourceJob.GeometryId;
         job.Goal =
             "NTO Transition " +
