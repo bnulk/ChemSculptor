@@ -318,6 +318,8 @@ WinForms 的 SplitContainer 是框架界面控件，不属于技能命名。
 
 ### 7.3 Skill / Workflow 强制建设模板
 
+完整编写指导见 [Skill 与 Workflow 编写指导书](Skill-Workflow-Authoring-Guide.md)。
+
 适用范围：
 
 ```text
