@@ -5,6 +5,111 @@
 
 ---
 
+## v0.77.0（2026-11-18）：阶段与作业因果关系图
+
+### 版本
+
+- 当前版本：`0.77.0`
+- 日期：`2026-11-18`
+- 版本类型：新增功能
+
+### 改动目的
+
+实现全过程计算档案包第 5 步。把根工作流账本中的阶段归属和作业关系
+整理成可持久化、可审计的因果关系图，为后续证据快照、文件发现和归档
+解释“某个作业为什么存在、属于哪个阶段、由哪个作业或计划产生”。
+
+### 核心原则
+
+```text
+因果关系只来自持久化账本和作业清单
+不按时间戳猜测因果关系
+阶段顺序只是声明的展示顺序，不冒充科学因果
+JobAttemptIds 提供阶段包含作业的证据
+ParentJobId 提供作业派生的证据
+CorrectionPlanId 和 AttemptNumber 提供恢复尝试的证据
+关系图必须使用完整作业清单，不继承界面筛选条件
+本阶段不读取计算输出文件，不生成报告，不接入 API 和 WinForms
+```
+
+### 因果关系类型
+
+```text
+StageContainsJob
+StagePrecedesStage
+JobDerivedFromJob
+JobRecoveryOfJob
+```
+
+关系边保存 `EvidenceKind`、`SourceField` 和 `IsRequired`，用于区分
+“阶段声明顺序”和“不可缺失的作业来源关系”。
+
+### 新增文件
+
+```text
+src/ChemSculptor.Compute/CalculationWorkflowCausalityModels.cs
+src/ChemSculptor.Compute/FileCalculationWorkflowCausalityRepository.cs
+src/ChemSculptor.Compute/CalculationWorkspacePaths.cs
+src/ChemSculptor.Agent/AgentServiceRegistration.cs
+tests/ChemSculptor.Core.Tests/CalculationWorkflowCausalityTests.cs
+docs/Tutorials/Calculation-Run-Archive-Step-05-Causality-Tutorial.md
+docs/Calculation-Run-Archive-Package-Spec.md
+```
+
+### 扩展文件
+
+```text
+src/ChemSculptor.Compute/CalculationInterfaces.cs
+```
+
+### 持久化
+
+因果关系图固定写入：
+
+```text
+workflow-runs/<RootWorkflowId>/causality.json
+```
+
+写入采用临时文件加原子替换；节点、边和问题按稳定字段排序，便于比较
+两次构建结果和服务重启后的复核。
+
+### 问题码
+
+每个异常关系都有稳定问题码，包括：
+
+```text
+causality.ledger.missing
+causality.node.duplicate
+causality.job.stage_missing
+causality.stage.job_missing
+causality.job.stage_conflict
+causality.parent.missing
+causality.parent.root_mismatch
+causality.job.self_reference
+causality.job.cycle
+causality.edge.duplicate
+causality.job.manifest_unavailable
+causality.job.unindexed
+causality.job.evidence_conflict
+```
+
+### 验证
+
+```text
+Release 构建：0 警告，0 错误
+Core 测试：317/317 通过
+新增测试覆盖多阶段、失败/取消作业、恢复作业、NTO 派生、缺失父作业、
+跨根工作流、自引用、循环、重复引用、确定性排序、JSON 往返和重启读取
+```
+
+### 教程
+
+```text
+docs/Tutorials/Calculation-Run-Archive-Step-05-Causality-Tutorial.md
+```
+
+---
+
 ## v0.76.0（2026-11-18）：全过程档案包范围契约
 
 ### 版本

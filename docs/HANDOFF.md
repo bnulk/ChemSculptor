@@ -2,7 +2,7 @@
 
 ## 当前阶段
 
-全过程计算档案包第 4 步已完成。
+全过程计算档案包第 5 步已完成。
 
 ```text
 已冻结 Calculation Run Archive Package 规范
@@ -81,6 +81,28 @@ science 与 process 必须彼此不同
 运行中或结论未知的根工作流不能标记档案 Complete
 外层标识与范围标识不一致时返回稳定问题码
 本阶段不读取仓储、不复制文件、不生成摘要、不组装包、不改 API 和 WinForms
+```
+
+第 5 步阶段与作业因果关系已完成：
+
+```text
+新增 CalculationWorkflowCausalityGraph
+新增 Stage / JobAttempt 节点
+新增 StageContainsJob、StagePrecedesStage、JobDerivedFromJob、JobRecoveryOfJob
+每条边记录 EvidenceKind、SourceField 和 IsRequired
+新增 ICalculationWorkflowCausalityRepository
+新增 FileCalculationWorkflowCausalityRepository
+因果关系图固定写入 workflow-runs/<RootWorkflowId>/causality.json
+构建时强制读取完整作业清单，不传入展示筛选条件
+使用 Stages[].JobAttemptIds 建立阶段包含作业关系
+使用 Stages[].Order 建立声明顺序关系，并标记为非必要条件
+使用 JobAttempts[].ParentJobId 建立派生关系
+使用 CorrectionPlanId 或 AttemptNumber 建立恢复关系
+父作业缺失、跨根工作流、自引用、循环、重复边和阶段冲突均生成稳定问题码
+临时文件原子替换后写入，节点、边和问题确定性排序
+JSON 使用 camelCase 和字符串枚举，服务重启后可按 RootWorkflowId 读取
+新增 12 项测试和第五步教程
+本阶段不读取计算输出文件，不生成报告，不组装档案包，不改 API 和 WinForms
 ```
 
 计算成果包与报告生成层第 0 步已完成。
@@ -223,10 +245,11 @@ NTO 当前只支持 Gaussian TDDFT 源结果
 报告文档尚未渲染为 Markdown
 成果包清单当前只定义数据结构，不执行文件发现和 SHA-256 计算
 Api 和 WinForms 尚未接入新报告层
-全过程档案第 1 至 4 步已完成
+全过程档案第 1 至 5 步已完成
 当前保存仍以最新作业和最终科学点成果包为主
 作业清单已支持完整枚举和筛选
 科学成果、科学点、来源作业和运行目录的缺失关联审计已实现
+阶段与作业因果关系图已实现
 全过程文件发现、校验、组装和下载尚未实现
 ```
 
@@ -234,7 +257,7 @@ Api 和 WinForms 尚未接入新报告层
 
 ```text
 Release 构建：0 警告，0 错误
-测试：305/305 通过
+测试：317/317 通过
 真实 Gaussian 16：3/3 通过
 真实 Gaussian opt freq：1/1 通过
 真实 Gaussian O2 稳定性修正：1/1 通过
@@ -268,14 +291,15 @@ Release 构建：0 警告，0 错误
 
 ## 下一步精确任务
 
-下一步精确任务：等待用户确认是否进入全过程档案第 5 步。
+下一步精确任务：等待用户确认是否进入全过程档案第 6 步。
 
 ```text
-第 5 步候选目标：建立阶段、作业尝试、恢复作业、科学点和后处理之间的因果关系。
-当前第 4 步已完成，不在未确认前继续修改报告层。
+第 6 步候选目标：冻结全过程产物发现策略，区分必收、可选、缺失、
+排除和不可访问文件，为后续完整文件清单和 SHA-256 提供稳定输入。
+当前第 5 步已完成，不在未确认前继续修改报告层或文件组装层。
 ```
 
-第 4 步范围契约完成后，再按用户指定推进全过程证据快照、文件清单、
+第 5 步因果关系完成后，再按用户指定推进全过程产物发现、文件清单、
 档案组装和客户端下载。
 
 历史阶段建议：
@@ -322,6 +346,22 @@ conversation.txt 是客户端会话记录
 ```text
 docs/PROJECT_STATE.md
 docs/CHANGES.md
+docs/HANDOFF.md
+```
+
+## 本次全过程档案第 5 步关联文件
+
+```text
+src/ChemSculptor.Compute/CalculationWorkflowCausalityModels.cs
+src/ChemSculptor.Compute/FileCalculationWorkflowCausalityRepository.cs
+src/ChemSculptor.Compute/CalculationInterfaces.cs
+src/ChemSculptor.Compute/CalculationWorkspacePaths.cs
+src/ChemSculptor.Agent/AgentServiceRegistration.cs
+tests/ChemSculptor.Core.Tests/CalculationWorkflowCausalityTests.cs
+docs/Tutorials/Calculation-Run-Archive-Step-05-Causality-Tutorial.md
+docs/Calculation-Run-Archive-Package-Spec.md
+docs/CHANGES.md
+docs/PROJECT_STATE.md
 docs/HANDOFF.md
 ```
 

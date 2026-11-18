@@ -284,6 +284,23 @@ public interface ICalculationWorkflowInventoryRepository
 }
 
 /// <summary>
+/// 根工作流因果关系图构建接口。
+/// 只读取账本和作业清单，不读取计算文件，不按时间戳推断因果。
+/// </summary>
+public interface ICalculationWorkflowCausalityRepository
+{
+    /// <summary>按根工作流构建并持久化因果关系图快照。</summary>
+    Task<CalculationWorkflowCausalityGraph> BuildAsync(
+        string rootWorkflowId,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>读取最近一次因果关系图；不存在时返回 null。</summary>
+    Task<CalculationWorkflowCausalityGraph?> GetAsync(
+        string rootWorkflowId,
+        CancellationToken cancellationToken = default);
+}
+
+/// <summary>
 /// 根工作流证据账本仓储。
 /// 提供按 RootWorkflowId 读取、保存、登记阶段和附加作业的原子操作。
 /// </summary>

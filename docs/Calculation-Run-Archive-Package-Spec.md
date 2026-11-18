@@ -128,6 +128,37 @@ NTO 单状态作业
 
 每个作业尝试必须独立保存，不能只保留最终成功尝试。
 
+### 4.3.1 阶段与作业因果关系
+
+全过程档案必须能够区分以下四类关系：
+
+```text
+StageContainsJob
+  阶段明确包含一个作业尝试
+
+StagePrecedesStage
+  阶段按声明顺序位于另一个阶段之前，不自动等同于科学因果
+
+JobDerivedFromJob
+  一个作业由另一个作业派生，例如频率作业来自最终优化作业
+
+JobRecoveryOfJob
+  一个作业用于修正另一个作业的失败或异常
+```
+
+关系必须来自持久化证据，不能仅根据时间戳推断。首批证据字段为：
+
+```text
+Stages[].JobAttemptIds
+Stages[].Order
+JobAttempts[].ParentJobId
+JobAttempts[].AttemptNumber
+JobAttempts[].CorrectionPlanId
+```
+
+父作业缺失、跨根工作流、自引用、循环、阶段归属冲突和重复边必须
+显式记录。阶段声明顺序不是必要条件；作业派生和恢复关系是必要条件。
+
 ### 4.4 持久化证据
 
 根工作流结束后仍应保留、可复制、可校验并可用于复现或审计的文件和记录。

@@ -27,6 +27,9 @@ public static class AgentServiceRegistration
             ICalculationWorkflowInventoryRepository,
             FileCalculationWorkflowInventoryRepository>(services);
         ServiceCollectionServiceExtensions.AddSingleton<
+            ICalculationWorkflowCausalityRepository,
+            FileCalculationWorkflowCausalityRepository>(services);
+        ServiceCollectionServiceExtensions.AddSingleton<
             IScientificWorkflowInventoryService,
             ScientificWorkflowInventoryService>(services);
         ServiceCollectionServiceExtensions.AddSingleton<ITaskInterpreter, RuleBasedTaskInterpreter>(
