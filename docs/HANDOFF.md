@@ -2,7 +2,7 @@
 
 ## 当前阶段
 
-全过程计算档案包第 3 步已完成。
+全过程计算档案包第 4 步已完成。
 
 ```text
 已冻结 Calculation Run Archive Package 规范
@@ -62,6 +62,25 @@ JobInventory 保存展示筛选结果
 AuditJobInventory 保存不受筛选影响的完整关联审计结果
 缺失科学成果、缺失作业和根标识冲突均显式报告
 不复制文件、不生成报告、不组装档案包、不改 API 和 WinForms
+```
+
+第 4 步统一成果包范围契约已完成：
+
+```text
+新增 ReportPackageScope
+新增 ReportPackageScopeKind
+新增 ReportCalculationConclusionStatus
+科学点成果包以 ResultId 为边界
+全过程计算档案包以 RootWorkflowId 为边界
+全过程档案必须同时包含科学点、执行证据和排除项清单
+request、snapshot、document 和 manifest 均携带 Scope
+范围对象可以 JSON 往返
+目录只接受安全规范相对路径
+science 与 process 必须彼此不同
+计算失败但证据完整时档案可以 Complete
+运行中或结论未知的根工作流不能标记档案 Complete
+外层标识与范围标识不一致时返回稳定问题码
+本阶段不读取仓储、不复制文件、不生成摘要、不组装包、不改 API 和 WinForms
 ```
 
 计算成果包与报告生成层第 0 步已完成。
@@ -199,13 +218,12 @@ ORCA、原始关键词扩展和审批机制暂不实现
 联合优化频率已包含波函数稳定性矫正，虚频修正仍未实现
 NTO 当前只支持 Gaussian TDDFT 源结果
 当前会话没有 TDDFT 源时返回 NoTddftSource，不提交 NTO
-报告层只完成第 0 步契约
+报告层只完成第 0 步契约和统一包范围
 证据快照尚未读取 ScientificData 仓储
 报告文档尚未渲染为 Markdown
 成果包清单当前只定义数据结构，不执行文件发现和 SHA-256 计算
 Api 和 WinForms 尚未接入新报告层
-全过程档案规范已完成第 1 步
-根工作流持久化证据账本已完成第 2 步
+全过程档案第 1 至 4 步已完成
 当前保存仍以最新作业和最终科学点成果包为主
 作业清单已支持完整枚举和筛选
 科学成果、科学点、来源作业和运行目录的缺失关联审计已实现
@@ -216,7 +234,7 @@ Api 和 WinForms 尚未接入新报告层
 
 ```text
 Release 构建：0 警告，0 错误
-测试：292/292 通过
+测试：305/305 通过
 真实 Gaussian 16：3/3 通过
 真实 Gaussian opt freq：1/1 通过
 真实 Gaussian O2 稳定性修正：1/1 通过
@@ -250,14 +268,14 @@ Release 构建：0 警告，0 错误
 
 ## 下一步精确任务
 
-下一步精确任务：等待用户确认是否进入全过程档案第 4 步。
+下一步精确任务：等待用户确认是否进入全过程档案第 5 步。
 
 ```text
-第 4 步候选目标：扩展报告包范围契约，使全过程档案和科学点成果可以共享边界。
-当前第 3 步已完成，不在未确认前继续修改报告层。
+第 5 步候选目标：建立阶段、作业尝试、恢复作业、科学点和后处理之间的因果关系。
+当前第 4 步已完成，不在未确认前继续修改报告层。
 ```
 
-第 3 步作业清单和关联审计完成后，再按用户指定推进全过程证据快照、文件清单、
+第 4 步范围契约完成后，再按用户指定推进全过程证据快照、文件清单、
 档案组装和客户端下载。
 
 历史阶段建议：
@@ -304,6 +322,22 @@ conversation.txt 是客户端会话记录
 ```text
 docs/PROJECT_STATE.md
 docs/CHANGES.md
+docs/HANDOFF.md
+```
+
+## 本次全过程档案第 4 步关联文件
+
+```text
+src/ChemSculptor.Reporting/ReportContracts.cs
+src/ChemSculptor.Reporting/ReportPackageScope.cs
+src/ChemSculptor.Reporting/ReportPackageRequest.cs
+src/ChemSculptor.Reporting/ReportEvidenceSnapshot.cs
+src/ChemSculptor.Reporting/ReportDocument.cs
+src/ChemSculptor.Reporting/ReportPackageManifest.cs
+tests/ChemSculptor.Core.Tests/ReportContractTests.cs
+docs/Tutorials/Calculation-Run-Archive-Step-04-Scope-Tutorial.md
+docs/CHANGES.md
+docs/PROJECT_STATE.md
 docs/HANDOFF.md
 ```
 

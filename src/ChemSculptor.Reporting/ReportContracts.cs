@@ -20,6 +20,38 @@ public enum ReportPackageProfile
     Archive
 }
 
+/// <summary>成果包的边界类别。</summary>
+public enum ReportPackageScopeKind
+{
+    /// <summary>以科学成果和科学点集合为边界的成果包。</summary>
+    ScientificPointArtifact,
+
+    /// <summary>以根工作流为边界、同时包含科学点和全部执行证据的档案包。</summary>
+    CalculationRunArchive
+}
+
+/// <summary>计算结论状态；与档案包完整性相互独立。</summary>
+public enum ReportCalculationConclusionStatus
+{
+    /// <summary>计算工作流成功完成。</summary>
+    Succeeded,
+
+    /// <summary>计算工作流完成并保留部分有效结果。</summary>
+    PartiallySucceeded,
+
+    /// <summary>计算工作流失败。</summary>
+    Failed,
+
+    /// <summary>计算工作流被取消。</summary>
+    Canceled,
+
+    /// <summary>计算工作流仍在运行。</summary>
+    InProgress,
+
+    /// <summary>无法确定计算结论。</summary>
+    Unknown
+}
+
 /// <summary>报告证据完整性。</summary>
 public enum ReportEvidenceCompleteness
 {

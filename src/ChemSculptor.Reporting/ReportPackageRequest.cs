@@ -15,6 +15,12 @@ public sealed class ReportPackageRequest
     /// <summary>要生成报告的已归档科学成果标识。</summary>
     public string ResultId { get; set; } = string.Empty;
 
+    /// <summary>
+    /// 成果包范围契约；旧调用方可以暂不设置，
+    /// 新成果包必须明确区分科学点成果包和全过程计算档案包。
+    /// </summary>
+    public ReportPackageScope? Scope { get; set; }
+
     /// <summary>成果包用途剖面。</summary>
     public ReportPackageProfile Profile { get; set; } =
         ReportPackageProfile.Standard;

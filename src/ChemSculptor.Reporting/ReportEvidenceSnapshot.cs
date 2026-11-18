@@ -24,6 +24,9 @@ public sealed class ReportEvidenceSnapshot
     /// <summary>根工作流标识；无法确定时为空。</summary>
     public string RootWorkflowId { get; set; } = string.Empty;
 
+    /// <summary>冻结的成果包范围；旧证据快照可以为空。</summary>
+    public ReportPackageScope? Scope { get; set; }
+
     /// <summary>冻结的报告请求。</summary>
     public ReportPackageRequest Request { get; set; } =
         new ReportPackageRequest();

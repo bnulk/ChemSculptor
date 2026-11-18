@@ -18,6 +18,9 @@ public sealed class ReportPackageManifest
     /// <summary>科学成果标识。</summary>
     public string ResultId { get; set; } = string.Empty;
 
+    /// <summary>清单所描述的成果包范围。</summary>
+    public ReportPackageScope? Scope { get; set; }
+
     /// <summary>证据快照标识。</summary>
     public string SnapshotId { get; set; } = string.Empty;
 

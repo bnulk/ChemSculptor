@@ -161,6 +161,268 @@ public class ReportContractTests
             StringComparison.Ordinal);
     }
 
+    /// <summary>科学点包和全过程档案包必须能够共用范围契约往返。</summary>
+    [Fact]
+    public void PackageScopesRoundTripWithDistinctBoundaries()
+    {
+        ReportPackageScope pointScope =
+            ReportPackageScope.CreateScientificPointArtifact(
+                "scientific-result-1");
+        pointScope.CapturedAt =
+            new DateTimeOffset(
+                2026,
+                11,
+                18,
+                9,
+                30,
+                0,
+                TimeSpan.FromHours(8));
+        pointScope.CalculationConclusion =
+            ReportCalculationConclusionStatus.Succeeded;
+
+        ReportPackageScope archiveScope =
+            ReportPackageScope.CreateCalculationRunArchive(
+                "workflow-1",
+                "scientific-result-1");
+        archiveScope.CalculationConclusion =
+            ReportCalculationConclusionStatus.Failed;
+
+        ReportPackageScope pointRoundTrip = RoundTrip(pointScope);
+        ReportPackageScope archiveRoundTrip = RoundTrip(archiveScope);
+
+        Assert.Equal(
+            ReportPackageScopeKind.ScientificPointArtifact,
+            pointRoundTrip.Kind);
+        Assert.True(pointRoundTrip.IncludeSciencePointSet);
+        Assert.False(pointRoundTrip.IncludeExecutionEvidence);
+        Assert.Equal(
+            ReportCalculationConclusionStatus.Succeeded,
+            pointRoundTrip.CalculationConclusion);
+
+        Assert.Equal(
+            ReportPackageScopeKind.CalculationRunArchive,
+            archiveRoundTrip.Kind);
+        Assert.Equal(
+            "workflow-1",
+            archiveRoundTrip.RootWorkflowId);
+        Assert.True(archiveRoundTrip.IncludeExecutionEvidence);
+        Assert.True(archiveRoundTrip.IncludeExcludedArtifacts);
+        Assert.Equal("science", archiveRoundTrip.ScienceDirectory);
+        Assert.Equal("process", archiveRoundTrip.ProcessDirectory);
+    }
+
+    /// <summary>科学点包不能偷偷携带全过程证据。</summary>
+    [Fact]
+    public void ScientificPointScopeRejectsExecutionEvidence()
+    {
+        ReportPackageScope scope =
+            ReportPackageScope.CreateScientificPointArtifact(
+                "scientific-result-1");
+        scope.IncludeExecutionEvidence = true;
+
+        ReportPackageScopeValidationResult validation =
+            ReportPackageScopeValidator.Validate(scope);
+
+        Assert.False(validation.IsValid);
+        Assert.Contains(
+            validation.Issues,
+            issue => issue.Code
+                == "report.scope.process_evidence.included");
+    }
+
+    /// <summary>全过程档案必须同时保留科学点、执行证据和排除项。</summary>
+    [Fact]
+    public void ArchiveScopeRequiresScienceAndProcessEvidence()
+    {
+        ReportPackageScope scope =
+            ReportPackageScope.CreateCalculationRunArchive(
+                "workflow-1",
+                "scientific-result-1");
+        scope.IncludeSciencePointSet = false;
+        scope.IncludeExecutionEvidence = false;
+        scope.IncludeExcludedArtifacts = false;
+
+        ReportPackageScopeValidationResult validation =
+            ReportPackageScopeValidator.Validate(
+                scope,
+                ReportPackageStatus.Draft);
+
+        Assert.False(validation.IsValid);
+        Assert.Contains(
+            validation.Issues,
+            issue => issue.Code
+                == "report.scope.science_point_set.not_included");
+        Assert.Contains(
+            validation.Issues,
+            issue => issue.Code
+                == "report.scope.execution_evidence.not_included");
+        Assert.Contains(
+            validation.Issues,
+            issue => issue.Code
+                == "report.scope.excluded_artifacts.not_included");
+    }
+
+    /// <summary>运行中的根工作流不能生成标记为 Complete 的完整档案。</summary>
+    [Fact]
+    public void InProgressArchiveCannotBeMarkedComplete()
+    {
+        ReportPackageScope scope =
+            ReportPackageScope.CreateCalculationRunArchive(
+                "workflow-1",
+                "scientific-result-1");
+        scope.CalculationConclusion =
+            ReportCalculationConclusionStatus.InProgress;
+
+        ReportPackageScopeValidationResult validation =
+            ReportPackageScopeValidator.Validate(
+                scope,
+                ReportPackageStatus.Complete);
+
+        Assert.False(validation.IsValid);
+        Assert.Contains(
+            validation.Issues,
+            issue => issue.Code
+                == "report.scope.in_progress.cannot_be_complete");
+    }
+
+    /// <summary>结论未知时不能声称全过程档案完整。</summary>
+    [Fact]
+    public void UnknownConclusionArchiveCannotBeMarkedComplete()
+    {
+        ReportPackageScope scope =
+            ReportPackageScope.CreateCalculationRunArchive(
+                "workflow-1",
+                "scientific-result-1");
+        scope.CalculationConclusion =
+            ReportCalculationConclusionStatus.Unknown;
+
+        ReportPackageScopeValidationResult validation =
+            ReportPackageScopeValidator.Validate(
+                scope,
+                ReportPackageStatus.Complete);
+
+        Assert.False(validation.IsValid);
+        Assert.Contains(
+            validation.Issues,
+            issue => issue.Code
+                == "report.scope.unknown_conclusion.cannot_be_complete");
+    }
+
+    /// <summary>计算失败不妨碍全过程档案在证据完整时标记 Complete。</summary>
+    [Fact]
+    public void FailedCalculationCanHaveCompleteArchiveEvidence()
+    {
+        ReportPackageScope scope =
+            ReportPackageScope.CreateCalculationRunArchive(
+                "workflow-1",
+                "scientific-result-1");
+        scope.CalculationConclusion =
+            ReportCalculationConclusionStatus.Failed;
+
+        ReportPackageScopeValidationResult validation =
+            ReportPackageScopeValidator.Validate(
+                scope,
+                ReportPackageStatus.Complete);
+
+        Assert.True(validation.IsValid);
+    }
+
+    /// <summary>范围标识必须与快照和清单的外部标识一致。</summary>
+    [Fact]
+    public void ScopeIdentityMustMatchPackageIdentity()
+    {
+        ReportPackageScope scope =
+            ReportPackageScope.CreateCalculationRunArchive(
+                "workflow-1",
+                "scientific-result-1");
+
+        ReportPackageScopeValidationResult validation =
+            ReportPackageScopeValidator.Validate(
+                scope,
+                ReportPackageStatus.Complete,
+                "scientific-result-2",
+                "workflow-2");
+
+        Assert.False(validation.IsValid);
+        Assert.Contains(
+            validation.Issues,
+            issue => issue.Code
+                == "report.scope.result_id.mismatch");
+        Assert.Contains(
+            validation.Issues,
+            issue => issue.Code
+                == "report.scope.root_workflow_id.mismatch");
+    }
+
+    /// <summary>范围目录不得使用绝对路径或目录穿越。</summary>
+    [Fact]
+    public void ArchiveScopeRejectsUnsafeDirectories()
+    {
+        ReportPackageScope scope =
+            ReportPackageScope.CreateCalculationRunArchive(
+                "workflow-1",
+                "scientific-result-1");
+        scope.ScienceDirectory = "../outside";
+        scope.ProcessDirectory = "C:\\server\\jobs";
+
+        ReportPackageScopeValidationResult validation =
+            ReportPackageScopeValidator.Validate(scope);
+
+        Assert.False(validation.IsValid);
+        Assert.Contains(
+            validation.Issues,
+            issue => issue.Code
+                == "report.scope.science_directory.invalid");
+        Assert.Contains(
+            validation.Issues,
+            issue => issue.Code
+                == "report.scope.process_directory.invalid");
+    }
+
+    /// <summary>科学点和过程证据不能写入同一个逻辑目录。</summary>
+    [Fact]
+    public void ArchiveScopeRequiresDistinctDirectoryNames()
+    {
+        ReportPackageScope scope =
+            ReportPackageScope.CreateCalculationRunArchive(
+                "workflow-1",
+                "scientific-result-1");
+        scope.ProcessDirectory = scope.ScienceDirectory;
+
+        ReportPackageScopeValidationResult validation =
+            ReportPackageScopeValidator.Validate(scope);
+
+        Assert.False(validation.IsValid);
+        Assert.Contains(
+            validation.Issues,
+            issue => issue.Code
+                == "report.scope.directories.not_distinct");
+    }
+
+    /// <summary>包内逻辑目录必须是规范相对路径，不能混入文件名片段。</summary>
+    [Theory]
+    [InlineData("science/../process")]
+    [InlineData("./science")]
+    [InlineData("science/")]
+    [InlineData("science//points")]
+    public void ArchiveScopeRejectsNonCanonicalDirectories(string directory)
+    {
+        ReportPackageScope scope =
+            ReportPackageScope.CreateCalculationRunArchive(
+                "workflow-1",
+                "scientific-result-1");
+        scope.ScienceDirectory = directory;
+
+        ReportPackageScopeValidationResult validation =
+            ReportPackageScopeValidator.Validate(scope);
+
+        Assert.False(validation.IsValid);
+        Assert.Contains(
+            validation.Issues,
+            issue => issue.Code
+                == "report.scope.science_directory.invalid");
+    }
+
     private static T RoundTrip<T>(T value)
     {
         string json = ReportContractSerializer.Serialize(value);
@@ -179,6 +441,9 @@ public class ReportContractTests
         ReportPackageRequest request = new ReportPackageRequest();
         request.RequestId = "request-1";
         request.ResultId = "scientific-result-1";
+        request.Scope =
+            ReportPackageScope.CreateScientificPointArtifact(
+                request.ResultId);
         request.Profile = ReportPackageProfile.Archive;
         request.RequestedAt =
             new DateTimeOffset(2026, 11, 13, 10, 0, 0, TimeSpan.FromHours(8));
@@ -216,6 +481,7 @@ public class ReportContractTests
         snapshot.RequestId = request.RequestId;
         snapshot.ResultId = request.ResultId;
         snapshot.RootWorkflowId = "job-1";
+        snapshot.Scope = request.Scope;
         snapshot.Request = request;
         snapshot.ScientificResult = result;
         snapshot.Jobs.Add(jobEvidence);
@@ -253,6 +519,7 @@ public class ReportContractTests
         document.DocumentId = "document-1";
         document.RequestId = snapshot.RequestId;
         document.ResultId = snapshot.ResultId;
+        document.Scope = snapshot.Scope;
         document.SnapshotId = snapshot.SnapshotId;
         document.SnapshotSha256 = snapshot.SnapshotSha256;
         document.Title = "通用计算成果报告";
@@ -278,6 +545,7 @@ public class ReportContractTests
         manifest.PackageId = "package-1";
         manifest.RequestId = document.RequestId;
         manifest.ResultId = document.ResultId;
+        manifest.Scope = document.Scope;
         manifest.SnapshotId = document.SnapshotId;
         manifest.ReportDocumentId = document.DocumentId;
         manifest.Status = ReportPackageStatus.Complete;

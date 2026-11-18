@@ -5,6 +5,192 @@
 
 ---
 
+## v0.76.0（2026-11-18）：全过程档案包范围契约
+
+### 版本
+
+- 当前版本：`0.76.0`
+- 日期：`2026-11-18`
+- 版本类型：新增功能
+
+### 改动目的
+
+实现全过程计算档案包第 4 步。让科学点成果包和全过程计算档案包共享同一个
+范围契约，同时严格区分“最终科学结论”和“全部执行证据”，为后续证据快照、
+文件发现和成果包组装提供稳定边界。
+
+### 核心边界
+
+```text
+ScientificPointArtifact
+  必须指定 ResultId
+  必须包含 science/
+  不得包含 process/
+
+CalculationRunArchive
+  必须指定 RootWorkflowId
+  必须同时包含 science/ 和 process/
+  必须保留排除项清单
+```
+
+本阶段不读取仓储、不复制文件、不生成 SHA-256、不组装成果包，
+不接入 API 和 WinForms。
+
+### 新增文件
+
+```text
+src/ChemSculptor.Reporting/ReportPackageScope.cs
+docs/Tutorials/Calculation-Run-Archive-Step-04-Scope-Tutorial.md
+```
+
+### 扩展文件
+
+```text
+src/ChemSculptor.Reporting/ReportContracts.cs
+src/ChemSculptor.Reporting/ReportPackageRequest.cs
+src/ChemSculptor.Reporting/ReportEvidenceSnapshot.cs
+src/ChemSculptor.Reporting/ReportDocument.cs
+src/ChemSculptor.Reporting/ReportPackageManifest.cs
+tests/ChemSculptor.Core.Tests/ReportContractTests.cs
+```
+
+### 范围模型
+
+新增 `ReportPackageScopeKind`：
+
+```text
+ScientificPointArtifact
+CalculationRunArchive
+```
+
+新增 `ReportCalculationConclusionStatus`：
+
+```text
+Succeeded
+PartiallySucceeded
+Failed
+Canceled
+InProgress
+Unknown
+```
+
+范围对象保存：
+
+```text
+SchemaVersion
+Kind
+ResultId
+RootWorkflowId
+CapturedAt
+CalculationConclusion
+IncludeSciencePointSet
+IncludeExecutionEvidence
+IncludeExcludedArtifacts
+ScienceDirectory
+ProcessDirectory
+```
+
+`ReportPackageRequest`、`ReportEvidenceSnapshot`、`ReportDocument` 和
+`ReportPackageManifest` 均增加可空 `Scope`。可空只用于兼容第 0 步旧 JSON，
+新生成的成果包必须显式设置范围。
+
+### 范围校验
+
+新增 `ReportPackageScopeValidator`，覆盖：
+
+```text
+范围缺失
+科学成果标识缺失
+根工作流标识缺失
+科学点集合未包含
+科学点包错误包含执行证据
+档案包未包含执行证据
+档案包未包含排除项
+科学点目录和执行证据目录危险或相同
+运行中档案标记为 Complete
+未知结论档案标记为 Complete
+外层 ResultId 与范围不一致
+外层 RootWorkflowId 与范围不一致
+```
+
+科学点目录和执行证据目录只接受规范相对路径：
+
+```text
+拒绝绝对路径
+拒绝反斜杠路径
+拒绝目录穿越
+拒绝前导斜杠和尾部斜杠
+拒绝重复斜杠和空片段
+要求 science 与 process 不同
+```
+
+### 状态语义
+
+保留四个相互独立的状态维度：
+
+```text
+ReportPackageScopeKind
+  这是什么包
+
+ReportCalculationConclusionStatus
+  计算完成、失败、取消、运行中或未知
+
+ReportPackageStatus
+  成果包是否正在组装或已组装完成
+
+ReportEvidenceCompleteness
+  所需证据是否完整
+```
+
+允许：
+
+```text
+计算失败 + 证据完整 -> 档案包 Complete
+```
+
+拒绝：
+
+```text
+计算运行中 + 标记档案包 Complete
+计算结论未知 + 标记档案包 Complete
+```
+
+### 测试
+
+新增范围契约场景：
+
+```text
+两类范围 JSON 往返
+科学点包拒绝执行证据
+档案包强制科学点、执行证据和排除项
+运行中档案不能 Complete
+未知结论档案不能 Complete
+计算失败但证据完整可以是 Complete
+外层标识一致性
+危险目录拒绝
+science 与 process 唯一性
+```
+
+验证结果：
+
+```text
+Release 构建：0 警告，0 错误
+报告契约专项测试：18/18 通过
+```
+
+### 教程
+
+```text
+docs/Tutorials/Calculation-Run-Archive-Step-04-Scope-Tutorial.md
+```
+
+### 教程式说明
+
+成果包边界不是界面上的一个字符串。它决定后续可以读取哪些仓储、复制哪些
+文件、生成哪些章节以及缺失时如何声明。科学点包只回答“最终科学结论是什么”；
+全过程档案包同时回答“这些结论是怎样产生的”。范围契约先把这两个问题分开，
+后续代码才不会用“最新作业”或“最后一个输出文件”替代完整根工作流。
+
 ## v0.75.0（2026-11-17）：根工作流作业完整清单与科学关联审计
 
 ### 版本
