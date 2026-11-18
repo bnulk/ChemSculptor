@@ -106,6 +106,16 @@ public sealed class WorkspaceManager : ICalculationWorkspace
                 .WorkflowEvidenceLedgerFileName);
     }
 
+    /// <summary>获取根工作流全过程产物发现快照路径。</summary>
+    public string GetWorkflowRunArtifactDiscoveryPath(
+        string rootWorkflowId)
+    {
+        return Path.Combine(
+            GetWorkflowRunDirectory(rootWorkflowId),
+            CalculationWorkspacePaths
+                .WorkflowArtifactDiscoveryFileName);
+    }
+
     /// <summary>获取输入目录。</summary>
     public string GetInputDirectory(string jobId)
     {

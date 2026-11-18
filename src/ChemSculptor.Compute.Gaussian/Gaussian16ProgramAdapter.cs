@@ -204,6 +204,12 @@ public sealed class Gaussian16ProgramAdapter
             Path.ChangeExtension(inputFileName, ".chk");
         string formattedCheckpointFileName =
             Path.ChangeExtension(inputFileName, ".fchk");
+        bool programInputRequired =
+            job.State != CalculationJobState.Created;
+        bool primaryOutputRequired =
+            job.State == CalculationJobState.Completed
+                || job.State == CalculationJobState.Parsed
+                || job.State == CalculationJobState.Validated;
         List<CalculationArtifactPattern> patterns =
             new List<CalculationArtifactPattern>();
 
@@ -213,43 +219,51 @@ public sealed class Gaussian16ProgramAdapter
                 "*.fchk",
                 CalculationArtifactKind.RestartState,
                 "application/octet-stream",
-                true));
+                true,
+                false));
             patterns.Add(CreateArtifactPattern(
                 "*.chk",
                 CalculationArtifactKind.RestartState,
                 "application/octet-stream",
-                true));
+                true,
+                false));
         }
 
         patterns.Add(CreateArtifactPattern(
             outputFileName,
             CalculationArtifactKind.PrimaryOutput,
             "text/plain; charset=utf-8",
-            false));
+            false,
+            primaryOutputRequired));
         patterns.Add(CreateArtifactPattern(
             inputFileName,
             CalculationArtifactKind.Input,
             "text/plain; charset=utf-8",
-            false));
+            false,
+            programInputRequired));
         patterns.Add(CreateArtifactPattern(
             formattedCheckpointFileName,
             CalculationArtifactKind.RestartState,
             "application/octet-stream",
-            true));
+            true,
+            false));
         patterns.Add(CreateArtifactPattern(
-            checkpointFileName,
+            "*" + Path.GetExtension(checkpointFileName),
             CalculationArtifactKind.RestartState,
             "application/octet-stream",
-            true));
+            true,
+            false));
         patterns.Add(CreateArtifactPattern(
             "stdout.log",
             CalculationArtifactKind.SupportingOutput,
             "text/plain; charset=utf-8",
+            false,
             false));
         patterns.Add(CreateArtifactPattern(
             "stderr.log",
             CalculationArtifactKind.SupportingOutput,
             "text/plain; charset=utf-8",
+            false,
             false));
         return patterns;
     }
@@ -523,13 +537,15 @@ public sealed class Gaussian16ProgramAdapter
         string filePattern,
         CalculationArtifactKind kind,
         string mediaType,
-        bool canUseForRestart)
+        bool canUseForRestart,
+        bool isRequired = true)
     {
         CalculationArtifactPattern pattern = new CalculationArtifactPattern();
         pattern.FilePattern = filePattern;
         pattern.Kind = kind;
         pattern.MediaType = mediaType;
         pattern.CanUseForRestart = canUseForRestart;
+        pattern.IsRequired = isRequired;
         return pattern;
     }
 }

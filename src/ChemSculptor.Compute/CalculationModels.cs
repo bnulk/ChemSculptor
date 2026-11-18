@@ -516,6 +516,32 @@ public sealed class CalculationArtifactPattern
 
     /// <summary>是否可以用于恢复或继续计算。</summary>
     public bool CanUseForRestart { get; set; }
+
+    /// <summary>
+    /// 匹配结果是否一定是必要条件。
+    /// 通配规则和程序版本相关文件默认只是可选候选。
+    /// </summary>
+    public bool IsRequired { get; set; } = true;
+
+    /// <summary>匹配范围；默认只扫描作业运行目录。</summary>
+    public CalculationArtifactPatternScope Scope { get; set; } =
+        CalculationArtifactPatternScope.RunDirectory;
+}
+
+/// <summary>适配器产物规则相对作业目录的扫描范围。</summary>
+public enum CalculationArtifactPatternScope
+{
+    /// <summary>作业根目录。</summary>
+    JobDirectory,
+
+    /// <summary>作业输入目录。</summary>
+    InputDirectory,
+
+    /// <summary>作业运行目录。</summary>
+    RunDirectory,
+
+    /// <summary>作业结果目录。</summary>
+    ResultDirectory
 }
 
 /// <summary>

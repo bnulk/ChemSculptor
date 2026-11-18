@@ -5,6 +5,211 @@
 
 ---
 
+## v0.78.0（2026-11-18）：全过程产物发现快照
+
+### 版本
+
+- 当前版本：`0.78.0`
+- 日期：`2026-11-18`
+- 版本类型：新增功能
+
+### 改动目的
+
+实现全过程计算档案包第 6 步。以完整作业清单为依据，为一个
+`RootWorkflowId` 建立可持久化的产物发现快照，回答“哪些文件属于哪个
+阶段和作业尝试、文件角色是什么、是否为必要证据、当前是否存在、为什么
+被排除或无法访问”。
+
+本步只做发现和审计，不复制文件，不计算 SHA-256，也不生成最终
+`manifest.json` 或 `checksums.sha256`。
+
+### 核心原则
+
+```text
+发现快照不是最终档案 Manifest
+Snapshot 使用 Present，最终 Manifest 才使用 Included
+全部正常、失败、取消和恢复作业尝试都进入发现范围
+完整作业清单不受界面展示筛选影响
+程序适配器提供候选文件规则，通用层负责路径、状态和汇总
+未知持久化文件进入 Other，不能静默丢弃
+scratch、缓存、临时文件和零字节控制流显式进入排除汇总
+必要证据缺失或被排除时 IsComplete = false
+路径越界和重解析点拒绝跟随
+服务器绝对路径不进入快照
+```
+
+### 新增文件
+
+```text
+src/ChemSculptor.Compute/CalculationWorkflowArtifactDiscoveryModels.cs
+src/ChemSculptor.Compute/CalculationWorkflowArtifactDiscoveryPolicy.cs
+src/ChemSculptor.Compute/CalculationWorkflowArtifactPathPolicy.cs
+src/ChemSculptor.Compute/FileCalculationWorkflowArtifactDiscoveryRepository.cs
+tests/ChemSculptor.Core.Tests/CalculationWorkflowArtifactDiscoveryTests.cs
+docs/Tutorials/Calculation-Run-Archive-Step-06-Artifact-Discovery-Tutorial.md
+```
+
+### 扩展文件
+
+```text
+src/ChemSculptor.Compute/CalculationModels.cs
+src/ChemSculptor.Compute/CalculationInterfaces.cs
+src/ChemSculptor.Compute/CalculationWorkspacePaths.cs
+src/ChemSculptor.Compute/WorkspaceManager.cs
+src/ChemSculptor.Compute.Gaussian/Gaussian16ProgramAdapter.cs
+src/ChemSculptor.Agent/AgentServiceRegistration.cs
+```
+
+### 发现快照模型
+
+`CalculationArtifactPattern` 增加：
+
+```text
+IsRequired
+  匹配结果是否为必要条件
+
+Scope
+  JobDirectory / InputDirectory / RunDirectory / ResultDirectory
+```
+
+`CalculationWorkflowArtifactDiscoverySnapshot` 保存：
+
+```text
+SchemaVersion
+PolicyVersion
+RootWorkflowId
+CapturedAt
+Jobs
+Files
+Issues
+Summary
+```
+
+文件发现项保存稳定 `ArtifactId`、阶段和作业归属、逻辑路径、角色、
+必要性、发现状态、媒体类型、长度、恢复用途、排除类别和诊断消息。
+
+### 文件角色
+
+通用角色包括：
+
+```text
+JobManifest
+SourceInput
+GeometryInput
+ProgramInput
+PrimaryOutput
+ConsoleOutput
+RestartState
+NormalizedResult
+ValidationEvidence
+ParameterAudit
+ProcessingPlan
+PostProcessOutput
+ScientificData
+Narrative
+Report
+Manifest
+Checksum
+Other
+```
+
+### 发现状态
+
+```text
+Present
+ExcludedByPolicy
+NotExpected
+Missing
+Unreadable
+SecurityRejected
+```
+
+`Present` 只表示文件存在并可在第 7 步读取，不表示已经复制、校验或
+进入最终档案包。
+
+### 扫描范围与排除
+
+仓储扫描作业根目录、`input/`、`run/` 和 `results/`，并结合程序适配器
+规则和实际存在的文件建立记录。内部 scratch 不作为递归来源。
+
+以下内容进入排除记录：
+
+```text
+scratch
+tmp / temp
+cache / .cache / __pycache__
+.git
+*.tmp / *.temp / *.lock / *.lck / *.swp
+以 ~ 结尾的编辑器交换文件
+.DS_Store / Thumbs.db / desktop.ini
+零字节 stdout.log / stderr.log / console.log
+```
+
+排除项按类别汇总文件数、字节数、原因和可重新生成属性。必要条件即使
+命中排除规则，仍保持 `Required`，并使发现结果不完整。
+
+### 安全规则
+
+```text
+所有持久化路径必须位于所属作业目录内
+拒绝目录穿越和绝对路径越界
+拒绝跟随符号链接或 Windows 重解析点
+文件元数据读取失败记录 Unreadable
+规则解析失败记录稳定问题码
+逻辑路径统一使用正斜杠
+服务重启后可以读取最近发现快照
+JSON 临时文件原子替换
+```
+
+### Gaussian 适配器
+
+Gaussian 输入和主要输出的必要性按作业状态决定：
+
+```text
+Created   程序输入不必要，主要输出不必要
+Running   程序输入必要，主要输出不必要
+Completed / Parsed / Validated
+          程序输入必要，主要输出必要
+```
+
+检查点通配规则默认是可选候选；`stdout.log` 和 `stderr.log` 也是可选
+证据。通配规则不能冒充每一个匹配文件都必须存在。
+
+### 验证
+
+```text
+Release 构建：0 警告，0 错误
+Core 测试：323/323 通过
+新增 6 项测试覆盖：
+  多阶段、失败和取消作业发现
+  检查点、未知文件和目录排除
+  JSON 往返和服务重启读取
+  必要输入或输出缺失
+  重解析点拒绝和结果目录越界
+  Gaussian 必要性随作业状态变化
+  必要证据被排除后仍保持 Required
+```
+
+### 边界
+
+```text
+不复制文件
+不生成最终文件清单
+不计算 SHA-256
+不生成 checksums.sha256
+不组装 zip 或目录成果包
+不接入 API、WinForms 或 Markdown 报告
+不修改科学点集合语义
+```
+
+### 教程
+
+```text
+docs/Tutorials/Calculation-Run-Archive-Step-06-Artifact-Discovery-Tutorial.md
+```
+
+---
+
 ## v0.77.0（2026-11-18）：阶段与作业因果关系图
 
 ### 版本

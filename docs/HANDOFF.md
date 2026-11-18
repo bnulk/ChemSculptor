@@ -2,7 +2,7 @@
 
 ## 当前阶段
 
-全过程计算档案包第 5 步已完成。
+全过程计算档案包第 6 步已完成。
 
 ```text
 已冻结 Calculation Run Archive Package 规范
@@ -103,6 +103,31 @@ science 与 process 必须彼此不同
 JSON 使用 camelCase 和字符串枚举，服务重启后可按 RootWorkflowId 读取
 新增 12 项测试和第五步教程
 本阶段不读取计算输出文件，不生成报告，不组装档案包，不改 API 和 WinForms
+```
+
+第 6 步全过程产物发现策略已完成：
+
+```text
+新增 CalculationWorkflowArtifactDiscoverySnapshot、文件条目、作业摘要、
+文件角色、必要性、发现状态、排除汇总和稳定问题码
+新增 CalculationWorkflowArtifactDiscoveryPolicy
+新增 CalculationWorkflowArtifactPathPolicy
+新增 ICalculationWorkflowArtifactDiscoveryRepository
+新增 FileCalculationWorkflowArtifactDiscoveryRepository
+固定写入 workflow-runs/<RootWorkflowId>/artifacts-discovery.json
+使用完整作业清单，不继承界面展示筛选
+覆盖正常、失败、取消和恢复作业尝试
+扫描作业根、input、run 和 results 目录
+识别输入、输出、检查点、规范化结果、验证、参数审计和处理方案等角色
+Gaussian 程序输入和主要输出按作业状态决定是否必要
+未知持久化文件进入 Other，不静默忽略
+scratch、缓存、临时文件和零字节控制流进入排除汇总
+必要文件缺失或被排除时 IsComplete = false
+拒绝路径越界和重解析点，逻辑路径不包含服务器绝对路径
+JSON 临时文件原子替换，服务重启后可读取
+新增 6 项测试和第 6 步教程
+本阶段不复制文件、不计算 SHA-256、不生成最终 manifest/checksums、
+不组装档案包、不改 API、WinForms 和报告层
 ```
 
 计算成果包与报告生成层第 0 步已完成。
@@ -245,19 +270,20 @@ NTO 当前只支持 Gaussian TDDFT 源结果
 报告文档尚未渲染为 Markdown
 成果包清单当前只定义数据结构，不执行文件发现和 SHA-256 计算
 Api 和 WinForms 尚未接入新报告层
-全过程档案第 1 至 5 步已完成
+全过程档案第 1 至 6 步已完成
 当前保存仍以最新作业和最终科学点成果包为主
 作业清单已支持完整枚举和筛选
 科学成果、科学点、来源作业和运行目录的缺失关联审计已实现
 阶段与作业因果关系图已实现
-全过程文件发现、校验、组装和下载尚未实现
+全过程产物发现快照、排除汇总和安全路径检查已实现
+全过程文件复制、SHA-256 清单、组装和下载尚未实现
 ```
 
 ## 验证结果
 
 ```text
 Release 构建：0 警告，0 错误
-测试：317/317 通过
+测试：323/323 通过
 真实 Gaussian 16：3/3 通过
 真实 Gaussian opt freq：1/1 通过
 真实 Gaussian O2 稳定性修正：1/1 通过
@@ -284,23 +310,23 @@ Release 构建：0 警告，0 错误
 尚未实现成果包组装器
 尚未接入成果包 API 和客户端保存
 尚未以吸收光谱和 NTO 作为内容提供者验收通用层
-尚未实现全过程产物发现和 exclusions.json
 尚未实现全过程 manifest.json 与 checksums.sha256
 尚未实现全过程档案 API 和客户端下载
 ```
 
 ## 下一步精确任务
 
-下一步精确任务：等待用户确认是否进入全过程档案第 6 步。
+下一步精确任务：等待用户确认是否进入全过程档案第 7 步。
 
 ```text
-第 6 步候选目标：冻结全过程产物发现策略，区分必收、可选、缺失、
-排除和不可访问文件，为后续完整文件清单和 SHA-256 提供稳定输入。
-当前第 5 步已完成，不在未确认前继续修改报告层或文件组装层。
+第 7 步目标：把 artifacts-discovery.json 中的 Present 项转换为最终
+文件清单，计算 SHA-256，校验长度，并生成 checksums.sha256 的基础数据。
+必须保持发现项与最终清单项的可追溯关系，不能把发现阶段的 Present
+直接改写成已归档的 Included。
+当前第 6 步已完成，不在未确认前继续修改报告层或文件组装层。
 ```
 
-第 5 步因果关系完成后，再按用户指定推进全过程产物发现、文件清单、
-档案组装和客户端下载。
+第 6 步产物发现完成后，再按用户指定推进文件清单、档案组装和客户端下载。
 
 历史阶段建议：
 
@@ -346,6 +372,27 @@ conversation.txt 是客户端会话记录
 ```text
 docs/PROJECT_STATE.md
 docs/CHANGES.md
+docs/HANDOFF.md
+```
+
+## 本次全过程档案第 6 步关联文件
+
+```text
+src/ChemSculptor.Compute/CalculationWorkflowArtifactDiscoveryModels.cs
+src/ChemSculptor.Compute/CalculationWorkflowArtifactDiscoveryPolicy.cs
+src/ChemSculptor.Compute/CalculationWorkflowArtifactPathPolicy.cs
+src/ChemSculptor.Compute/FileCalculationWorkflowArtifactDiscoveryRepository.cs
+src/ChemSculptor.Compute/CalculationModels.cs
+src/ChemSculptor.Compute/CalculationInterfaces.cs
+src/ChemSculptor.Compute/CalculationWorkspacePaths.cs
+src/ChemSculptor.Compute/WorkspaceManager.cs
+src/ChemSculptor.Compute.Gaussian/Gaussian16ProgramAdapter.cs
+src/ChemSculptor.Agent/AgentServiceRegistration.cs
+tests/ChemSculptor.Core.Tests/CalculationWorkflowArtifactDiscoveryTests.cs
+docs/Tutorials/Calculation-Run-Archive-Step-06-Artifact-Discovery-Tutorial.md
+docs/Calculation-Run-Archive-Package-Spec.md
+docs/CHANGES.md
+docs/PROJECT_STATE.md
 docs/HANDOFF.md
 ```
 

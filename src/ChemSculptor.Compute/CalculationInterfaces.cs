@@ -191,6 +191,9 @@ public interface ICalculationWorkspace
     /// <summary>获取根工作流证据账本路径。</summary>
     string GetWorkflowRunLedgerPath(string rootWorkflowId);
 
+    /// <summary>获取根工作流全过程产物发现快照路径。</summary>
+    string GetWorkflowRunArtifactDiscoveryPath(string rootWorkflowId);
+
     /// <summary>获取程序输出文件路径。</summary>
     string GetJobOutputPath(string jobId);
 
@@ -296,6 +299,23 @@ public interface ICalculationWorkflowCausalityRepository
 
     /// <summary>读取最近一次因果关系图；不存在时返回 null。</summary>
     Task<CalculationWorkflowCausalityGraph?> GetAsync(
+        string rootWorkflowId,
+        CancellationToken cancellationToken = default);
+}
+
+/// <summary>
+/// 根工作流全过程产物发现接口。
+/// 只枚举持久化候选文件及其状态，不复制文件，也不计算摘要。
+/// </summary>
+public interface ICalculationWorkflowArtifactDiscoveryRepository
+{
+    /// <summary>按根工作流建立并保存产物发现快照。</summary>
+    Task<CalculationWorkflowArtifactDiscoverySnapshot> DiscoverAsync(
+        string rootWorkflowId,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>读取最近一次产物发现快照；不存在时返回 null。</summary>
+    Task<CalculationWorkflowArtifactDiscoverySnapshot?> GetAsync(
         string rootWorkflowId,
         CancellationToken cancellationToken = default);
 }

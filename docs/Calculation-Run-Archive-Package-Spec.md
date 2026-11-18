@@ -159,6 +159,73 @@ JobAttempts[].CorrectionPlanId
 父作业缺失、跨根工作流、自引用、循环、阶段归属冲突和重复边必须
 显式记录。阶段声明顺序不是必要条件；作业派生和恢复关系是必要条件。
 
+### 4.3.2 全过程产物发现快照
+
+最终档案 Manifest 之前必须先建立产物发现快照。发现快照固定写入：
+
+```text
+workflow-runs/<RootWorkflowId>/artifacts-discovery.json
+```
+
+发现快照回答“候选文件属于哪个阶段和作业尝试、角色是什么、是否必要、
+当前是否存在、为何被排除或无法访问”。它不是最终档案 Manifest：
+
+```text
+发现快照状态 Present
+  文件存在，可在后续清单阶段读取
+
+最终 Manifest 状态 Included
+  文件已经被成果包组装器接受并复制到包内
+```
+
+发现阶段不得提前把 `Present` 改写为 `Included`。
+
+通用文件角色至少包括：
+
+```text
+JobManifest
+SourceInput
+GeometryInput
+ProgramInput
+PrimaryOutput
+ConsoleOutput
+RestartState
+NormalizedResult
+ValidationEvidence
+ParameterAudit
+ProcessingPlan
+PostProcessOutput
+ScientificData
+Narrative
+Report
+Manifest
+Checksum
+Other
+```
+
+发现状态至少包括：
+
+```text
+Present
+ExcludedByPolicy
+NotExpected
+Missing
+Unreadable
+SecurityRejected
+```
+
+发现范围以完整作业清单为准，覆盖正常、失败、取消和恢复作业尝试，
+不受界面展示筛选影响。通用扫描范围为作业根、`input/`、`run/` 和
+`results/`；程序专用候选规则由程序适配器提供。
+
+发现策略必须显式汇总 scratch、缓存、临时文件、锁文件、操作系统元数据
+和零字节控制流。未知持久化文件进入 `Other`，不得静默忽略。必要条件
+缺失、不可读、越界或被排除时，发现快照必须标记为不完整。
+
+所有候选路径必须位于所属作业目录内。拒绝目录穿越和绝对路径越界，
+拒绝跟随符号链接或 Windows 重解析点。快照只保存规范化逻辑路径，
+不得泄露服务器绝对路径。
+
 ### 4.4 持久化证据
 
 根工作流结束后仍应保留、可复制、可校验并可用于复现或审计的文件和记录。
@@ -972,3 +1039,33 @@ NTO 包含多个派生状态作业
 缺失和排除必须显式，不得静默丢失
 manifest.json 和 checksums.sha256 定义档案完整性
 ```
+
+## 23. 第 6 步实现状态
+
+第 6 步“全过程产物发现策略”已经实现：
+
+```text
+新增 ICalculationWorkflowArtifactDiscoveryRepository
+新增 FileCalculationWorkflowArtifactDiscoveryRepository
+新增产物发现模型、文件角色、必要性、发现状态和稳定问题码
+新增通用发现策略、路径安全策略和排除汇总
+程序适配器产物规则支持目录范围和必要性声明
+Gaussian 程序输入和主要输出按作业状态决定是否必要
+快照使用完整作业清单，覆盖失败、取消和恢复尝试
+未知文件进入 Other，排除项不静默丢失
+JSON 使用临时文件原子替换，服务重启后可读取
+```
+
+本步边界：
+
+```text
+只发现文件，不复制文件
+只登记长度和存在状态，不计算 SHA-256
+不生成最终文件清单
+不生成 checksums.sha256
+不组装档案目录或压缩包
+不接入 API、WinForms 或 Markdown 报告
+```
+
+第 7 步以本快照为输入，生成经过长度与 SHA-256 校验的最终文件清单，
+再为成果包组装提供正式输入。

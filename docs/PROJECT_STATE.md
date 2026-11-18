@@ -3,7 +3,7 @@
 ## 当前版本
 
 ```text
-0.77.0
+0.78.0
 ```
 
 ## 文档维护原则
@@ -35,7 +35,7 @@ HANDOFF.md
 
 ```text
 Release 构建：0 警告，0 错误
-测试：317/317 通过
+测试：323/323 通过
 真实 Gaussian 16：3/3 通过
 真实 Gaussian opt freq：1/1 通过
 真实 Gaussian O2 稳定性修正：1/1 通过
@@ -107,13 +107,16 @@ ChemSculptor.Reporting
   同时完整保留科学点集合
 ```
 
-全过程档案规范已经冻结，根工作流持久化证据账本、作业完整清单和
-阶段/作业因果关系图已经实现。
+全过程档案规范已经冻结，根工作流持久化证据账本、作业完整清单、
+阶段/作业因果关系图和全过程产物发现快照已经实现。
 账本按 RootWorkflowId 保存阶段、作业尝试和状态，服务重启后可以
 恢复全部已登记索引；仓储可以读取 manifest、发现缺失和孤立作业，并把
 科学成果、科学点和来源作业关联起来。因果关系图只依据账本和作业清单，
 记录阶段包含、阶段声明顺序、作业派生和作业恢复关系，并持久化为
-`workflow-runs/<RootWorkflowId>/causality.json`。完整文件发现、成果包组装和客户端下载尚未实现。
+`workflow-runs/<RootWorkflowId>/causality.json`。产物发现按完整作业
+清单建立 `workflow-runs/<RootWorkflowId>/artifacts-discovery.json`，
+登记文件角色、必要性、存在状态和安全问题，并汇总显式排除项。
+文件复制、SHA-256 清单、成果包组装和客户端下载尚未实现。
 当前客户端“保存”仍以最终科学点成果包和最新作业入口为主。
 
 依赖原则：
@@ -306,11 +309,15 @@ WinForms 已按清单保存完整成果包
 全过程档案第 3 步作业完整枚举、筛选和科学关联审计已实现
 全过程档案第 4 步统一成果包范围契约已实现
 全过程档案第 5 步阶段与作业因果关系图已实现
+全过程档案第 6 步全过程产物发现快照已实现
 当前保存入口仍以最新作业和最终科学点成果包为主
 作业清单同时保留展示筛选结果和完整审计结果
 因果关系图包含完整作业清单，不使用界面展示筛选条件
 因果关系图不按时间戳猜测因果，不读取计算输出文件
-scratch、缓存和临时文件的排除清单尚未实现
+产物发现快照只登记文件及其状态，不复制文件，也不计算 SHA-256
+scratch、缓存、临时文件和零字节控制流显式记录到排除汇总
+未分类持久化文件进入 Other，不会被静默忽略
+发现快照使用 Present，不提前冒充最终 manifest.json 的 Included
 ```
 
 ## 下一阶段
@@ -323,7 +330,7 @@ scratch、缓存和临时文件的排除清单尚未实现
 第 3 步：作业仓储完整枚举、筛选和科学关联审计已完成
 第 4 步：报告包范围契约扩展已完成
 第 5 步：阶段与作业因果关系已完成
-第 6 步：全过程产物发现策略尚未实现
+第 6 步：全过程产物发现策略已完成
 第 7 步：完整文件清单和 SHA-256 尚未实现
 第 8 步：全过程证据快照尚未实现
 第 9 步：通用报告章节提供者尚未实现
@@ -425,7 +432,33 @@ JSON 使用 camelCase 和字符串枚举
 本阶段不读取计算输出、不生成报告、不组装档案包、不改 API 和 WinForms
 ```
 
-下一步待用户确认；若继续全过程档案包，第 6 步是全过程产物发现策略。
+第 6 步已完成：
+
+```text
+新增 CalculationWorkflowArtifactDiscoverySnapshot 及其条目、作业摘要、
+问题码和排除汇总模型
+新增 CalculationWorkflowArtifactDiscoveryPolicy 通用发现策略
+新增 CalculationWorkflowArtifactPathPolicy 路径与重解析点安全策略
+新增 ICalculationWorkflowArtifactDiscoveryRepository
+新增 FileCalculationWorkflowArtifactDiscoveryRepository
+发现快照固定写入 workflow-runs/<RootWorkflowId>/artifacts-discovery.json
+使用完整作业清单，覆盖正常、失败、取消及恢复作业尝试
+扫描作业根、输入、运行和结果目录，识别程序输入、主要输出、检查点、
+规范化结果、验证、参数审计、处理方案、科学数据、叙述和报告等角色
+程序适配器声明候选规则；规则可以区分目录范围和必要条件
+Gaussian 程序输入和主要输出按作业状态决定是否为必要条件
+未知持久化文件进入 Other；scratch、缓存、临时文件和零字节控制流
+进入 ExcludedByPolicy，并按类别汇总数量和字节数
+缺失、不可读、安全拒绝和规则失败均有稳定状态或问题码
+路径越界和重解析点拒绝跟随，逻辑路径不泄露服务器绝对路径
+JSON 使用临时文件原子替换；服务重启后仍可读取最近快照
+新增 6 项产物发现测试，并新增第 6 步教程
+本阶段不复制文件、不计算 SHA-256、不生成最终 manifest/checksums、
+不组装档案包、不改 API、WinForms 或报告层
+```
+
+下一步尚未自动执行；若继续全过程档案包，第 7 步是完整文件清单和
+SHA-256 摘要。
 
 计算成果包与报告生成层：
 
@@ -603,6 +636,8 @@ docs/Tutorials/ScientificData-Tutorial.md
 docs/Tutorials/Scientific-Repository-Upgrade-Tutorial.md
 docs/Tutorials/Oxygen-End-to-End-Tutorial.md
 docs/Tutorials/Report-Package-Step-00-Contracts-Tutorial.md
+docs/Tutorials/Calculation-Run-Archive-Step-05-Causality-Tutorial.md
+docs/Tutorials/Calculation-Run-Archive-Step-06-Artifact-Discovery-Tutorial.md
 docs/Calculation-Run-Archive-Package-Spec.md
 docs/Coding-Conventions.md
 ```
