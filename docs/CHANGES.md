@@ -5,6 +5,123 @@
 
 ---
 
+## v0.75.0（2026-11-17）：根工作流作业完整清单与科学关联审计
+
+### 版本
+
+- 当前版本：`0.75.0`
+- 日期：`2026-11-17`
+- 版本类型：新增功能
+
+### 改动目的
+
+实现全过程计算档案包第 3 步。以 `RootWorkflowId` 为边界，读取账本中的
+全部作业尝试和对应 `manifest.json`，再把这些作业与科学成果、科学点和
+来源字段关联起来，为后续报告证据快照和档案包组装提供可审计输入。
+
+### 核心边界
+
+```text
+不复制计算文件
+不生成报告
+不组装档案包
+不修改 API 和 WinForms
+不覆盖历史作业
+账本 manifest 只读取，不改变原有作业生命周期
+```
+
+### 新增文件
+
+```text
+src/ChemSculptor.Compute/CalculationWorkflowInventoryModels.cs
+src/ChemSculptor.Compute/FileCalculationWorkflowInventoryRepository.cs
+src/ChemSculptor.Agent/ScientificWorkflowInventoryModels.cs
+src/ChemSculptor.Agent/IScientificWorkflowInventoryService.cs
+src/ChemSculptor.Agent/ScientificWorkflowInventoryService.cs
+tests/ChemSculptor.Core.Tests/CalculationWorkflowInventoryTests.cs
+tests/ChemSculptor.Core.Tests/ScientificWorkflowInventoryServiceTests.cs
+```
+
+### 作业枚举和筛选
+
+新增独立的 `ICalculationWorkflowInventoryRepository`，没有把枚举方法
+塞进既有 `ICalculationRepository`，因此已有计算 Skill 和 Workflow 不需要
+修改主体实现。查询支持：
+
+```text
+RootWorkflowId
+StageIds
+States
+TaskTypes
+Programs
+ParentJobId
+RecoveryAttempt
+IncludeUnindexedJobs
+```
+
+清单条目同时保留账本快照、作业 manifest 状态、作业目录、运行目录、
+阶段、父作业、恢复序号和稳定问题。作业筛选只影响返回的作业列表，
+缺失 manifest、孤立作业目录和账本悬空引用始终保留在审计问题中。
+
+### 科学关联审计
+
+新增 Agent 层 `ScientificWorkflowInventoryService`，复用作业清单仓储和
+科学数据仓储，建立以下关联：
+
+```text
+ScientificResult
+  -> CalculationPoint
+  -> CalculationJobId
+  -> Provenance.InitialJobId
+  -> Provenance.AcceptedJobId
+  -> PointArtifactReference.CalculationJobId
+  -> PointValidationRecord.JobId
+  -> 元数据中以 JobId 结尾的来源作业
+```
+
+关联结果区分“声明根工作流标识”和“从作业清单推断的有效根标识”。
+科学点根标识与查询根标识冲突、来源作业不存在、科学成果为空和科学成果
+没有点时，都生成稳定问题码；不会把缺失证据当成成功。
+
+`JobInventory` 是调用方筛选后的展示清单，`AuditJobInventory` 是不受筛选
+影响的完整关联审计清单。这样可以筛选振动分析或恢复作业，同时仍能解析
+科学点引用的优化、TDDFT 等其他阶段作业。
+
+### 测试
+
+```text
+多阶段、多作业和失败/取消作业完整枚举
+阶段、状态、任务类型、程序、父作业和恢复尝试组合筛选
+账本引用但 manifest 缺失
+账本引用但作业目录缺失
+孤立作业目录发现
+阶段与作业尝试双向悬空引用
+服务重启后重新读取
+原始作业和恢复作业映射到同一科学点
+一个科学成果包含多个科学点
+科学点引用不存在作业
+科学点根工作流标识冲突
+无关科学成果不进入当前结果
+没有科学成果时明确报告缺失
+筛选作业时仍使用完整清单做关联审计
+```
+
+### 验证
+
+```text
+Release 构建：0 警告，0 错误
+全量测试：292/292 通过
+```
+
+### 教程式说明
+
+`ledger.json` 是根工作流范围索引，`manifest.json` 是每个作业的快照。
+档案层不应该扫描目录后猜测某个作业属于谁，也不应该用“最后一个成功作业”
+代替整个根工作流。先按账本完整枚举，再用科学点来源字段把科学结论与
+过程证据连接起来；两者都缺失或冲突时，问题必须显式出现在清单中。
+
+---
+
 ## v0.74.0（2026-11-17）：根工作流持久化证据账本
 
 ### 版本

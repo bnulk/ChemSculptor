@@ -75,6 +75,14 @@ public sealed class WorkspaceManager : ICalculationWorkspace
             safeJobId);
     }
 
+    /// <summary>获取全部计算作业目录的父目录。</summary>
+    public string GetJobsDirectory()
+    {
+        return Path.Combine(
+            _options.RootDirectory,
+            _options.JobsDirectoryName);
+    }
+
     /// <summary>获取根工作流证据目录。</summary>
     public string GetWorkflowRunDirectory(
         string rootWorkflowId)

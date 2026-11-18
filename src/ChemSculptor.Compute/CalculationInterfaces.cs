@@ -162,6 +162,9 @@ public interface ICalculationWorkspace
         string jobId,
         CancellationToken cancellationToken = default);
 
+    /// <summary>获取全部计算作业目录的父目录。</summary>
+    string GetJobsDirectory();
+
     /// <summary>确保根工作流证据目录存在。</summary>
     Task EnsureWorkflowRunWorkspaceAsync(
         string rootWorkflowId,
@@ -266,6 +269,18 @@ public interface ICalculationRepository
         string jobId,
         CancellationToken cancellationToken = default);
 
+}
+
+/// <summary>
+/// 根工作流作业清单查询接口。
+/// 以账本为索引读取全部作业尝试，并审计清单缺失、孤立目录和阶段引用。
+/// </summary>
+public interface ICalculationWorkflowInventoryRepository
+{
+    /// <summary>按根工作流枚举和筛选全部作业。</summary>
+    Task<CalculationWorkflowJobInventory> QueryAsync(
+        CalculationWorkflowJobInventoryQuery query,
+        CancellationToken cancellationToken = default);
 }
 
 /// <summary>

@@ -23,6 +23,12 @@ public static class AgentServiceRegistration
         ServiceCollectionServiceExtensions.AddSingleton<
             ICalculationWorkflowEvidenceLedgerRepository,
             FileCalculationWorkflowEvidenceLedgerRepository>(services);
+        ServiceCollectionServiceExtensions.AddSingleton<
+            ICalculationWorkflowInventoryRepository,
+            FileCalculationWorkflowInventoryRepository>(services);
+        ServiceCollectionServiceExtensions.AddSingleton<
+            IScientificWorkflowInventoryService,
+            ScientificWorkflowInventoryService>(services);
         ServiceCollectionServiceExtensions.AddSingleton<ITaskInterpreter, RuleBasedTaskInterpreter>(
             services);
         ServiceCollectionServiceExtensions.AddSingleton<IConversationRepository, InMemoryConversationRepository>(

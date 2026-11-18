@@ -2,7 +2,7 @@
 
 ## 当前阶段
 
-全过程计算档案包第 2 步已完成。
+全过程计算档案包第 3 步已完成。
 
 ```text
 已冻结 Calculation Run Archive Package 规范
@@ -44,6 +44,24 @@ JSON 使用 camelCase 和字符串枚举
 临时文件写入后再原子替换 ledger.json
 仓储实例重建后仍可按 RootWorkflowId 读取全部已登记索引
 本阶段不复制计算文件、不生成报告、不组装档案包、不改 API 和 WinForms
+```
+
+第 3 步作业完整清单和科学关联审计已完成：
+
+```text
+新增 FileCalculationWorkflowInventoryRepository
+按 RootWorkflowId 枚举账本中的全部作业尝试
+读取 manifest.json 并区分 Present、Missing、Invalid
+发现账本未登记但可归属根工作流的孤立作业目录
+审计阶段与作业尝试的双向悬空引用
+支持阶段、状态、任务类型、程序、父作业和恢复尝试筛选
+新增 ScientificWorkflowInventoryService
+映射科学成果、科学点、直接作业、初始作业、接受作业、文件和验证作业
+核对科学点根工作流标识
+JobInventory 保存展示筛选结果
+AuditJobInventory 保存不受筛选影响的完整关联审计结果
+缺失科学成果、缺失作业和根标识冲突均显式报告
+不复制文件、不生成报告、不组装档案包、不改 API 和 WinForms
 ```
 
 计算成果包与报告生成层第 0 步已完成。
@@ -189,8 +207,8 @@ Api 和 WinForms 尚未接入新报告层
 全过程档案规范已完成第 1 步
 根工作流持久化证据账本已完成第 2 步
 当前保存仍以最新作业和最终科学点成果包为主
-账本已保存作业尝试索引，但尚未实现仓储级全量枚举和筛选
-尚未实现账本与科学点、科学成果、运行目录的缺失关联审计
+作业清单已支持完整枚举和筛选
+科学成果、科学点、来源作业和运行目录的缺失关联审计已实现
 全过程文件发现、校验、组装和下载尚未实现
 ```
 
@@ -198,7 +216,7 @@ Api 和 WinForms 尚未接入新报告层
 
 ```text
 Release 构建：0 警告，0 错误
-测试：277/277 通过
+测试：292/292 通过
 真实 Gaussian 16：3/3 通过
 真实 Gaussian opt freq：1/1 通过
 真实 Gaussian O2 稳定性修正：1/1 通过
@@ -225,7 +243,6 @@ Release 构建：0 警告，0 错误
 尚未实现成果包组装器
 尚未接入成果包 API 和客户端保存
 尚未以吸收光谱和 NTO 作为内容提供者验收通用层
-尚未实现按 RootWorkflowId 枚举全部作业
 尚未实现全过程产物发现和 exclusions.json
 尚未实现全过程 manifest.json 与 checksums.sha256
 尚未实现全过程档案 API 和客户端下载
@@ -233,19 +250,14 @@ Release 构建：0 警告，0 错误
 
 ## 下一步精确任务
 
-下一步精确任务：实现按 RootWorkflowId 的仓储级作业完整枚举、筛选和缺失关联审计。
+下一步精确任务：等待用户确认是否进入全过程档案第 4 步。
 
 ```text
-目标：从 ledger.json 解析出根工作流全部作业尝试，并读取对应 manifest.json
-区分：已登记且清单存在、已登记但清单缺失、目录存在但未登记
-筛选：阶段、状态、任务类型、父作业、恢复尝试和程序
-关联：科学点、科学成果、运行目录和来源作业
-边界：不复制文件、不生成报告、不组装档案包、不接 Api
-要求：不得静默忽略缺失 manifest 或孤立作业目录
-测试：多阶段多作业、失败和取消、恢复链、缺失清单、孤立目录和服务重启
+第 4 步候选目标：扩展报告包范围契约，使全过程档案和科学点成果可以共享边界。
+当前第 3 步已完成，不在未确认前继续修改报告层。
 ```
 
-完成第 3 步后，再按用户指定推进全过程证据快照、文件清单、
+第 3 步作业清单和关联审计完成后，再按用户指定推进全过程证据快照、文件清单、
 档案组装和客户端下载。
 
 历史阶段建议：
@@ -292,6 +304,25 @@ conversation.txt 是客户端会话记录
 ```text
 docs/PROJECT_STATE.md
 docs/CHANGES.md
+docs/HANDOFF.md
+```
+
+## 本次全过程档案第 3 步关联文件
+
+```text
+src/ChemSculptor.Compute/CalculationWorkflowInventoryModels.cs
+src/ChemSculptor.Compute/FileCalculationWorkflowInventoryRepository.cs
+src/ChemSculptor.Compute/CalculationInterfaces.cs
+src/ChemSculptor.Compute/WorkspaceManager.cs
+src/ChemSculptor.Agent/ScientificWorkflowInventoryModels.cs
+src/ChemSculptor.Agent/IScientificWorkflowInventoryService.cs
+src/ChemSculptor.Agent/ScientificWorkflowInventoryService.cs
+src/ChemSculptor.Agent/AgentServiceRegistration.cs
+tests/ChemSculptor.Core.Tests/CalculationWorkflowInventoryTests.cs
+tests/ChemSculptor.Core.Tests/ScientificWorkflowInventoryServiceTests.cs
+tests/ChemSculptor.Core.Tests/WorkspaceManagerTests.cs
+docs/CHANGES.md
+docs/PROJECT_STATE.md
 docs/HANDOFF.md
 ```
 

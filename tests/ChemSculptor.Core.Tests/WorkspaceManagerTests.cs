@@ -22,6 +22,9 @@ public class WorkspaceManagerTests
         WorkspaceManager manager = new WorkspaceManager(options);
         string jobDirectory = Path.Combine(root, "jobs", "job-123");
 
+        Assert.Equal(
+            Path.Combine(root, "jobs"),
+            manager.GetJobsDirectory());
         Assert.Equal(jobDirectory, manager.GetJobDirectory("job-123"));
         Assert.Equal(
             Path.Combine(jobDirectory, "input"),
